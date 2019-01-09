@@ -6,6 +6,6 @@ module wsobjectstore {
     requires com.fasterxml.jackson.databind;
     requires jersey.client;
     requires org.apache.logging.log4j;
-    requires commons.lang3;
+    requires org.apache.commons.lang3;
     requires jsr311.api;
 }
