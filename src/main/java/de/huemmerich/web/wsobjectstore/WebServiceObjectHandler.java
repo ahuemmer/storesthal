@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 
 public class WebServiceObjectHandler<T extends WebServiceObject> {
 

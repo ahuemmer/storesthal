@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'http://repo.maven.apache.org/maven2'
+    }
+}
+
+
+
+ext.moduleName = 'wsobjectstore'
+
+compileJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+        ]
+        classpath = files()
+    }
+}
+
+
+
+dependencies {
+    compile 'com.sun.jersey:jersey-client:1.19.4'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    compile 'org.apache.logging.log4j:log4j-api:2.11.1'
+    compile 'org.apache.logging.log4j:log4j-core:2.11.1'
+    compile 'org.apache.commons:commons-lang3:3.8.1'
+    compile 'javax.xml.bind:jaxb-api:2.3.1'
+    testCompile 'junit:junit:4.12'
+    compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+}
+
+group = 'de.huemmerich-web'
+version = '1.0.0'
+description = 'WSObjectStore'
+sourceCompatibility = '9'
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
