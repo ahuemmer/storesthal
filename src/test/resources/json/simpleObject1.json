@@ -1,0 +1,6 @@
+{
+  "_links": {
+    "self": {"href":"${self}"}
+  },
+  "name": "${name}"
+}

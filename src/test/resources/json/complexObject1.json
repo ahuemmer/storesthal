@@ -1,0 +1,11 @@
+{
+    "_links": {
+        "self": {"href":"${self}"}
+    },
+    "color": 10157977,
+    "comment": "",
+    "category_id": 1,
+    "name": "Test!",
+    "number": 2,
+    "type": "expense"
+}

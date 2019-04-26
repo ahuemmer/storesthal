@@ -1,46 +1,58 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    id 'de.gliderpilot.semantic-release' version '1.4.0'
 }
 
 repositories {
     mavenLocal()
     maven {
+        url = 'https://jitpack.io'
+    }
+    maven {
         url = 'http://repo.maven.apache.org/maven2'
     }
 }
 
-
-
-ext.moduleName = 'wsobjectstore'
-
-compileJava {
-    inputs.property("moduleName", moduleName)
-    doFirst {
-        options.compilerArgs = [
-                '--module-path', classpath.asPath,
-        ]
-        classpath = files()
-    }
+ext {
+    springVersion="5.1.6.RELEASE"
+    junitVersion="5.4.2"
 }
-
-
 
 dependencies {
-    compile 'com.sun.jersey:jersey-client:1.19.4'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
-    compile 'org.apache.logging.log4j:log4j-api:2.11.1'
-    compile 'org.apache.logging.log4j:log4j-core:2.11.1'
-    compile 'org.apache.commons:commons-lang3:3.8.1'
-    compile 'javax.xml.bind:jaxb-api:2.3.1'
-    testCompile 'junit:junit:4.12'
-    compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+    compile group: 'org.springframework', name: 'spring-context', version: "${springVersion}"
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: "${junitVersion}"
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+
+    //Really no idea what the cause is, but the handlebars-related stuff from com.github.jknack won't be found,
+    //so it's excluded - does not make any problems!
+    testCompile ("com.github.tomakehurst:wiremock-jre8:2.23.2") {
+        exclude group: "com.github.jknack", module: '*'
+    }
+    testCompile ("com.github.JensPiegsa:wiremock-extension:0.4.0") {
+        exclude group: "com.github.jknack", module: '*'
+    }
+    testCompile 'org.apache.commons:commons-text:1.6'
+    testRuntime 'org.opentest4j:opentest4j:1.0.0-M1'
+
+    compile 'org.springframework.hateoas:spring-hateoas:0.25.1.RELEASE'
+    compile 'org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.9.8'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.8'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
+    compile 'org.apache.commons:commons-lang3:3.9'
+    runtime group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.2'
+
 }
 
-group = 'de.huemmerich-web'
-version = '1.0.0'
-description = 'WSObjectStore'
-sourceCompatibility = '9'
+group = 'de.huemmerich.web'
+sourceCompatibility = '11'
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+}
 
 publishing {
     publications {
@@ -48,4 +60,9 @@ publishing {
             from(components.java)
         }
     }
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
 }
