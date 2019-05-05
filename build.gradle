@@ -1,13 +1,22 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    id 'de.gliderpilot.semantic-release' version '1.4.0'
 }
 
 repositories {
     mavenLocal()
     maven {
+        url = 'https://jitpack.io'
+    }
+    maven {
         url = 'http://repo.maven.apache.org/maven2'
     }
+}
+
+ext {
+    springVersion="5.1.6.RELEASE"
+    junitVersion="5.4.2"
 }
 
 /*ext.moduleName = 'wsobjectstore'
@@ -23,13 +32,31 @@ compileJava {
 }*/
 
 dependencies {
+    compile group: 'org.springframework', name: 'spring-context', version: "${springVersion}"
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: "${junitVersion}"
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    testCompile "com.github.tomakehurst:wiremock-jre8:2.23.2"
+    testCompile "com.github.JensPiegsa:wiremock-extension:0.4.0"
+    testRuntime 'org.opentest4j:opentest4j:1.0.0-M1'
 
+    //testCompile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
+    //compile "org.springframework:spring-web:${springVersion}"
+    compile 'org.springframework.hateoas:spring-hateoas:0.25.1.RELEASE'
+    compile 'org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.9.8'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.8'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
+    compile 'org.apache.commons:commons-lang3:3.9'
 }
 
 group = 'de.huemmerich-web'
-version = '2.0.0-SNAPSHOT'
-description = 'WSObjectStore'
 sourceCompatibility = '11'
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+}
 
 publishing {
     publications {
