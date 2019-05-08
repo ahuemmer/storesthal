@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class ComplexObjectWithMultipleChildren {
+public class ComplexObjectWithMultipleChildren1 {
 
         @JsonProperty("category_id")
         protected Integer categoryId;

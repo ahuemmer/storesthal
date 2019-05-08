@@ -6,11 +6,8 @@ import com.github.jenspiegsa.wiremockextension.WireMockSettings;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.Options;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import de.huemmerich.web.wsobjectstore.complextestobjects.*;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
@@ -31,7 +28,7 @@ public class WSObjectStoreTest {
             .notifier(new ConsoleNotifier(true));
 
     @Test
-    public void testWSObjectStoreGetComplexObject1() {
+    public void testWSObjectStoreGetComplexObject1() throws WSObjectStoreException {
         serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexObjects/1"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -59,7 +56,7 @@ public class WSObjectStoreTest {
     }
 
     @Test
-    public void testWSObjectStoreGetComplexObjectWithSingleChild() {
+    public void testWSObjectStoreGetComplexObjectWithSingleChild() throws WSObjectStoreException {
         serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexObjectsWithSingleChildren/1"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -100,13 +97,13 @@ public class WSObjectStoreTest {
     }
 
     @Test
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildren() {
-        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexObjectsWithMultipleChildren/1"))
+    public void testWSObjectStoreGetComplexObjectWithMultipleChildren1() throws WSObjectStoreException {
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexObjectsWithMultipleChildren1/1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
                         .withBody("{\n" +
-                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren/1\"}, \"child\":{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren/1\"}},\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1\"}, \"children\":[{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/1\"},{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/2\"},{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/3\"}]},\n" +
                                 "    \"color\": 22101579,\n" +
                                 "    \"comment\": \"itsme...\",\n" +
                                 "    \"category_id\": 1508,\n" +
@@ -115,20 +112,39 @@ public class WSObjectStoreTest {
                                 "    \"type\": \"neither\"\n" +
                                 "}"))));
 
-        //TODO: Ausformulieren, ...
-
-        /*serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren/1"))
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
                         .withBody("{\n" +
-                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren/1\"}},\n" +
-                                "    \"name\": \"Testchild!\"\n" +
-                                "}"))));*/
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/1\"}},\n" +
+                                "    \"childId\": 12345,\n" +
+                                "    \"name\": \"Testchild 1!\"\n" +
+                                "}"))));
+
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/2"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/2\"}},\n" +
+                                "    \"childId\": 815,\n" +
+                                "    \"name\": \"Testchild 2!\"\n" +
+                                "}"))));
+
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/3"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/3\"}},\n" +
+                                "    \"childId\": 4711,\n" +
+                                "    \"name\": \"Testchild 3!\"\n" +
+                                "}"))));
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren test = new WSObjectStore().<ComplexObjectWithMultipleChildren>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren/1", ComplexObjectWithMultipleChildren.class);
+        ComplexObjectWithMultipleChildren1 test = new WSObjectStore().<ComplexObjectWithMultipleChildren1>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
 
         assertNotNull(test);
         assertEquals(1508, test.getCategoryId());
@@ -141,7 +157,86 @@ public class WSObjectStoreTest {
         List<ComplexChild2> children = test.getChildren();
         assertNotNull(children);
         assertEquals(3, children.size());
-        //assert...
+        assertEquals("Testchild 1!", children.get(0).getChildName());
+        assertEquals("Testchild 2!", children.get(1).getChildName());
+        assertEquals("Testchild 3!", children.get(2).getChildName());
+
+        assertEquals(12345, children.get(0).getChildId());
+        assertEquals(815, children.get(1).getChildId());
+
+    }
+
+    @Test
+    //Pretty much the same as before (in testWSObjectStoreGetComplexObjectWithMultipleChildren1), but now we use
+    //ComplexObjectWithMultipleChildren2 which has a concrete implementation of a collection (LinkedList) instead
+    //of an interface.
+    public void testWSObjectStoreGetComplexObjectWithMultipleChildren2() throws WSObjectStoreException {
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexObjectsWithMultipleChildren2/1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren2/1\"}, \"children\":[{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/1\"},{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/2\"},{\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/3\"}]},\n" +
+                                "    \"color\": 22101579,\n" +
+                                "    \"comment\": \"itsme...\",\n" +
+                                "    \"category_id\": 1508,\n" +
+                                "    \"name\": \"Test3!\",\n" +
+                                "    \"number\": 9,\n" +
+                                "    \"type\": \"neither\"\n" +
+                                "}"))));
+
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/1"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/1\"}},\n" +
+                                "    \"childId\": 12345,\n" +
+                                "    \"name\": \"Testchild 1!\"\n" +
+                                "}"))));
+
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/2"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/2\"}},\n" +
+                                "    \"childId\": 815,\n" +
+                                "    \"name\": \"Testchild 2!\"\n" +
+                                "}"))));
+
+        serverMock.addStubMapping(stubFor(get(urlEqualTo("/complexChildren2/3"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody("{\n" +
+                                "\"_links\": {\"self\": {\"href\":\"http://localhost:"+serverMock.port()+"/complexChildren2/3\"}},\n" +
+                                "    \"childId\": 4711,\n" +
+                                "    \"name\": \"Testchild 3!\"\n" +
+                                "}"))));
+
+        serverMock.start();
+
+        ComplexObjectWithMultipleChildren2 test = new WSObjectStore().<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren2/1", ComplexObjectWithMultipleChildren2.class);
+
+        assertNotNull(test);
+        assertEquals(1508, test.getCategoryId());
+        assertEquals(22101579, test.getColor());
+        assertEquals("itsme...", test.getComment());
+        assertEquals("Test3!", test.getName());
+        assertEquals(9, test.getNumber());
+        assertEquals("neither", test.getType());
+
+        List<ComplexChild2> children = test.getChildren();
+        assertNotNull(children);
+        assertEquals(3, children.size());
+        assertEquals("Testchild 1!", children.get(0).getChildName());
+        assertEquals("Testchild 2!", children.get(1).getChildName());
+        assertEquals("Testchild 3!", children.get(2).getChildName());
+
+        assertEquals(12345, children.get(0).getChildId());
+        assertEquals(815, children.get(1).getChildId());
+
     }
 
 }

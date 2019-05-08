@@ -22,13 +22,11 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,12 +111,92 @@ public class WSObjectStore {
         return input.substring(0,1).toUpperCase()+input.substring(1);
     }
 
-    private <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited) {
+    private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult) throws WSObjectStoreException {
+        if ("self".equals(l.getRel())) {
+            return;
+        }
 
-        RestTemplate restTemplate = getRestTemplateWithHalMessageConverter();
+        URI uri = null;
+
+        try {
+            uri = new URI(l.getHref());
+        } catch (URISyntaxException e) {
+            throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
+        }
+
+        if (linksVisited.contains(uri)) {
+            return;
+        }
+
+        try {
+            String methodName = "set"+ucFirst(l.getRel());
+
+            Method m = searchForSetter(objectClass, l.getRel());
+
+            if (m!=null) {
+                Class type = m.getParameterTypes()[0];
+
+                if (Collection.class.isAssignableFrom(type)) {
+
+                    Type[] x = m.getGenericParameterTypes();
+
+                    ParameterizedType xy = (ParameterizedType) x[0];
+
+                    Class realType = (Class) xy.getActualTypeArguments()[0];
+
+                    Collection coll = collections.get(l.getRel());
+
+                    if (coll==null) {
+                        if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+                            if (List.class.isAssignableFrom(type)) {
+                                coll = new Vector(); //Vector because of thread safety
+                            }
+                            else if (Set.class.isAssignableFrom(type)) {
+                                coll = new HashSet();
+                            }
+                            else if (Queue.class.isAssignableFrom(type)) {
+                                coll = new ConcurrentLinkedDeque();
+                            }
+                        }
+                        else {
+                            //TODO: Array...?
+                            try {
+                                coll = (Collection) type.getConstructor().newInstance();
+                            } catch (NoSuchMethodException | InstantiationException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        collections.put(l.getRel(),coll);
+                    }
+
+
+                    Object subObject = getObject(l.getHref(), realType, linksVisited, collections);
+
+                    coll.add(subObject);
+
+                    m.invoke(intermediateResult,coll);
+
+                }
+                else {
+                    Object subObject = getObject(l.getHref(), type, linksVisited, collections);
+                    m.invoke(intermediateResult, subObject);
+                }
+
+            }
+
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        linksVisited.add(uri);
+    }
+
+    private <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections) throws WSObjectStoreException {
 
         ResponseEntity<Resource<T>> response =
-                restTemplate.exchange(url,
+                getRestTemplateWithHalMessageConverter().exchange(url,
                         HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<Resource<T>>() {
                             @Override
                             public Type getType() {
@@ -138,43 +216,11 @@ public class WSObjectStore {
         try {
             linksVisited.add(new URI(url));
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            throw new WSObjectStoreException("Could not add url\""+url+"\"to visited links collection!", e);
         }
 
         for (Link l: response.getBody().getLinks()) {
-
-            if ("self".equals(l.getRel())) {
-                continue;
-            }
-
-            URI uri = null;
-
-            try {
-                uri = new URI(l.getHref());
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-
-            if (linksVisited.contains(uri)) {
-                continue;
-            }
-
-            try {
-                String methodName = "set"+ucFirst(l.getRel());
-
-                Method m = searchForSetter(objectClass, l.getRel());
-
-                if (m!=null) {
-                    Class type = m.getParameterTypes()[0];
-                    Object subObject = getObject(l.getHref(), type, linksVisited);
-                    m.invoke(result, subObject);
-                }
-
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            }
+            followLink(l, linksVisited, objectClass, collections, result);
         }
 
         return result;
@@ -190,9 +236,9 @@ public class WSObjectStore {
         return null;
     }
 
-    public <T> T getObject(String url, Class<T> objectClass) {
+    public <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
 
-        return getObject(url, objectClass, new HashSet<>());
+        return getObject(url, objectClass, new HashSet<>(), new HashMap<String,Collection>());
 
     }
 
