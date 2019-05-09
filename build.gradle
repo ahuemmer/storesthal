@@ -37,6 +37,7 @@ dependencies {
     testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     testCompile "com.github.tomakehurst:wiremock-jre8:2.23.2"
     testCompile "com.github.JensPiegsa:wiremock-extension:0.4.0"
+    testCompile 'org.apache.commons:commons-text:1.6'
     testRuntime 'org.opentest4j:opentest4j:1.0.0-M1'
 
     //testCompile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'

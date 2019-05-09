@@ -1,17 +1,13 @@
 package de.huemmerich.web.wsobjectstore;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.ResourceSupport;
-import org.springframework.hateoas.client.Traverson;
 import org.springframework.hateoas.hal.Jackson2HalModule;
 import org.springframework.hateoas.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
 import org.springframework.http.HttpEntity;
@@ -31,7 +27,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
-
 import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
 
 public class WSObjectStore {
@@ -111,6 +106,49 @@ public class WSObjectStore {
         return input.substring(0,1).toUpperCase()+input.substring(1);
     }
 
+    private<T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult) throws WSObjectStoreException {
+        Type[] genericParameterTypes = m.getGenericParameterTypes();
+        ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
+        Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
+
+        Class type = m.getParameterTypes()[0];
+
+        Collection coll = collections.get(l.getRel());
+
+        if (coll==null) {
+            if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+                if (List.class.isAssignableFrom(type)) {
+                    coll = new Vector(); //Vector because of thread safety
+                }
+                else if (Set.class.isAssignableFrom(type)) {
+                    coll = new HashSet();
+                }
+                else if (Queue.class.isAssignableFrom(type)) {
+                    coll = new ConcurrentLinkedDeque();
+                }
+            }
+            else {
+                //TODO: Array...?
+                try {
+                    coll = (Collection) type.getConstructor().newInstance();
+                } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    throw new WSObjectStoreException("Could not instantiate collection of type \""+type.getCanonicalName()+"\".", e);
+                }
+            }
+            collections.put(l.getRel(),coll);
+        }
+
+        Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String,Collection>());
+
+        coll.add(subObject);
+
+        try {
+            m.invoke(intermediateResult,coll);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new WSObjectStoreException("Could not invoke method \""+m.getName()+"("+coll.getClass().getCanonicalName()+")\" on instance of \""+intermediateResult.getClass().getCanonicalName()+"\" class.", e);
+        }
+    }
+
     private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult) throws WSObjectStoreException {
         if ("self".equals(l.getRel())) {
             return;
@@ -128,66 +166,28 @@ public class WSObjectStore {
             return;
         }
 
-        try {
-            String methodName = "set"+ucFirst(l.getRel());
+        String methodName = "set"+ucFirst(l.getRel());
 
-            Method m = searchForSetter(objectClass, l.getRel());
+        Method m = searchForSetter(objectClass, l.getRel());
 
-            if (m!=null) {
-                Class type = m.getParameterTypes()[0];
+        if (m!=null) {
+            Class type = m.getParameterTypes()[0];
 
-                if (Collection.class.isAssignableFrom(type)) {
-
-                    Type[] x = m.getGenericParameterTypes();
-
-                    ParameterizedType xy = (ParameterizedType) x[0];
-
-                    Class realType = (Class) xy.getActualTypeArguments()[0];
-
-                    Collection coll = collections.get(l.getRel());
-
-                    if (coll==null) {
-                        if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
-                            if (List.class.isAssignableFrom(type)) {
-                                coll = new Vector(); //Vector because of thread safety
-                            }
-                            else if (Set.class.isAssignableFrom(type)) {
-                                coll = new HashSet();
-                            }
-                            else if (Queue.class.isAssignableFrom(type)) {
-                                coll = new ConcurrentLinkedDeque();
-                            }
-                        }
-                        else {
-                            //TODO: Array...?
-                            try {
-                                coll = (Collection) type.getConstructor().newInstance();
-                            } catch (NoSuchMethodException | InstantiationException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        collections.put(l.getRel(),coll);
-                    }
-
-
-                    Object subObject = getObject(l.getHref(), realType, linksVisited, collections);
-
-                    coll.add(subObject);
-
-                    m.invoke(intermediateResult,coll);
-
-                }
-                else {
-                    Object subObject = getObject(l.getHref(), type, linksVisited, collections);
+            if (Collection.class.isAssignableFrom(type)) {
+                handleCollection(l, m, collections, linksVisited, intermediateResult);
+            }
+            else if (type.getComponentType()!=null) {
+                throw new WSObjectStoreException("Array relations are not supported (yet?).");
+            }
+            else {
+                Object subObject = getObject(l.getHref(), type, linksVisited, new HashMap<String,Collection>());
+                try {
                     m.invoke(intermediateResult, subObject);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new WSObjectStoreException("Could not invoke method \""+m.getName()+"("+subObject.getClass().getCanonicalName()+")\" on instance of \""+intermediateResult.getClass().getCanonicalName()+"\" class.", e);
                 }
-
             }
 
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
         }
 
         linksVisited.add(uri);

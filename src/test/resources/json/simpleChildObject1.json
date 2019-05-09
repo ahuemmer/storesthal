@@ -1,0 +1,6 @@
+{
+  "_links": {
+    "self": {"href":"http://localhost:${port}/complexChildren/1"}
+  },
+  "name": "Testchild!"
+}
