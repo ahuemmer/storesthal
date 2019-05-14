@@ -1,6 +1,8 @@
 package de.huemmerich.web.wsobjectstore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.ParameterizedTypeReference;
@@ -38,6 +40,18 @@ public class WSObjectStore {
         this(null);
     }
 
+    private static int httpCalls=0;
+    private static Map<String,Integer> cacheMisses = new HashMap<>();
+    private static Map<String,Integer> cacheHits = new HashMap<>();
+
+    private static Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
+
+    private static final String INTERMEDIATE_CACHE_NAME="intermediateCache";
+
+    private static Set<URI> transientObjects=new HashSet<>();
+
+    private static Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
+
     public WSObjectStore(String basePackage) {
 
         if (basePackage==null) {
@@ -65,6 +79,8 @@ public class WSObjectStore {
         }
 
     }
+
+    private static Map<URI,Object> intermediateCache = new HashMap<>();
 
     public final Set<HALObjectMetadata> getHalObjectClasses() {
         Stream<HALObjectMetadata> result = Stream.concat(halObjectClasses.values().stream(), halObjectClassesWithoutUrl.stream());
@@ -106,7 +122,7 @@ public class WSObjectStore {
         return input.substring(0,1).toUpperCase()+input.substring(1);
     }
 
-    private<T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult) throws WSObjectStoreException {
+    private<T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
         Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
@@ -138,7 +154,27 @@ public class WSObjectStore {
             collections.put(l.getRel(),coll);
         }
 
-        Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String,Collection>());
+        URI uri;
+
+        try {
+            uri = new URI(l.getHref());
+        } catch (URISyntaxException e) {
+            throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
+        }
+
+        if (transientObjects.contains(uri)) {
+            Method addMethod = null;
+            try {
+                addMethod = coll.getClass().getMethod("add", Object.class);
+            } catch (NoSuchMethodException e) {
+                throw new WSObjectStoreException("Could not find \"add\" method for collection class "+coll.getClass().getCanonicalName());
+            }
+
+            markForLaterInvocation(uri, intermediateResult, addMethod);
+            //return;
+        }
+
+        Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String,Collection>(), depth+1);
 
         coll.add(subObject);
 
@@ -149,12 +185,45 @@ public class WSObjectStore {
         }
     }
 
-    private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult) throws WSObjectStoreException {
+    private static Object getObjectFromCache(URI uri) {
+        logger.debug("Trying to get object with URI "+uri+" from cache \""+INTERMEDIATE_CACHE_NAME+"\"...");
+        Object result = intermediateCache.get(uri);
+        if (result!=null) {
+            if (cacheHits.get(INTERMEDIATE_CACHE_NAME)==null) {
+                cacheHits.put(INTERMEDIATE_CACHE_NAME,0);
+            }
+            cacheHits.put(INTERMEDIATE_CACHE_NAME, cacheHits.get(INTERMEDIATE_CACHE_NAME)+1);
+            logger.debug("Cache hit for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
+        }
+        else {
+            if (cacheMisses.get(INTERMEDIATE_CACHE_NAME)==null) {
+                cacheMisses.put(INTERMEDIATE_CACHE_NAME,0);
+            }
+            cacheMisses.put(INTERMEDIATE_CACHE_NAME, cacheMisses.get(INTERMEDIATE_CACHE_NAME)+1);
+            logger.debug("Cache miss for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
+        }
+        return result;
+    }
+
+    private static void putObjectInCache(URI uri, Object object, String cacheName) {
+
+        if (INTERMEDIATE_CACHE_NAME.equals(cacheName)) {
+            intermediateCache.put(uri, object);
+            logger.debug("Put one object into "+INTERMEDIATE_CACHE_NAME+" for URI \""+uri.toString()+"\".");
+            logger.debug(INTERMEDIATE_CACHE_NAME+" size is now "+intermediateCache.size()+".");
+        }
+        else {
+            logger.error("Caches other than \""+INTERMEDIATE_CACHE_NAME+"\" are not supported yet!");
+        }
+
+    }
+
+    private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult, int depth) throws WSObjectStoreException {
         if ("self".equals(l.getRel())) {
             return;
         }
 
-        URI uri = null;
+        URI uri;
 
         try {
             uri = new URI(l.getHref());
@@ -162,38 +231,69 @@ public class WSObjectStore {
             throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
         }
 
-        if (linksVisited.contains(uri)) {
-            return;
-        }
-
-        String methodName = "set"+ucFirst(l.getRel());
-
         Method m = searchForSetter(objectClass, l.getRel());
 
         if (m!=null) {
+
+            if (transientObjects.contains(uri)) {
+                markForLaterInvocation(uri, intermediateResult, m);
+                return;
+            }
+
             Class type = m.getParameterTypes()[0];
 
+            Object subObject = null;
+
             if (Collection.class.isAssignableFrom(type)) {
-                handleCollection(l, m, collections, linksVisited, intermediateResult);
+                handleCollection(l, m, collections, linksVisited, intermediateResult, depth + 1);
+                return;
             }
-            else if (type.getComponentType()!=null) {
+            else if (type.getComponentType() != null) {
                 throw new WSObjectStoreException("Array relations are not supported (yet?).");
             }
-            else {
-                Object subObject = getObject(l.getHref(), type, linksVisited, new HashMap<String,Collection>());
-                try {
-                    m.invoke(intermediateResult, subObject);
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new WSObjectStoreException("Could not invoke method \""+m.getName()+"("+subObject.getClass().getCanonicalName()+")\" on instance of \""+intermediateResult.getClass().getCanonicalName()+"\" class.", e);
-                }
+            else if (linksVisited.contains(uri)) {
+                subObject = getObjectFromCache(uri);
             }
+            else {
+                subObject = getObject(l.getHref(), type, linksVisited, new HashMap<String, Collection>(), depth + 1);
+            }
+
+            invokeSetter(m, intermediateResult, subObject);
 
         }
 
         linksVisited.add(uri);
     }
 
-    private <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections) throws WSObjectStoreException {
+    private void markForLaterInvocation(URI uri, Object object, Method method) {
+        if (!invokeLater.containsKey(uri)) {
+            invokeLater.put(uri, new LinkedList<AbstractMap.SimpleEntry<Object,Method>>());
+        }
+        invokeLater.get(uri).add(new AbstractMap.SimpleEntry<Object,Method>(object,method));
+    }
+
+    private void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
+        try {
+            m.invoke(applyTo, parameter);
+        } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
+            throw new WSObjectStoreException("Could not invoke method \"" + m.getName() + "(" + applyTo.getClass().getCanonicalName() + ")\" on instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
+        }
+    }
+
+    private <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws WSObjectStoreException {
+
+        httpCalls+=1;
+
+        URI uri;
+
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            throw new WSObjectStoreException("Could not create URI from url\""+url+"\"!", e);
+        }
+
+        logger.debug("Adding URI "+uri.toString()+" to transient objects...");
+        transientObjects.add(uri);
 
         ResponseEntity<Resource<T>> response =
                 getRestTemplateWithHalMessageConverter().exchange(url,
@@ -213,15 +313,36 @@ public class WSObjectStore {
 
         T result = response.getBody().getContent();
 
-        try {
-            linksVisited.add(new URI(url));
-        } catch (URISyntaxException e) {
-            throw new WSObjectStoreException("Could not add url\""+url+"\"to visited links collection!", e);
+        linksVisited.add(uri);
+        for (Link l: response.getBody().getLinks()) {
+            followLink(l, linksVisited, objectClass, collections, result, depth);
+        }
+        putObjectInCache(uri, result, INTERMEDIATE_CACHE_NAME);
+
+
+        /**
+         * During object retrieval, it might happen, that links to "parent" objects are not followed / populated,
+         * as the parent object itself is just being examined and populated. This function corrects this afterwards,
+         * when the parent object is fully available and in cache.
+         */
+
+        if (depth==0) {
+
+            for(URI invokeUri: invokeLater.keySet()) {
+                List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
+                for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod: invocationList) {
+                    Object cachedObject = getObjectFromCache(uri);
+                    invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
+                }
+            }
+
+            transientObjects.clear();
+            intermediateCache.clear();
+            invokeLater.clear();
         }
 
-        for (Link l: response.getBody().getLinks()) {
-            followLink(l, linksVisited, objectClass, collections, result);
-        }
+        logger.debug("Removing URI "+uri.toString()+" from transient objects...");
+        transientObjects.remove(uri);
 
         return result;
     }
@@ -236,9 +357,44 @@ public class WSObjectStore {
         return null;
     }
 
+    private static final Method searchForGetter(Class objectClass, String rel) {
+        String methodName = "get"+ucFirst(rel);
+        for (Method m: objectClass.getMethods()) {
+            if (m.getName().equals(methodName) && (m.getParameterCount() == 0)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
     public <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
 
-        return getObject(url, objectClass, new HashSet<>(), new HashMap<String,Collection>());
+        logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
+
+        //transientObjects.clear();
+
+        return getObject(url, objectClass, new HashSet<>(), new HashMap<String,Collection>(), 0);
+
+    }
+
+    public static Map<String,Object> getStatistics() {
+        return Map.of("httpCalls",httpCalls, "cacheHits", cacheHits, "cacheMisses", cacheMisses);
+    }
+
+    public static void resetStatistics() {
+        httpCalls = 0;
+        cacheHits.clear();
+        cacheMisses.clear();
+    }
+
+    public static void printStatistics() {
+        System.out.println("WSObjectStore statistics:");
+        System.out.println("-------------------------");
+        System.out.println("- HTTP Calls: "+httpCalls);
+        System.out.println("- Cache hits:");
+        cacheHits.keySet().forEach(key -> System.out.println("   - "+key+": "+cacheHits.get(key)));
+        System.out.println("- Cache misses:");
+        cacheMisses.keySet().forEach(key -> System.out.println("   - "+key+": "+cacheHits.get(key)));
 
     }
 

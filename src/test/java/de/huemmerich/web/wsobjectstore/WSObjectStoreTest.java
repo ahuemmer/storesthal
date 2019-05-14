@@ -36,8 +36,8 @@ public class WSObjectStoreTest {
 
     @ConfigureWireMock
     Options options = wireMockConfig()
-            .dynamicPort()
-            .notifier(new ConsoleNotifier(true));
+            .dynamicPort();
+            //.notifier(new ConsoleNotifier(true));
 
     private void configureServerMock(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {
 
@@ -202,6 +202,93 @@ public class WSObjectStoreTest {
         assertEquals(815, children[1].getChildId());
         assertEquals(4711, children[2].getChildId());*/
 
+    }
+
+    @Test
+    public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelation() throws WSObjectStoreException, IOException {
+
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexChildren2/1", "simpleChildObjectWithParentRelation.json", Map.of("childId","654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+        configureServerMock("/complexChildren2/2", "simpleChildObjectWithParentRelation.json", Map.of("childId","158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+        configureServerMock("/complexChildren2/3", "simpleChildObjectWithParentRelation.json", Map.of("childId","1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+
+        serverMock.start();
+
+        WSObjectStore.resetStatistics();
+
+        ComplexObjectWithMultipleChildren4 test = new WSObjectStore().<ComplexObjectWithMultipleChildren4>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
+
+        assertNotNull(test);
+        assertEquals(1508, test.getCategoryId());
+        assertEquals(22101579, test.getColor());
+        assertEquals("itsme...", test.getComment());
+        assertEquals("Test3!", test.getName());
+        assertEquals(9, test.getNumber());
+        assertEquals("neither", test.getType());
+
+        List<ComplexChildWithParentRelation> children = test.getChildren();
+        assertNotNull(children);
+        assertEquals(3, children.size());
+        assertEquals("Testchild with parent 1.", children.get(0).getChildName());
+        assertEquals("Testchild with parent 2.", children.get(1).getChildName());
+        assertEquals("Testchild with parent 3.", children.get(2).getChildName());
+
+        assertEquals(654321, children.get(0).getChildId());
+        assertEquals(158, children.get(1).getChildId());
+        assertEquals(1147, children.get(2).getChildId());
+
+        WSObjectStore.printStatistics();
+
+        assertEquals(4,(Integer) WSObjectStore.getStatistics().get("httpCalls"));
+
+        for (ComplexChildWithParentRelation child: children) {
+            //Use == here --> really the same object!
+            assertTrue(test==child.getParent());
+        }
+    }
+
+    @Test
+    public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelationCollection() throws WSObjectStoreException, IOException {
+
+        configureServerMock("/complexObjectsWithMultipleChildren2/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexChildren2/1", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren2/1"));
+        configureServerMock("/complexChildren2/2", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren2/1"));
+        configureServerMock("/complexChildren2/3", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren2/1"));
+
+        serverMock.start();
+
+        WSObjectStore.resetStatistics();
+
+        ComplexObjectWithMultipleChildren5 test = new WSObjectStore().<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren2/1", ComplexObjectWithMultipleChildren5.class);
+
+        assertNotNull(test);
+        assertEquals(1508, test.getCategoryId());
+        assertEquals(22101579, test.getColor());
+        assertEquals("itsme...", test.getComment());
+        assertEquals("Test3!", test.getName());
+        assertEquals(9, test.getNumber());
+        assertEquals("neither", test.getType());
+
+        List<ComplexChildWithParentRelationCollection> children = test.getChildren();
+        assertNotNull(children);
+        assertEquals(3, children.size());
+        assertEquals("Testchild with parent 1.", children.get(0).getChildName());
+        assertEquals("Testchild with parent 2.", children.get(1).getChildName());
+        assertEquals("Testchild with parent 3.", children.get(2).getChildName());
+
+        assertEquals(654321, children.get(0).getChildId());
+        assertEquals(158, children.get(1).getChildId());
+        assertEquals(1147, children.get(2).getChildId());
+
+        WSObjectStore.printStatistics();
+
+        assertEquals(4,(Integer) WSObjectStore.getStatistics().get("httpCalls"));
+
+        for (ComplexChildWithParentRelationCollection child: children) {
+            assertEquals(1, child.getParents().size());
+            //Use == here --> really the same object!
+            assertTrue(test==child.getParents().get(0));
+        }
     }
 
     private static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {
