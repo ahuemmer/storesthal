@@ -170,13 +170,12 @@ public class WSObjectStore {
                 throw new WSObjectStoreException("Could not find \"add\" method for collection class "+coll.getClass().getCanonicalName());
             }
 
-            markForLaterInvocation(uri, intermediateResult, addMethod);
-            //return;
+            markForLaterInvocation(uri, coll, addMethod);
         }
-
-        Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String,Collection>(), depth+1);
-
-        coll.add(subObject);
+        else {
+            Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String, Collection>(), depth + 1);
+            coll.add(subObject);
+        }
 
         try {
             m.invoke(intermediateResult,coll);
@@ -235,14 +234,19 @@ public class WSObjectStore {
 
         if (m!=null) {
 
-            if (transientObjects.contains(uri)) {
-                markForLaterInvocation(uri, intermediateResult, m);
-                return;
-            }
-
             Class type = m.getParameterTypes()[0];
 
             Object subObject = null;
+
+            if (transientObjects.contains(uri)) {
+                if (Collection.class.isAssignableFrom(type)) {
+                    handleCollection(l, m, collections, linksVisited, intermediateResult, depth + 1);
+                }
+                else {
+                    markForLaterInvocation(uri, intermediateResult, m);
+                }
+                return;
+            }
 
             if (Collection.class.isAssignableFrom(type)) {
                 handleCollection(l, m, collections, linksVisited, intermediateResult, depth + 1);
@@ -354,6 +358,7 @@ public class WSObjectStore {
                 return m;
             }
         }
+        logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
         return null;
     }
 
