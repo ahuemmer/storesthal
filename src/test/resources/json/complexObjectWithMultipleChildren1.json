@@ -6,7 +6,7 @@
   "color": ${color},
   "comment": "${comment}",
   "category_id": ${categoryId},
-  "name": "Test3!",
-  "number": 9,
+  "name": "${name}",
+  "number": ${number},
   "type": "neither"
 }

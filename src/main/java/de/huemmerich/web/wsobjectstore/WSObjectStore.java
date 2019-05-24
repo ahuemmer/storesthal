@@ -52,8 +52,9 @@ public class WSObjectStore {
 
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
 
-
     private static final Map<URI,Object> intermediateCache = new HashMap<>();
+
+    private static WSObjectStoreConfiguration configuration;
 
     public WSObjectStore(String basePackage) {
 
@@ -83,6 +84,10 @@ public class WSObjectStore {
 
     }
 
+    public static void setConfiguration(WSObjectStoreConfiguration configuration) {
+        WSObjectStore.configuration = configuration;
+    }
+
 
     public final Set<HALObjectMetadata> getHalObjectClasses() {
         Stream<HALObjectMetadata> result = Stream.concat(halObjectClasses.values().stream(), halObjectClassesWithoutUrl.stream());
@@ -93,7 +98,7 @@ public class WSObjectStore {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
         MappingJackson2HttpMessageConverter halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(ResourceSupport.class);
-        halConverter.setSupportedMediaTypes(Arrays.asList(HAL_JSON_UTF8));
+        halConverter.setSupportedMediaTypes(Collections.singletonList(HAL_JSON_UTF8));
         halConverter.setObjectMapper(objectMapper);
         return halConverter;
     }
@@ -123,6 +128,7 @@ public class WSObjectStore {
         return input.substring(0,1).toUpperCase()+input.substring(1);
     }
 
+    @SuppressWarnings("unchecked")
     private<T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
@@ -164,18 +170,18 @@ public class WSObjectStore {
         }
 
         if (transientObjects.contains(uri)) {
-            Method addMethod = null;
+            Method addMethod;
             try {
-                addMethod = coll.getClass().getMethod("add", Object.class);
+                addMethod = Objects.requireNonNull(coll).getClass().getMethod("add", Object.class);
             } catch (NoSuchMethodException e) {
-                throw new WSObjectStoreException("Could not find \"add\" method for collection class "+coll.getClass().getCanonicalName());
+                throw new WSObjectStoreException("Could not find \"add\" method for collection class "+ Objects.requireNonNull(coll).getClass().getCanonicalName());
             }
 
             markForLaterInvocation(uri, coll, addMethod);
         }
         else {
             Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<>(), depth + 1);
-            coll.add(subObject);
+            Objects.requireNonNull(coll).add(subObject);
         }
 
         try {
@@ -214,6 +220,7 @@ public class WSObjectStore {
 
     }
 
+    @SuppressWarnings("unchecked")
     private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult, int depth) throws WSObjectStoreException {
         if ("self".equals(l.getRel())) {
             return;
@@ -233,7 +240,7 @@ public class WSObjectStore {
 
             Class type = m.getParameterTypes()[0];
 
-            Object subObject = null;
+            Object subObject;
 
             if (transientObjects.contains(uri)) {
                 if (Collection.class.isAssignableFrom(type)) {
@@ -256,7 +263,7 @@ public class WSObjectStore {
                 subObject = getObjectFromCache(uri);
             }
             else {
-                subObject = getObject(l.getHref(), type, linksVisited, new HashMap<String, Collection>(), depth + 1);
+                subObject = getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
             }
 
             invokeSetter(m, intermediateResult, subObject);
@@ -268,9 +275,9 @@ public class WSObjectStore {
 
     private void markForLaterInvocation(URI uri, Object object, Method method) {
         if (!invokeLater.containsKey(uri)) {
-            invokeLater.put(uri, new LinkedList<AbstractMap.SimpleEntry<Object,Method>>());
+            invokeLater.put(uri, new LinkedList<>());
         }
-        invokeLater.get(uri).add(new AbstractMap.SimpleEntry<Object,Method>(object,method));
+        invokeLater.get(uri).add(new AbstractMap.SimpleEntry<>(object, method));
     }
 
     private void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
@@ -296,6 +303,7 @@ public class WSObjectStore {
         logger.debug("Adding URI "+uri.toString()+" to transient objects...");
         transientObjects.add(uri);
 
+        //noinspection Convert2Diamond
         ResponseEntity<Resource<T>> response =
                 getRestTemplateWithHalMessageConverter().exchange(url,
                         HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<Resource<T>>() {
@@ -320,7 +328,7 @@ public class WSObjectStore {
         putObjectInCache(uri, result, INTERMEDIATE_CACHE_NAME);
 
 
-        /**
+        /*
          * During object retrieval, it might happen, that links to "parent" objects are not followed / populated,
          * as the parent object itself is just being examined and populated. This function corrects this afterwards,
          * when the parent object is fully available and in cache.
@@ -364,7 +372,7 @@ public class WSObjectStore {
 
         //transientObjects.clear();
 
-        return getObject(url, objectClass, new HashSet<>(), new HashMap<String,Collection>(), 0);
+        return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
 
     }
 
