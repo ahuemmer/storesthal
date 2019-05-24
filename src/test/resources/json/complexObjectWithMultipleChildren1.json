@@ -1,15 +1,11 @@
 {
   "_links": {
     "self": {"href":"http://localhost:${port}/complexObjectsWithMultipleChildren1/1"},
-    "children":[
-      {"href":"http://localhost:${port}/complexChildren2/1"},
-      {"href":"http://localhost:${port}/complexChildren2/2"},
-      {"href":"http://localhost:${port}/complexChildren2/3"}
-    ]
+    "children":${children}
   },
-  "color": 22101579,
-  "comment": "itsme...",
-  "category_id": 1508,
+  "color": ${color},
+  "comment": "${comment}",
+  "category_id": ${categoryId},
   "name": "Test3!",
   "number": 9,
   "type": "neither"

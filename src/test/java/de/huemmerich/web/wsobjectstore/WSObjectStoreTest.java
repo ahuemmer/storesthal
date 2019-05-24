@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +102,11 @@ public class WSObjectStoreTest {
     @Test
     public void testWSObjectStoreGetComplexObjectWithMultipleChildren1() throws WSObjectStoreException, IOException {
 
-        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "itsme...","categoryId","1508", "children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+        "http://localhost:${port}/complexChildren2/2",
+        "http://localhost:${port}/complexChildren2/3"}
+    )));
         configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
         configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
         configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
@@ -135,19 +140,23 @@ public class WSObjectStoreTest {
     //ComplexObjectWithMultipleChildren2 which has a concrete implementation of a collection (LinkedList) instead
     //of an interface.
     public void testWSObjectStoreGetComplexObjectWithMultipleChildren2() throws WSObjectStoreException, IOException {
-        configureServerMock("/complexObjectsWithMultipleChildren2/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "hello!", "categoryId","4711","children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+                "http://localhost:${port}/complexChildren2/2",
+                "http://localhost:${port}/complexChildren2/3"}
+        )));
         configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
         configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
         configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren2 test = new WSObjectStore().<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren2/1", ComplexObjectWithMultipleChildren2.class);
+        ComplexObjectWithMultipleChildren2 test = new WSObjectStore().<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
 
         assertNotNull(test);
-        assertEquals(1508, test.getCategoryId());
+        assertEquals(4711, test.getCategoryId());
         assertEquals(22101579, test.getColor());
-        assertEquals("itsme...", test.getComment());
+        assertEquals("hello!", test.getComment());
         assertEquals("Test3!", test.getName());
         assertEquals(9, test.getNumber());
         assertEquals("neither", test.getType());
@@ -169,7 +178,11 @@ public class WSObjectStoreTest {
     //Pretty much the same as the two before (in testWSObjectStoreGetComplexObjectWithMultipleChildren1), but now we use
     //ComplexObjectWithMultipleChildren3 which has an array as collection insted of a (Linked)List.
     public void testWSObjectStoreGetComplexObjectWithMultipleChildrenInArray() throws WSObjectStoreException, IOException {
-        configureServerMock("/complexObjectsWithMultipleChildren2/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "", "categoryId","9999","children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+                "http://localhost:${port}/complexChildren2/2",
+                "http://localhost:${port}/complexChildren2/3"}
+        )));
         configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
         configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
         configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
@@ -177,7 +190,7 @@ public class WSObjectStoreTest {
         serverMock.start();
 
         assertThrows(WSObjectStoreException.class, () -> {
-            ComplexObjectWithMultipleChildren3 test = new WSObjectStore().<ComplexObjectWithMultipleChildren3>getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren2/1", ComplexObjectWithMultipleChildren3.class);
+            ComplexObjectWithMultipleChildren3 test = new WSObjectStore().<ComplexObjectWithMultipleChildren3>getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
         });
 
         //ARRAYS ARE NOT SUPPORTED (YET??)
@@ -207,7 +220,11 @@ public class WSObjectStoreTest {
     @Test
     public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelation() throws WSObjectStoreException, IOException {
 
-        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json");
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "887766", "comment", "", "categoryId","12345", "children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+                "http://localhost:${port}/complexChildren2/2",
+                "http://localhost:${port}/complexChildren2/3"}
+        )));
         configureServerMock("/complexChildren2/1", "simpleChildObjectWithParentRelation.json", Map.of("childId","654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
         configureServerMock("/complexChildren2/2", "simpleChildObjectWithParentRelation.json", Map.of("childId","158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
         configureServerMock("/complexChildren2/3", "simpleChildObjectWithParentRelation.json", Map.of("childId","1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
@@ -219,9 +236,9 @@ public class WSObjectStoreTest {
         ComplexObjectWithMultipleChildren4 test = new WSObjectStore().<ComplexObjectWithMultipleChildren4>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
 
         assertNotNull(test);
-        assertEquals(1508, test.getCategoryId());
-        assertEquals(22101579, test.getColor());
-        assertEquals("itsme...", test.getComment());
+        assertEquals(12345, test.getCategoryId());
+        assertEquals(887766, test.getColor());
+        assertEquals("", test.getComment());
         assertEquals("Test3!", test.getName());
         assertEquals(9, test.getNumber());
         assertEquals("neither", test.getType());
@@ -250,21 +267,25 @@ public class WSObjectStoreTest {
     @Test
     public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelationCollection() throws WSObjectStoreException, IOException {
 
-        configureServerMock("/complexObjectsWithMultipleChildren2/1", "complexObjectWithMultipleChildren1.json");
-        configureServerMock("/complexChildren2/1", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren2/1"));
-        configureServerMock("/complexChildren2/2", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren2/1"));
-        configureServerMock("/complexChildren2/3", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren2/1"));
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "456456", "comment", "abcABC", "categoryId","123459876","children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+                "http://localhost:${port}/complexChildren2/2",
+                "http://localhost:${port}/complexChildren2/3"}
+        )));
+        configureServerMock("/complexChildren2/1", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+        configureServerMock("/complexChildren2/2", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+        configureServerMock("/complexChildren2/3", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId","1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
 
         serverMock.start();
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren5 test = new WSObjectStore().<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren2/1", ComplexObjectWithMultipleChildren5.class);
+        ComplexObjectWithMultipleChildren5 test = new WSObjectStore().<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
 
         assertNotNull(test);
-        assertEquals(1508, test.getCategoryId());
-        assertEquals(22101579, test.getColor());
-        assertEquals("itsme...", test.getComment());
+        assertEquals(123459876, test.getCategoryId());
+        assertEquals(456456, test.getColor());
+        assertEquals("abcABC", test.getComment());
         assertEquals("Test3!", test.getName());
         assertEquals(9, test.getNumber());
         assertEquals("neither", test.getType());
@@ -289,6 +310,67 @@ public class WSObjectStoreTest {
             //Use == here --> really the same object!
             assertTrue(test==child.getParents().get(0));
         }
+    }
+
+    @Test
+    public void testVeryComplexObjectStructure() throws IOException, WSObjectStoreException {
+        configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "0", "comment", ".", "categoryId","2","children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren2/1",
+                "http://localhost:${port}/complexChildren2/2",
+                "http://localhost:${port}/complexChildren2/3"}
+        )));
+        configureServerMock("/complexChildren2/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5","children", createJsonHrefArray(new String[] {
+                        "http://localhost:${port}/complexChildren3/1"
+        }
+        )));
+        configureServerMock("/complexChildren2/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId","1","children", createJsonHrefArray(new String[] {
+                }
+        )));
+        configureServerMock("/complexChildren2/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "468", "comment", "Number 3...", "categoryId","1111","children", createJsonHrefArray(new String[] {
+                }
+        )));
+
+        configureServerMock("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5","children", createJsonHrefArray(new String[] {
+                }
+        )));
+        serverMock.start();
+
+        WSObjectStore.resetStatistics();
+
+        ComplexObjectWithMultipleChildren6 test = new WSObjectStore().<ComplexObjectWithMultipleChildren6>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
+
+        assertEquals(0,test.getColor());
+        assertEquals(".",test.getComment());
+        assertEquals(2,test.getCategoryId());
+        assertEquals(3,test.getChildren().size());
+
+        assertEquals(1345,test.getChildren().get(0).getColor());
+        assertEquals("Number 1...",test.getChildren().get(0).getComment());
+        assertEquals(5,test.getChildren().get(0).getCategoryId());
+        assertEquals(1,test.getChildren().get(0).getChildren().size());
+
+        assertEquals(584390,test.getChildren().get(1).getColor());
+        assertEquals("Number 2...",test.getChildren().get(1).getComment());
+        assertEquals(1,test.getChildren().get(1).getCategoryId());
+        //assertEquals(0,test.getChildren().get(1).getChildren().size());
+
+        assertEquals(468,test.getChildren().get(2).getColor());
+        assertEquals("Number 3...",test.getChildren().get(2).getComment());
+        assertEquals(1111,test.getChildren().get(2).getCategoryId());
+        //assertEquals(0,test.getChildren().get(2).getChildren().size());
+
+    }
+
+    private static String createJsonHrefArray(String[] entries) {
+        String result = "[";
+        for(int i=0;i<entries.length;i++) {
+            result+="    {\"href\":\""+entries[i]+"\"}";
+            if (i!=entries.length-1) {
+                result+=",";
+            }
+        }
+        result+="]";
+        return result;
     }
 
     private static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {

@@ -33,24 +33,27 @@ import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
 
 public class WSObjectStore {
 
-    private Map<String, HALObjectMetadata> halObjectClasses = new HashMap<>();
-    private Set<HALObjectMetadata> halObjectClassesWithoutUrl = new HashSet<>();
+    private final Map<String, HALObjectMetadata> halObjectClasses = new HashMap<>();
+    private final Set<HALObjectMetadata> halObjectClassesWithoutUrl = new HashSet<>();
 
     public WSObjectStore() {
         this(null);
     }
 
     private static int httpCalls=0;
-    private static Map<String,Integer> cacheMisses = new HashMap<>();
-    private static Map<String,Integer> cacheHits = new HashMap<>();
+    private static final Map<String,Integer> cacheMisses = new HashMap<>();
+    private static final Map<String,Integer> cacheHits = new HashMap<>();
 
-    private static Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
 
     private static final String INTERMEDIATE_CACHE_NAME="intermediateCache";
 
-    private static Set<URI> transientObjects=new HashSet<>();
+    private static final Set<URI> transientObjects=new HashSet<>();
 
-    private static Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
+    private static final Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
+
+
+    private static final Map<URI,Object> intermediateCache = new HashMap<>();
 
     public WSObjectStore(String basePackage) {
 
@@ -80,7 +83,6 @@ public class WSObjectStore {
 
     }
 
-    private static Map<URI,Object> intermediateCache = new HashMap<>();
 
     public final Set<HALObjectMetadata> getHalObjectClasses() {
         Stream<HALObjectMetadata> result = Stream.concat(halObjectClasses.values().stream(), halObjectClassesWithoutUrl.stream());
@@ -99,8 +101,7 @@ public class WSObjectStore {
     private HttpEntity<String> getHttpEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(HAL_JSON_UTF8));
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        return entity;
+        return new HttpEntity<>(headers);
     }
 
     private RestTemplate getRestTemplateWithHalMessageConverter() {
@@ -115,7 +116,7 @@ public class WSObjectStore {
         return restTemplate;
     }
 
-    private static final String ucFirst(String input) {
+    private static String ucFirst(String input) {
         if (input==null) {
             return null;
         }
@@ -173,7 +174,7 @@ public class WSObjectStore {
             markForLaterInvocation(uri, coll, addMethod);
         }
         else {
-            Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<String, Collection>(), depth + 1);
+            Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<>(), depth + 1);
             coll.add(subObject);
         }
 
@@ -188,16 +189,12 @@ public class WSObjectStore {
         logger.debug("Trying to get object with URI "+uri+" from cache \""+INTERMEDIATE_CACHE_NAME+"\"...");
         Object result = intermediateCache.get(uri);
         if (result!=null) {
-            if (cacheHits.get(INTERMEDIATE_CACHE_NAME)==null) {
-                cacheHits.put(INTERMEDIATE_CACHE_NAME,0);
-            }
+            cacheHits.putIfAbsent(INTERMEDIATE_CACHE_NAME, 0);
             cacheHits.put(INTERMEDIATE_CACHE_NAME, cacheHits.get(INTERMEDIATE_CACHE_NAME)+1);
             logger.debug("Cache hit for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
         }
         else {
-            if (cacheMisses.get(INTERMEDIATE_CACHE_NAME)==null) {
-                cacheMisses.put(INTERMEDIATE_CACHE_NAME,0);
-            }
+            cacheMisses.putIfAbsent(INTERMEDIATE_CACHE_NAME, 0);
             cacheMisses.put(INTERMEDIATE_CACHE_NAME, cacheMisses.get(INTERMEDIATE_CACHE_NAME)+1);
             logger.debug("Cache miss for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
         }
@@ -307,9 +304,8 @@ public class WSObjectStore {
                                 Type type = super.getType();
                                 if (type instanceof ParameterizedType) {
                                     Type[] responseWrapperActualTypes = {objectClass};
-                                    ParameterizedType responseWrapperType = parameterize(Resource.class,
+                                    return parameterize(Resource.class,
                                             responseWrapperActualTypes);
-                                    return responseWrapperType;
                                 }
                                 return type;
                             }
@@ -351,7 +347,7 @@ public class WSObjectStore {
         return result;
     }
 
-    private static final Method searchForSetter(Class objectClass, String rel) {
+    private static Method searchForSetter(Class objectClass, String rel) {
         String methodName = "set"+ucFirst(rel);
         for (Method m: objectClass.getMethods()) {
             if (m.getName().equals(methodName) && (m.getParameterCount() == 1)) {
@@ -359,16 +355,6 @@ public class WSObjectStore {
             }
         }
         logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
-        return null;
-    }
-
-    private static final Method searchForGetter(Class objectClass, String rel) {
-        String methodName = "get"+ucFirst(rel);
-        for (Method m: objectClass.getMethods()) {
-            if (m.getName().equals(methodName) && (m.getParameterCount() == 0)) {
-                return m;
-            }
-        }
         return null;
     }
 
