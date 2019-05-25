@@ -18,8 +18,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestTemplate;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,9 +38,9 @@ public class WSObjectStore {
     private final Map<String, HALObjectMetadata> halObjectClasses = new HashMap<>();
     private final Set<HALObjectMetadata> halObjectClassesWithoutUrl = new HashSet<>();
 
-    public WSObjectStore() {
+    /*public WSObjectStore() {
         this(null);
-    }
+    }*/
 
     private static int httpCalls=0;
     private static final Map<String,Integer> cacheMisses = new HashMap<>();
@@ -46,17 +48,19 @@ public class WSObjectStore {
 
     private static final Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
 
-    private static final String INTERMEDIATE_CACHE_NAME="intermediateCache";
+    private static final String INTERMEDIATE_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.intermediate";
 
     private static final Set<URI> transientObjects=new HashSet<>();
 
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
 
-    private static final Map<URI,Object> intermediateCache = new HashMap<>();
+    private static final Map<String,Map<URI,Object>> caches = new HashMap<>();
 
     private static WSObjectStoreConfiguration configuration;
 
-    public WSObjectStore(String basePackage) {
+    public static final String COMMON_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.common";
+
+    /*public WSObjectStore(String basePackage) {
 
         if (basePackage==null) {
             basePackage="";
@@ -82,17 +86,17 @@ public class WSObjectStore {
             }
         }
 
-    }
+    }*/
 
     public static void setConfiguration(WSObjectStoreConfiguration configuration) {
         WSObjectStore.configuration = configuration;
     }
 
 
-    public final Set<HALObjectMetadata> getHalObjectClasses() {
+    /*public final Set<HALObjectMetadata> getHalObjectClasses() {
         Stream<HALObjectMetadata> result = Stream.concat(halObjectClasses.values().stream(), halObjectClassesWithoutUrl.stream());
         return result.collect(Collectors.toSet());
-    }
+    }*/
 
     private HttpMessageConverter getHalMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -191,33 +195,56 @@ public class WSObjectStore {
         }
     }
 
-    private static Object getObjectFromCache(URI uri) {
-        logger.debug("Trying to get object with URI "+uri+" from cache \""+INTERMEDIATE_CACHE_NAME+"\"...");
-        Object result = intermediateCache.get(uri);
+    private static Object getObjectFromCache(URI uri, Class objectClass) {
+
+        String cacheName = getObjectCacheName(objectClass);
+        if (cacheName == null) {
+            cacheName = INTERMEDIATE_CACHE_NAME;
+        }
+
+        logger.debug("Trying to get object with URI "+uri+" from cache \""+cacheName+"\"...");
+
+        Map<URI,Object> cache = caches.get(cacheName);
+        Object result = null;
+        if (cache!=null) {
+            result = cache.get(uri);
+        }
+
         if (result!=null) {
-            cacheHits.putIfAbsent(INTERMEDIATE_CACHE_NAME, 0);
-            cacheHits.put(INTERMEDIATE_CACHE_NAME, cacheHits.get(INTERMEDIATE_CACHE_NAME)+1);
-            logger.debug("Cache hit for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
+            cacheHits.putIfAbsent(cacheName, 0);
+            cacheHits.put(cacheName, cacheHits.get(cacheName)+1);
+            logger.debug("Cache hit for URI "+uri+" in cache \""+cacheName+"\"!");
         }
         else {
-            cacheMisses.putIfAbsent(INTERMEDIATE_CACHE_NAME, 0);
-            cacheMisses.put(INTERMEDIATE_CACHE_NAME, cacheMisses.get(INTERMEDIATE_CACHE_NAME)+1);
-            logger.debug("Cache miss for URI "+uri+" in cache \""+INTERMEDIATE_CACHE_NAME+"\"!");
+            cacheMisses.putIfAbsent(cacheName, 0);
+            cacheMisses.put(cacheName, cacheMisses.get(cacheName)+1);
+            logger.debug("Cache miss for URI "+uri+" in cache \""+cacheName+"\"!");
         }
         return result;
     }
 
-    private static void putObjectInCache(URI uri, Object object, String cacheName) {
-
-        if (INTERMEDIATE_CACHE_NAME.equals(cacheName)) {
-            intermediateCache.put(uri, object);
-            logger.debug("Put one object into "+INTERMEDIATE_CACHE_NAME+" for URI \""+uri.toString()+"\".");
-            logger.debug(INTERMEDIATE_CACHE_NAME+" size is now "+intermediateCache.size()+".");
-        }
-        else {
-            logger.error("Caches other than \""+INTERMEDIATE_CACHE_NAME+"\" are not supported yet!");
+    private static void putObjectInCache(URI uri, Object object) {
+        String cacheName = getObjectCacheName(object.getClass());
+        if (cacheName==null) {
+            cacheName = INTERMEDIATE_CACHE_NAME;
         }
 
+        caches.putIfAbsent(cacheName, new HashMap<URI, Object>());
+
+        logger.debug("Putting one object into cache named \""+cacheName+"\".");
+
+        caches.get(cacheName).put(uri, object);
+
+        logger.debug("\""+cacheName+" size is now "+caches.get(cacheName).size());
+    }
+
+    private static String getObjectCacheName(Class cls) {
+        Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
+
+        if (annotation!=null) {
+            return annotation.cacheName();
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -260,7 +287,7 @@ public class WSObjectStore {
                 throw new WSObjectStoreException("Array relations are not supported (yet?).");
             }
             else if (linksVisited.contains(uri)) {
-                subObject = getObjectFromCache(uri);
+                subObject = getObjectFromCache(uri, objectClass);
             }
             else {
                 subObject = getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
@@ -304,10 +331,12 @@ public class WSObjectStore {
         transientObjects.add(uri);
 
         //noinspection Convert2Diamond
+        //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
         ResponseEntity<Resource<T>> response =
                 getRestTemplateWithHalMessageConverter().exchange(url,
                         HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<Resource<T>>() {
                             @Override
+                            @NonNull
                             public Type getType() {
                                 Type type = super.getType();
                                 if (type instanceof ParameterizedType) {
@@ -325,7 +354,7 @@ public class WSObjectStore {
         for (Link l: response.getBody().getLinks()) {
             followLink(l, linksVisited, objectClass, collections, result, depth);
         }
-        putObjectInCache(uri, result, INTERMEDIATE_CACHE_NAME);
+        putObjectInCache(uri, result);
 
 
         /*
@@ -339,13 +368,13 @@ public class WSObjectStore {
             for(URI invokeUri: invokeLater.keySet()) {
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod: invocationList) {
-                    Object cachedObject = getObjectFromCache(uri);
+                    Object cachedObject = getObjectFromCache(uri, objectClass);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }
 
             transientObjects.clear();
-            intermediateCache.clear();
+            clearCache(INTERMEDIATE_CACHE_NAME);
             invokeLater.clear();
         }
 
@@ -384,6 +413,17 @@ public class WSObjectStore {
         httpCalls = 0;
         cacheHits.clear();
         cacheMisses.clear();
+    }
+
+    public static void clearCache(String cacheName) {
+        caches.get(cacheName).clear();
+    }
+
+
+    public static void clearAllCaches() {
+        for (String key: caches.keySet()) {
+            clearCache(key);
+        }
     }
 
     public static void printStatistics() {

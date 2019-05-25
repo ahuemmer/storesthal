@@ -8,5 +8,5 @@
   "category_id": ${categoryId},
   "name": "${name}",
   "number": ${number},
-  "type": "neither"
+  "type": "${type}"
 }
