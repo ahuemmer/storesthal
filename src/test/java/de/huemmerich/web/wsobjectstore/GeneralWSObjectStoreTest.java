@@ -4,10 +4,8 @@ import com.github.jenspiegsa.wiremockextension.ConfigureWireMock;
 import com.github.jenspiegsa.wiremockextension.InjectServer;
 import com.github.jenspiegsa.wiremockextension.WireMockSettings;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.Options;
 import de.huemmerich.web.wsobjectstore.complextestobjects.*;
-import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,46 +22,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
-@WireMockSettings(failOnUnmatchedRequests = true)
-public class WSObjectStoreTest {
-
-    /**
-     * The folder (within the test resources) where the json files are stored.
-     */
-    private static final String JSON_RESOURCE_FOLDER="json";
-
-    @InjectServer
-    WireMockServer serverMock;
-
-    @ConfigureWireMock
-    Options options = wireMockConfig()
-            .dynamicPort();
-            //.notifier(new ConsoleNotifier(true));
+public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
     @BeforeEach
     public void clearCaches() {
         WSObjectStore.resetStatistics();
         WSObjectStore.clearAllCaches();
-    }
-
-    private void configureServerMock(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {
-
-        Map<String, String> substitutions =  new HashMap<>();
-        substitutions.put("port",String.valueOf(serverMock.port()));
-
-        if (additionalSubstitutions!=null) {
-            substitutions.putAll(additionalSubstitutions);
-        }
-
-        serverMock.addStubMapping(stubFor(get(urlEqualTo(url))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
-                        .withBody(getJsonFileContent(responseFileName, substitutions)))));
-    }
-
-    private void configureServerMock(String url, String responseFileName) throws IOException {
-        configureServerMock(url,responseFileName,null);
     }
 
     @Test
@@ -73,7 +36,7 @@ public class WSObjectStoreTest {
         configureServerMock("/complexObjects/1", "complexObject1.json");
         serverMock.start();
 
-        ComplexObject1 test = new WSObjectStore().<ComplexObject1>getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject1.class);
+        ComplexObject1 test = WSObjectStore.<ComplexObject1>getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject1.class);
 
         assertNotNull(test);
         assertEquals(1, test.getCategoryId());
@@ -91,7 +54,7 @@ public class WSObjectStoreTest {
 
         serverMock.start();
 
-        ComplexObjectWithSingleChild test = new WSObjectStore().<ComplexObjectWithSingleChild>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
+        ComplexObjectWithSingleChild test = WSObjectStore.<ComplexObjectWithSingleChild>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
 
         assertNotNull(test);
         assertEquals(4711, test.getCategoryId());
@@ -120,7 +83,7 @@ public class WSObjectStoreTest {
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren1 test = new WSObjectStore().<ComplexObjectWithMultipleChildren1>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
+        ComplexObjectWithMultipleChildren1 test = WSObjectStore.<ComplexObjectWithMultipleChildren1>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
 
         assertNotNull(test);
         assertEquals(1508, test.getCategoryId());
@@ -158,7 +121,7 @@ public class WSObjectStoreTest {
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren2 test = new WSObjectStore().<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
+        ComplexObjectWithMultipleChildren2 test = WSObjectStore.<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
 
         assertNotNull(test);
         assertEquals(4711, test.getCategoryId());
@@ -197,7 +160,7 @@ public class WSObjectStoreTest {
         serverMock.start();
 
         assertThrows(WSObjectStoreException.class, () -> {
-            ComplexObjectWithMultipleChildren3 test = new WSObjectStore().<ComplexObjectWithMultipleChildren3>getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
+            ComplexObjectWithMultipleChildren3 test = WSObjectStore.<ComplexObjectWithMultipleChildren3>getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
         });
 
         //ARRAYS ARE NOT SUPPORTED (YET??)
@@ -240,7 +203,7 @@ public class WSObjectStoreTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren4 test = new WSObjectStore().<ComplexObjectWithMultipleChildren4>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
+        ComplexObjectWithMultipleChildren4 test = WSObjectStore.<ComplexObjectWithMultipleChildren4>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
 
         assertNotNull(test);
         assertEquals(12345, test.getCategoryId());
@@ -287,7 +250,7 @@ public class WSObjectStoreTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren5 test = new WSObjectStore().<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
+        ComplexObjectWithMultipleChildren5 test = WSObjectStore.<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
 
         assertNotNull(test);
         assertEquals(123459876, test.getCategoryId());
@@ -344,8 +307,8 @@ public class WSObjectStoreTest {
         )));
 
         configureServerMock("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId","10000", "name", "state...","number","null","type", "   ", "children", createJsonHrefArray(new String[] {})));
-        configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "of...","number","554715","children", createJsonHrefArray(new String[] {})));
-        configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "mind!","number","786132","children", createJsonHrefArray(new String[] {})));
+        configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "type", "*", "children", createJsonHrefArray(new String[] {})));
+        configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "type", "${myType}", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "Lorem","number","12378","children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "ipsum","number","0","children", createJsonHrefArray(new String[] {})));
 
@@ -353,7 +316,7 @@ public class WSObjectStoreTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren6 test = new WSObjectStore().<ComplexObjectWithMultipleChildren6>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
+        ComplexObjectWithMultipleChildren6 test = WSObjectStore.<ComplexObjectWithMultipleChildren6>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
 
         assertEquals(0,test.getColor());
         assertEquals(".",test.getComment());
@@ -415,10 +378,28 @@ public class WSObjectStoreTest {
 
         //  Subchild nr 3.1
 
+        ComplexObjectWithMultipleChildren6 subChild = test.getChildren().get(2).getChildren().get(0);
+        assertEquals(-7894, subChild.getNumber());
+        assertEquals(3, subChild.getColor());
+        assertEquals("I'm the second subchild", subChild.getComment());
+        assertEquals(789456123, subChild.getCategoryId());
+        assertEquals("of...", subChild.getName());
+        assertEquals("*", subChild.getType());
+        assertNull(subChild.getChildren());
+
+
         //  END Subchild nr. 3.1
 
-
         //  Subchild nr 3.2
+
+        subChild = test.getChildren().get(2).getChildren().get(1);
+        assertEquals(574389, subChild.getNumber());
+        assertEquals(818147, subChild.getColor());
+        assertEquals("I'm the third subchild", subChild.getComment());
+        assertEquals(0, subChild.getCategoryId());
+        assertEquals("mind!", subChild.getName());
+        assertEquals("${myType}", subChild.getType());
+        assertNull(subChild.getChildren());
 
         //  END Subchild nr. 3.2
 
@@ -433,25 +414,6 @@ public class WSObjectStoreTest {
         //  END Subchild nr. 3.4
 
         //END Child nr. 3
-    }
-
-    private static String createJsonHrefArray(String[] entries) {
-        String result = "[";
-        for(int i=0;i<entries.length;i++) {
-            result+="    {\"href\":\""+entries[i]+"\"}";
-            if (i!=entries.length-1) {
-                result+=",";
-            }
-        }
-        result+="]";
-        return result;
-    }
-
-    private static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {
-        File file = new File(WSObjectStoreTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER+"/"+fileName).getFile());
-        String fileContent = new String(Files.readAllBytes(file.toPath()), Charset.forName("UTF-8"));
-        StringSubstitutor sub = new StringSubstitutor(substitutes, "${", "}");
-        return sub.replace(fileContent,substitutes);
     }
 
 }

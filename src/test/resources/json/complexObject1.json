@@ -1,6 +1,6 @@
 {
     "_links": {
-        "self": {"href":"http://localhost:${port}/complexObjects/1"}
+        "self": {"href":"${self}"}
     },
     "color": 10157977,
     "comment": "",

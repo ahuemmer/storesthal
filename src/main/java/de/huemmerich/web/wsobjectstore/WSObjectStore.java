@@ -35,9 +35,6 @@ import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
 
 public class WSObjectStore {
 
-    private final Map<String, HALObjectMetadata> halObjectClasses = new HashMap<>();
-    private final Set<HALObjectMetadata> halObjectClassesWithoutUrl = new HashSet<>();
-
     /*public WSObjectStore() {
         this(null);
     }*/
@@ -60,45 +57,12 @@ public class WSObjectStore {
 
     public static final String COMMON_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.common";
 
-    /*public WSObjectStore(String basePackage) {
-
-        if (basePackage==null) {
-            basePackage="";
-        }
-
-        ClassPathScanningCandidateComponentProvider scanner =
-                new ClassPathScanningCandidateComponentProvider(false);
-
-        scanner.addIncludeFilter(new AnnotationTypeFilter(HALObject.class));
-
-        for (BeanDefinition bd : scanner.findCandidateComponents(basePackage)) {
-            try {
-                Class objectClass = Class.forName(bd.getBeanClassName());
-                String url = ((HALObject) objectClass.getAnnotation(HALObject.class)).url();
-                if ("".equals(url)) {
-                    halObjectClassesWithoutUrl.add(new HALObjectMetadata(objectClass));
-                }
-                else {
-                    halObjectClasses.put(url,new HALObjectMetadata(objectClass,url));
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }*/
 
     public static void setConfiguration(WSObjectStoreConfiguration configuration) {
         WSObjectStore.configuration = configuration;
     }
 
-
-    /*public final Set<HALObjectMetadata> getHalObjectClasses() {
-        Stream<HALObjectMetadata> result = Stream.concat(halObjectClasses.values().stream(), halObjectClassesWithoutUrl.stream());
-        return result.collect(Collectors.toSet());
-    }*/
-
-    private HttpMessageConverter getHalMessageConverter() {
+    private static HttpMessageConverter getHalMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
         MappingJackson2HttpMessageConverter halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(ResourceSupport.class);
@@ -107,13 +71,13 @@ public class WSObjectStore {
         return halConverter;
     }
 
-    private HttpEntity<String> getHttpEntity() {
+    private static HttpEntity<String> getHttpEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(HAL_JSON_UTF8));
         return new HttpEntity<>(headers);
     }
 
-    private RestTemplate getRestTemplateWithHalMessageConverter() {
+    private static RestTemplate getRestTemplateWithHalMessageConverter() {
         RestTemplate restTemplate = new RestTemplate();
 
         List<HttpMessageConverter<?>> existingConverters = restTemplate.getMessageConverters();
@@ -133,7 +97,7 @@ public class WSObjectStore {
     }
 
     @SuppressWarnings("unchecked")
-    private<T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
+    private static <T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
         Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
@@ -235,7 +199,7 @@ public class WSObjectStore {
 
         caches.get(cacheName).put(uri, object);
 
-        logger.debug("\""+cacheName+" size is now "+caches.get(cacheName).size());
+        logger.debug("\""+cacheName+"\" cache size is now "+caches.get(cacheName).size());
     }
 
     private static String getObjectCacheName(Class cls) {
@@ -248,7 +212,7 @@ public class WSObjectStore {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult, int depth) throws WSObjectStoreException {
+    private static <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult, int depth) throws WSObjectStoreException {
         if ("self".equals(l.getRel())) {
             return;
         }
@@ -286,12 +250,8 @@ public class WSObjectStore {
             else if (type.getComponentType() != null) {
                 throw new WSObjectStoreException("Array relations are not supported (yet?).");
             }
-            else if (linksVisited.contains(uri)) {
-                subObject = getObjectFromCache(uri, objectClass);
-            }
-            else {
-                subObject = getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
-            }
+
+            subObject = getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
 
             invokeSetter(m, intermediateResult, subObject);
 
@@ -300,14 +260,14 @@ public class WSObjectStore {
         linksVisited.add(uri);
     }
 
-    private void markForLaterInvocation(URI uri, Object object, Method method) {
+    private static void markForLaterInvocation(URI uri, Object object, Method method) {
         if (!invokeLater.containsKey(uri)) {
             invokeLater.put(uri, new LinkedList<>());
         }
         invokeLater.get(uri).add(new AbstractMap.SimpleEntry<>(object, method));
     }
 
-    private void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
+    private static void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
         try {
             m.invoke(applyTo, parameter);
         } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
@@ -315,9 +275,7 @@ public class WSObjectStore {
         }
     }
 
-    private <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws WSObjectStoreException {
-
-        httpCalls+=1;
+    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws WSObjectStoreException {
 
         URI uri;
 
@@ -326,6 +284,14 @@ public class WSObjectStore {
         } catch (URISyntaxException e) {
             throw new WSObjectStoreException("Could not create URI from url\""+url+"\"!", e);
         }
+
+        Object resultFromCache = getObjectFromCache(uri, objectClass);
+
+        if (resultFromCache!=null) {
+            return (T) resultFromCache;
+        }
+
+        httpCalls+=1;
 
         logger.debug("Adding URI "+uri.toString()+" to transient objects...");
         transientObjects.add(uri);
@@ -374,7 +340,7 @@ public class WSObjectStore {
             }
 
             transientObjects.clear();
-            clearCache(INTERMEDIATE_CACHE_NAME);
+            clearCache(INTERMEDIATE_CACHE_NAME, true);
             invokeLater.clear();
         }
 
@@ -395,7 +361,7 @@ public class WSObjectStore {
         return null;
     }
 
-    public <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
+    public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
 
         logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
 
@@ -415,14 +381,23 @@ public class WSObjectStore {
         cacheMisses.clear();
     }
 
-    public static void clearCache(String cacheName) {
-        caches.get(cacheName).clear();
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
+        if (caches.containsKey(cacheName)) {
+            caches.get(cacheName).clear();
+        }
+        if (clearStatisticsAsWell) {
+            cacheHits.put(cacheName,0);
+        }
     }
 
 
     public static void clearAllCaches() {
+        clearAllCaches(false);
+    }
+
+    public static void clearAllCaches(boolean clearStatisticsAsWell) {
         for (String key: caches.keySet()) {
-            clearCache(key);
+            clearCache(key, clearStatisticsAsWell);
         }
     }
 

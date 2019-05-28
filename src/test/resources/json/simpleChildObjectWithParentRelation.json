@@ -1,6 +1,6 @@
 {
     "_links": {
-        "self": {"href": "http://localhost:${port}/complexChildren2/1"},
+        "self": {"href": "${self}"},
         "parent": {"href": "http://localhost:${port}${parent}"}
     },
     "childId": ${childId},
