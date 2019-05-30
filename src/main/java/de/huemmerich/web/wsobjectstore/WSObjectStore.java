@@ -51,9 +51,9 @@ public class WSObjectStore {
 
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
 
-    private static final Map<String,Map<URI,Object>> caches = new HashMap<>();
+    private static final Map<String,LRUCache<URI,Object>> caches = new HashMap<>();
 
-    private static WSObjectStoreConfiguration configuration;
+    private static WSObjectStoreConfiguration configuration = new WSObjectStoreConfiguration();
 
     public static final String COMMON_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.common";
 
@@ -161,54 +161,51 @@ public class WSObjectStore {
 
     private static Object getObjectFromCache(URI uri, Class objectClass) {
 
-        String cacheName = getObjectCacheName(objectClass);
-        if (cacheName == null) {
-            cacheName = INTERMEDIATE_CACHE_NAME;
-        }
+        logger.debug("Trying to get object with URI "+uri+" from cache...");
 
-        logger.debug("Trying to get object with URI "+uri+" from cache \""+cacheName+"\"...");
-
-        Map<URI,Object> cache = caches.get(cacheName);
+        LRUCache<URI,Object> cache = getCache(objectClass);
         Object result = null;
         if (cache!=null) {
             result = cache.get(uri);
         }
 
         if (result!=null) {
-            cacheHits.putIfAbsent(cacheName, 0);
-            cacheHits.put(cacheName, cacheHits.get(cacheName)+1);
-            logger.debug("Cache hit for URI "+uri+" in cache \""+cacheName+"\"!");
+            cacheHits.putIfAbsent(cache.getCacheName(), 0);
+            cacheHits.put(cache.getCacheName(), cacheHits.get(cache.getCacheName())+1);
+            logger.debug("Cache hit for URI "+uri+" in cache \""+cache.getCacheName()+"\"!");
         }
         else {
-            cacheMisses.putIfAbsent(cacheName, 0);
-            cacheMisses.put(cacheName, cacheMisses.get(cacheName)+1);
-            logger.debug("Cache miss for URI "+uri+" in cache \""+cacheName+"\"!");
+            cacheMisses.putIfAbsent(cache.getCacheName(), 0);
+            cacheMisses.put(cache.getCacheName(), cacheMisses.get(cache.getCacheName())+1);
+            logger.debug("Cache miss for URI "+uri+" in cache \""+cache.getCacheName()+"\"!");
         }
         return result;
     }
 
     private static void putObjectInCache(URI uri, Object object) {
-        String cacheName = getObjectCacheName(object.getClass());
-        if (cacheName==null) {
-            cacheName = INTERMEDIATE_CACHE_NAME;
-        }
 
-        caches.putIfAbsent(cacheName, new HashMap<URI, Object>());
+        LRUCache cache = getCache(object.getClass());
 
-        logger.debug("Putting one object into cache named \""+cacheName+"\".");
+        logger.debug("Putting one object of class \""+object+"\" into cache named \""+cache.getCacheName()+"\"");
 
-        caches.get(cacheName).put(uri, object);
+        cache.put(uri, object);
 
-        logger.debug("\""+cacheName+"\" cache size is now "+caches.get(cacheName).size());
+        logger.debug("\""+cache.getCacheName()+"\" cache size is now: "+cache.size());
+
     }
 
-    private static String getObjectCacheName(Class cls) {
+    private static LRUCache<URI, Object> getCache(Class cls) {
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
-        if (annotation!=null) {
-            return annotation.cacheName();
-        }
-        return null;
+        String cacheName = (annotation!=null)?annotation.cacheName():INTERMEDIATE_CACHE_NAME;
+
+        logger.debug("Cache for object class \""+cls.getCanonicalName()+"\" is named \""+cacheName+"\".");
+
+        int cacheSize = (annotation!=null)?annotation.cacheSize():configuration.getDefaultCacheSize();
+
+        caches.putIfAbsent(cacheName, new LRUCache<URI, Object>(cacheName, cacheSize));
+
+        return caches.get(cacheName);
     }
 
     @SuppressWarnings("unchecked")
@@ -364,9 +361,6 @@ public class WSObjectStore {
     public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
 
         logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
-
-        //transientObjects.clear();
-
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
 
     }

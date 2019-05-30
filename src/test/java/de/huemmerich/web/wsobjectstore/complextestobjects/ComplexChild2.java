@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ComplexChild2 {
 
+    @JsonProperty("objectId")
     private int childId;
 
     @JsonProperty("name")

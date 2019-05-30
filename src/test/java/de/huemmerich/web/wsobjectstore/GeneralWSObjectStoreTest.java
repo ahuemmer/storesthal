@@ -50,7 +50,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void testWSObjectStoreGetComplexObjectWithSingleChild() throws WSObjectStoreException, IOException {
         configureServerMock("/complexObjectsWithSingleChildren/1", "complexObjectWithSingleChild1.json");
-        configureServerMock("/complexChildren/1", "simpleChildObject1.json");
+        configureServerMock("/complexChildren/1", "simpleObject1.json", Map.of("name","Testchild!"));
 
         serverMock.start();
 
@@ -77,9 +77,9 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         "http://localhost:${port}/complexChildren2/2",
         "http://localhost:${port}/complexChildren2/3"}
     )));
-        configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
-        configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
-        configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
+        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!"));
+        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!"));
+        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!"));
 
         serverMock.start();
 
@@ -115,9 +115,9 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
                 "http://localhost:${port}/complexChildren2/2",
                 "http://localhost:${port}/complexChildren2/3"}
         )));
-        configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
-        configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
-        configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
+        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!"));
+        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!"));
+        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!"));
 
         serverMock.start();
 
@@ -153,9 +153,9 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
                 "http://localhost:${port}/complexChildren2/2",
                 "http://localhost:${port}/complexChildren2/3"}
         )));
-        configureServerMock("/complexChildren2/1", "simpleChildObject2.json", Map.of("childId","12345", "childName", "Testchild 1!"));
-        configureServerMock("/complexChildren2/2", "simpleChildObject2.json", Map.of("childId","815", "childName", "Testchild 2!"));
-        configureServerMock("/complexChildren2/3", "simpleChildObject2.json", Map.of("childId","4711", "childName", "Testchild 3!"));
+        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!"));
+        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!"));
+        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!"));
 
         serverMock.start();
 
@@ -309,7 +309,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         configureServerMock("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId","10000", "name", "state...","number","null","type", "   ", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "type", "*", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "type", "${myType}", "children", createJsonHrefArray(new String[] {})));
-        configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "Lorem","number","12378","children", createJsonHrefArray(new String[] {})));
+        configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","type", "Object Mark IV", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "ipsum","number","0","children", createJsonHrefArray(new String[] {})));
 
         serverMock.start();
@@ -405,6 +405,15 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
 
         //  Subchild nr 3.3
+
+        subChild = test.getChildren().get(2).getChildren().get(2);
+        assertEquals(1186, subChild.getNumber());
+        assertEquals(29141, subChild.getColor());
+        assertEquals("I'm the fourth subchild", subChild.getComment());
+        assertEquals(55, subChild.getCategoryId());
+        assertEquals("Lorem", subChild.getName());
+        assertEquals("Object Mark IV", subChild.getType());
+        assertNull(subChild.getChildren());
 
         //  END Subchild nr. 3.3
 
