@@ -220,4 +220,55 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(24, WSObjectStore.getStatistics().get("httpCalls"));
 
     }
+
+    @Test
+    public void cacheObjectIntegrityTest() throws IOException, WSObjectStoreException {
+
+        configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124"));
+        configureServerMock("/parentObjects/124", "complexObject1.json");
+
+        serverMock.start();
+
+        ChildWithParentRelation test = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+
+        assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
+        assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
+        assertEquals(1, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(1, WSObjectStore.getCachedObjectCount(CHILD_CACHE_NAME));
+
+        ChildWithParentRelation test2 = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+
+        assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
+        //NULL because no _direct_ access:
+        assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
+        assertEquals(1, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(1, WSObjectStore.getCachedObjectCount(CHILD_CACHE_NAME));
+        assertSame(test, test2);
+        assertSame(test.getParent(), test2.getParent());
+
+        ParentObject testParent = test.getParent();
+
+        WSObjectStore.clearCache(PARENT_CACHE_NAME,false);
+
+        assertEquals(0, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
+
+        ChildWithParentRelation test3 = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+
+        assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
+        assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(2, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) WSObjectStore.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
+        assertEquals(0, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(1, WSObjectStore.getCachedObjectCount(CHILD_CACHE_NAME));
+        assertSame(test, test3);
+        assertSame(test2.getParent(), test3.getParent());
+
+    }
 }

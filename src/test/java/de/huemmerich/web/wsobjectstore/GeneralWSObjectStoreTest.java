@@ -310,7 +310,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "type", "*", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "type", "${myType}", "children", createJsonHrefArray(new String[] {})));
         configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","type", "Object Mark IV", "children", createJsonHrefArray(new String[] {})));
-        configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "ipsum","number","0","children", createJsonHrefArray(new String[] {})));
+        configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId","3521", "name", "ipsum","number","-7561","type", "Knödel", "children", createJsonHrefArray(new String[] {})));
 
         serverMock.start();
 
@@ -417,8 +417,16 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         //  END Subchild nr. 3.3
 
-
         //  Subchild nr 3.4
+
+        subChild = test.getChildren().get(2).getChildren().get(3);
+        assertEquals(-7561, subChild.getNumber());
+        assertEquals(222222, subChild.getColor());
+        assertEquals("I'm the fifth subchild", subChild.getComment());
+        assertEquals(3521, subChild.getCategoryId());
+        assertEquals("ipsum", subChild.getName());
+        assertEquals("Knödel", subChild.getType());
+        assertNull(subChild.getChildren());
 
         //  END Subchild nr. 3.4
 
