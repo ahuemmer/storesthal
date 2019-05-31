@@ -365,6 +365,13 @@ public class WSObjectStore {
 
     }
 
+    /**
+     * Return some information on cache hits and misses
+     * ATTN: Only "direct" hits and misses are counted. E. g., if an object is retrieved from cache the subobject
+     * of which is also cached, the subobject cache hit will not be counted! (Nevertheless the subobject is correctly
+     * retrieved from cache.)
+     * @return
+     */
     public static Map<String,Object> getStatistics() {
         return Map.of("httpCalls",httpCalls, "cacheHits", cacheHits, "cacheMisses", cacheMisses);
     }
@@ -381,9 +388,16 @@ public class WSObjectStore {
         }
         if (clearStatisticsAsWell) {
             cacheHits.put(cacheName,0);
+            cacheMisses.put(cacheName,0);
         }
     }
 
+    public static int getCachedObjectCount(String cacheName) {
+        if (caches.get(cacheName)==null) {
+            return 0;
+        }
+        return caches.get(cacheName).size();
+    }
 
     public static void clearAllCaches() {
         clearAllCaches(false);
@@ -392,6 +406,9 @@ public class WSObjectStore {
     public static void clearAllCaches(boolean clearStatisticsAsWell) {
         for (String key: caches.keySet()) {
             clearCache(key, clearStatisticsAsWell);
+        }
+        if (clearStatisticsAsWell) {
+            httpCalls=0;
         }
     }
 
