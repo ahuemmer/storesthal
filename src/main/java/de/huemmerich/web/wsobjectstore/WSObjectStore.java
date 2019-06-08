@@ -164,6 +164,12 @@ public class WSObjectStore {
         logger.debug("Trying to get object with URI "+uri+" from cache...");
 
         LRUCache<URI,Object> cache = getCache(objectClass);
+
+        if (configuration.isCachingDisabled()&&!(cache.getCacheName().equals(INTERMEDIATE_CACHE_NAME))) {
+            logger.debug("Caching is disabled!");
+            return null;
+        }
+
         Object result = null;
         if (cache!=null) {
             result = cache.get(uri);
@@ -186,7 +192,11 @@ public class WSObjectStore {
 
         LRUCache cache = getCache(object.getClass());
 
-        logger.debug("Putting one object of class \""+object+"\" into cache named \""+cache.getCacheName()+"\"");
+        if (configuration.isCachingDisabled()&&!(cache.getCacheName().equals(INTERMEDIATE_CACHE_NAME))) {
+            return;
+        }
+
+        logger.debug("Putting one object of class \""+object+"\" into cache named \""+cache.getCacheName()+"\" for URI "+uri.toString());
 
         cache.put(uri, object);
 
@@ -331,7 +341,7 @@ public class WSObjectStore {
             for(URI invokeUri: invokeLater.keySet()) {
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod: invocationList) {
-                    Object cachedObject = getObjectFromCache(uri, objectClass);
+                    Object cachedObject = getObjectFromCache(invokeUri, objectClass);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }

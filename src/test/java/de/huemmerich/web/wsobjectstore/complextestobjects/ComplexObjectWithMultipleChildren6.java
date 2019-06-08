@@ -20,6 +20,8 @@ public class ComplexObjectWithMultipleChildren6 {
 
     protected String comment;
 
+    protected ComplexObjectWithMultipleChildren6 parent;
+
     protected LinkedList<ComplexObjectWithMultipleChildren6> children;
 
     public Integer getCategoryId() {
@@ -76,5 +78,13 @@ public class ComplexObjectWithMultipleChildren6 {
 
     public void setChildren(LinkedList<ComplexObjectWithMultipleChildren6> children) {
         this.children = children;
+    }
+
+    public ComplexObjectWithMultipleChildren6 getParent() {
+        return parent;
+    }
+
+    public void setParent(ComplexObjectWithMultipleChildren6 parent) {
+        this.parent = parent;
     }
 }

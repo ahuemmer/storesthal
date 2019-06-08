@@ -1,7 +1,8 @@
 {
   "_links": {
-    "self": {"href":"http://localhost:${port}/complexObjectsWithMultipleChildren1/1"},
+    "self": {"href":"${self}"},
     "children":${children}
+    ${parent}
   },
   "color": ${color},
   "comment": "${comment}",
