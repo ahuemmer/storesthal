@@ -16,6 +16,12 @@ public class WSObjectStoreConfiguration {
     private boolean disableCaching=false;
 
     /**
+     * Controls whether the object store works without annotations.
+     * It'll try to find relation "target" setters by their name only then.
+     */
+    private boolean annotationless=false;
+
+    /**
      * Get the default size of an object cache.
      * @return Default cache size
      */
@@ -51,4 +57,21 @@ public class WSObjectStoreConfiguration {
     public void setDisableCaching(boolean disableCaching) {
         this.disableCaching = disableCaching;
     }
+
+    /**
+     * Return whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
+     * @return "true", if annotations they will be not be taken into account
+     */
+    public boolean isAnnotationless() {
+        return annotationless;
+    }
+
+    /**
+     * Controls whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
+     * ("true" means, the will be not be taken into account!)
+     */
+    public void setAnnotationless(boolean annotationless) {
+        this.annotationless = annotationless;
+    }
+
 }

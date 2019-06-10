@@ -1,6 +1,7 @@
 package de.huemmerich.web.wsobjectstore.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.huemmerich.web.wsobjectstore.HALRelation;
 
 public class ComplexChildWithParentRelation {
 
@@ -9,6 +10,7 @@ public class ComplexChildWithParentRelation {
     @JsonProperty("name")
     private String childName;
 
+    @HALRelation("parent")
     private ComplexObjectWithMultipleChildren4 parent;
 
     public int getChildId() {

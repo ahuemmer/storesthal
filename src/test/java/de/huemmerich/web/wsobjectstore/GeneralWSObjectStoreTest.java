@@ -307,9 +307,9 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         ), "parent", ""));
 
         configureServerMock("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId","10000", "name", "state...","number","null","type", "   ", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
-        configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "type", "*", "children", createJsonHrefArray(new String[] {}), "parent", ""));
+        configureServerMock("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "type", "*", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
         configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "type", "${myType}", "children", createJsonHrefArray(new String[] {}), "parent", ""));
-        configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","type", "Object Mark IV", "children", createJsonHrefArray(new String[] {}), "parent", ""));
+        configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","type", "Object Mark IV", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
         configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId","3521", "name", "ipsum","number","-7561","type", "Knödel", "children", createJsonHrefArray(new String[] {}), "parent", ""));
 
         serverMock.start();
@@ -342,7 +342,6 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(747474, subChild1.getColor());
         assertEquals("I'm the first subchild", subChild1.getComment());
         assertNotNull(subChild1.getParent());
-        assertEquals(1345, subChild1.getParent().getColor());
         assertSame(subChild1.getParent(), test.getChildren().get(0));
         assertEquals(10000, subChild1.getCategoryId());
         assertEquals("state...", subChild1.getName());
@@ -388,6 +387,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(789456123, subChild.getCategoryId());
         assertEquals("of...", subChild.getName());
         assertEquals("*", subChild.getType());
+        assertSame(subChild1, subChild.getParent());
         assertNull(subChild.getChildren());
 
 
@@ -399,6 +399,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(574389, subChild.getNumber());
         assertEquals(818147, subChild.getColor());
         assertEquals("I'm the third subchild", subChild.getComment());
+        assertNull(subChild.getParent());
         assertEquals(0, subChild.getCategoryId());
         assertEquals("mind!", subChild.getName());
         assertEquals("${myType}", subChild.getType());
@@ -416,6 +417,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(55, subChild.getCategoryId());
         assertEquals("Lorem", subChild.getName());
         assertEquals("Object Mark IV", subChild.getType());
+        assertSame(subChild.getParent(),test.getChildren().get(2).getChildren().get(1));
         assertNull(subChild.getChildren());
 
         //  END Subchild nr. 3.3

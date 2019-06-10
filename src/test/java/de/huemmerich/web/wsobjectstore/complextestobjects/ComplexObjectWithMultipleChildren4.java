@@ -1,6 +1,7 @@
 package de.huemmerich.web.wsobjectstore.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.huemmerich.web.wsobjectstore.HALRelation;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class ComplexObjectWithMultipleChildren4 {
 
         protected String comment;
 
+        @HALRelation("children")
         protected List<ComplexChildWithParentRelation> children;
 
         public Integer getCategoryId() {

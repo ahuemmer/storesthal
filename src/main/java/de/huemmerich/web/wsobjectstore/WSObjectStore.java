@@ -1,6 +1,9 @@
 package de.huemmerich.web.wsobjectstore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.reflections.Reflections;
+import org.reflections.scanners.FieldAnnotationsScanner;
+import org.reflections.scanners.MethodAnnotationsScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -53,13 +56,26 @@ public class WSObjectStore {
 
     private static final Map<String,LRUCache<URI,Object>> caches = new HashMap<>();
 
-    private static WSObjectStoreConfiguration configuration = new WSObjectStoreConfiguration();
+    private static WSObjectStoreConfiguration configuration;
 
     public static final String COMMON_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.common";
 
+    private static boolean initialized=false;
 
-    public static void setConfiguration(WSObjectStoreConfiguration configuration) {
+    private static void init() {
+        if (!initialized) {
+            init(new WSObjectStoreConfiguration());
+        }
+    }
+
+    public static void init(final WSObjectStoreConfiguration configuration) {
         WSObjectStore.configuration = configuration;
+        clearAllCaches(true);
+        initialized=true;
+    }
+
+    public static WSObjectStoreConfiguration getConfiguration() {
+        return configuration;
     }
 
     private static HttpMessageConverter getHalMessageConverter() {
@@ -87,6 +103,13 @@ public class WSObjectStore {
         restTemplate.setMessageConverters(newConverters);
 
         return restTemplate;
+    }
+
+    private static String lcFirst(String input) {
+        if (input==null) {
+            return null;
+        }
+        return input.substring(0,1).toLowerCase()+input.substring(1);
     }
 
     private static String ucFirst(String input) {
@@ -358,18 +381,66 @@ public class WSObjectStore {
     }
 
     private static Method searchForSetter(Class objectClass, String rel) {
-        String methodName = "set"+ucFirst(rel);
-        for (Method m: objectClass.getMethods()) {
-            if (m.getName().equals(methodName) && (m.getParameterCount() == 1)) {
-                return m;
+
+        logger.debug("Searching setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\"");
+
+        if (configuration.isAnnotationless()) {
+            String methodName = "set"+ucFirst(rel);
+            Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
+            if (m==null) {
+                logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
             }
+            else {
+                logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName()+" (annotationless mode!)");
+            }
+            return m;
         }
-        logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
-        return null;
+        else {
+            Set<Method> methods = ReflectionHelper.getMethodsAnnotatedWith(objectClass, HALRelation.class);
+            for (Method m: methods) {
+                if (m.getAnnotation(HALRelation.class).value().equals(rel)) {
+                    if (m.getParameterCount() == 1) {
+                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                        return m;
+                    }
+                    logger.warn("Method \""+m.getName()+"\" is annotated with \""+HALRelation.class.getName()+"\" and would be a suitable setter candidate for relation \""+rel+"\", but has the wrong number of parameters!");
+                }
+                else if (m.getAnnotation(HALRelation.class).value().equals("")) {
+                    if (lcFirst(m.getName().substring(3)).equals(rel)) {
+                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                        return m;
+                    }
+                }
+            }
+            //Nothing found up to now, let's go on and search the fields...
+            Set<Field> fields = ReflectionHelper.getFieldsAnnotatedWith(objectClass, HALRelation.class);
+            for (Field f: fields) {
+                if (f.getAnnotation(HALRelation.class).value().equals(rel)) {
+                    String methodName = "set"+ucFirst(f.getName());
+                    Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
+                    if (m!=null) {
+                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                        return m;
+                    }
+                }
+                else if (f.getAnnotation(HALRelation.class).value().equals("")) {
+                    String methodName = "set"+ucFirst(rel);
+                    Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
+                    if (m!=null) {
+                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                        return m;
+                    }
+                }
+            }
+            logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
+            return null;
+        }
     }
 
-    public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
 
+
+    public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
+        init();
         logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
 
