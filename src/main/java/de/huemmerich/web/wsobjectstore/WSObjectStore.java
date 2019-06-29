@@ -1,15 +1,11 @@
 package de.huemmerich.web.wsobjectstore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.reflections.Reflections;
-import org.reflections.scanners.FieldAnnotationsScanner;
-import org.reflections.scanners.MethodAnnotationsScanner;
+import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfiguration;
+import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfigurationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.ResourceSupport;
@@ -24,14 +20,11 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
@@ -64,7 +57,7 @@ public class WSObjectStore {
 
     private static void init() {
         if (!initialized) {
-            init(new WSObjectStoreConfiguration());
+            init(WSObjectStoreConfigurationFactory.DEFAULT_CONFIGURATION);
         }
     }
 

@@ -50,7 +50,6 @@ dependencies {
     compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
     compile 'org.apache.commons:commons-lang3:3.9'
     runtime group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.2'
-    compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
 
 }
 

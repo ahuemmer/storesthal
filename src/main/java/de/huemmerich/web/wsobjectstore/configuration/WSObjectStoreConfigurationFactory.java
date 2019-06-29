@@ -1,25 +1,30 @@
-package de.huemmerich.web.wsobjectstore;
+package de.huemmerich.web.wsobjectstore.configuration;
 
-public class WSObjectStoreConfiguration {
+import de.huemmerich.web.wsobjectstore.Cacheable;
+import de.huemmerich.web.wsobjectstore.HALRelation;
+import de.huemmerich.web.wsobjectstore.WSObjectStore;
 
-    public WSObjectStoreConfiguration(){}
+public class WSObjectStoreConfigurationFactory {
+
 
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
      */
-    private int defaultCacheSize=1000;
+    private int defaultCacheSize=WSObjectStoreConfiguration.DEFAULT_DEFAULT_CACHE_SIZE;
 
     /**
      * Controls whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
      */
-    private boolean disableCaching=false;
+    private boolean disableCaching=WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED;
 
     /**
      * Controls whether the object store works without annotations.
      * It'll try to find relation "target" setters by their name only then.
      */
-    private boolean annotationless=false;
+    private boolean annotationless=WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS;
+
+    public static final WSObjectStoreConfiguration DEFAULT_CONFIGURATION=getDefaultConfiguration();
 
     /**
      * Get the default size of an object cache.
@@ -34,8 +39,9 @@ public class WSObjectStoreConfiguration {
      * annotation, but no explizit {@link Cacheable#cacheSize()} setting.
      * @param defaultCacheSize The default cache size (default: 1000)
      */
-    public void setDefaultCacheSize(int defaultCacheSize) {
+    public WSObjectStoreConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
         this.defaultCacheSize = defaultCacheSize;
+        return this;
     }
 
     /**
@@ -54,8 +60,9 @@ public class WSObjectStoreConfiguration {
      * between consecutive getObject calls.
      * @param disableCaching Whether to completely disable caching or not (default: false)
      */
-    public void setDisableCaching(boolean disableCaching) {
+    public WSObjectStoreConfigurationFactory setDisableCaching(boolean disableCaching) {
         this.disableCaching = disableCaching;
+        return this;
     }
 
     /**
@@ -70,8 +77,25 @@ public class WSObjectStoreConfiguration {
      * Controls whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
      * ("true" means, the will be not be taken into account!)
      */
-    public void setAnnotationless(boolean annotationless) {
+    public WSObjectStoreConfigurationFactory setAnnotationless(boolean annotationless) {
         this.annotationless = annotationless;
+        return this;
+    }
+
+    public WSObjectStoreConfiguration getConfiguration() {
+        WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
+        result.setAnnotationless(this.annotationless);
+        result.setDefaultCacheSize(this.defaultCacheSize);
+        result.setDisableCaching(this.disableCaching);
+        return result;
+    }
+
+    public static WSObjectStoreConfiguration getDefaultConfiguration() {
+        WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
+        result.setAnnotationless(WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS);
+        result.setDefaultCacheSize(WSObjectStoreConfiguration.DEFAULT_DEFAULT_CACHE_SIZE);
+        result.setDisableCaching(WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED);
+        return result;
     }
 
 }
