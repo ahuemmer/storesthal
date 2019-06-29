@@ -2,10 +2,12 @@ package de.huemmerich.web.wsobjectstore.configuration;
 
 import de.huemmerich.web.wsobjectstore.Cacheable;
 import de.huemmerich.web.wsobjectstore.HALRelation;
-import de.huemmerich.web.wsobjectstore.WSObjectStore;
 
+/**
+ * Factory for {@link WSObjectStoreConfiguration}s. These are not to be modified after creation, therefore this factory
+ * will initialize an instance once and return in then. (See description at {@link WSObjectStoreConfiguration}).
+ */
 public class WSObjectStoreConfigurationFactory {
-
 
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
@@ -36,7 +38,7 @@ public class WSObjectStoreConfigurationFactory {
 
     /**
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
-     * annotation, but no explizit {@link Cacheable#cacheSize()} setting.
+     * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
      * @param defaultCacheSize The default cache size (default: 1000)
      */
     public WSObjectStoreConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
@@ -82,6 +84,10 @@ public class WSObjectStoreConfigurationFactory {
         return this;
     }
 
+    /**
+     * Returns a customized {@link WSObjectStoreConfiguration} using the parameters applied by the setters.
+     * @return Customized configuration instance
+     */
     public WSObjectStoreConfiguration getConfiguration() {
         WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
         result.setAnnotationless(this.annotationless);
@@ -90,6 +96,11 @@ public class WSObjectStoreConfigurationFactory {
         return result;
     }
 
+    /**
+     * Returns a {@link WSObjectStoreConfiguration} initialized with the default values (see public static vars
+     * of {@link WSObjectStoreConfiguration}.
+     * @return Default configuration instance
+     */
     public static WSObjectStoreConfiguration getDefaultConfiguration() {
         WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
         result.setAnnotationless(WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS);

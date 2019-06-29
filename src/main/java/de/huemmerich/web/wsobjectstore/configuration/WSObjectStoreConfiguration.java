@@ -2,9 +2,19 @@ package de.huemmerich.web.wsobjectstore.configuration;
 
 import de.huemmerich.web.wsobjectstore.Cacheable;
 import de.huemmerich.web.wsobjectstore.HALRelation;
+import de.huemmerich.web.wsobjectstore.WSObjectStore;
 
+/**
+ * This class holds the configuration of the runtime behavior of the WSObjectStore.
+ * The configuration itself is not to be changed at runtime (meaning: after calling {@link WSObjectStore#init(WSObjectStoreConfiguration)}),
+ * as this might lead to unexpected results. Therefore all setters are package-private and new configuration instances
+ * are to be created using {@link WSObjectStoreConfigurationFactory}.
+ */
 public class WSObjectStoreConfiguration {
 
+    /**
+     * Empty constructor - package private in order to be accessible only by {@link WSObjectStoreConfigurationFactory}, for the reasons mentioned above.
+     */
     WSObjectStoreConfiguration(){}
 
     /**
@@ -50,7 +60,7 @@ public class WSObjectStoreConfiguration {
 
     /**
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
-     * annotation, but no explizit {@link Cacheable#cacheSize()} setting.
+     * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
      * @param defaultCacheSize The default cache size (default: 1000)
      */
     void setDefaultCacheSize(int defaultCacheSize) {
