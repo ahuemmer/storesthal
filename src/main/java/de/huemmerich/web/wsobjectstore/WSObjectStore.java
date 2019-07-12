@@ -3,6 +3,7 @@ package de.huemmerich.web.wsobjectstore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfiguration;
 import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfigurationFactory;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -29,48 +30,116 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
 
+/**
+ * The main class of the whole library, encapsulating the core functionality needed. Callers should mainly need just
+ * the {@link #getObject(String, Class)} method which will take of everything else...
+ */
 public class WSObjectStore {
 
-    /*public WSObjectStore() {
-        this(null);
-    }*/
-
+    /**
+     * The total number of HTTP calls made.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()} or {@link #printStatistics()}.
+     */
     private static int httpCalls=0;
+
+    /**
+     * A map containing the number of cache misses by cache (name) for statistics creation.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()} or {@link #printStatistics()}.
+     */
     private static final Map<String,Integer> cacheMisses = new HashMap<>();
+
+    /**
+     * A map containing the number of cache hits by cache (name) for statistics creation.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()} or {@link #printStatistics()}.
+     */
     private static final Map<String,Integer> cacheHits = new HashMap<>();
 
+    /**
+     * The logger.
+     */
     private static final Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
 
+    /**
+     * The name of the intermediate cache. This cache is only used while traversing the objects / relations found during
+     * a single {@link #getObject(String, Class)} call.
+     */
     private static final String INTERMEDIATE_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.intermediate";
 
+    /**
+     * During a single {@link #getObject(String, Class)} call, transient object references are stored here. Such
+     * transient references may occur, if e. g. a child object encountered (back)refers to the parent object just
+     * being retrieved.
+     */
     private static final Set<URI> transientObjects=new HashSet<>();
 
+    /**
+     * When handling transient objects (see description at {@link #transientObjects}, setter functions may be marked
+     * down for being called later on, when the object to be set isn't in transient state any more, but "complete".
+     * These setters are stored here.
+     */
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object,Method>>> invokeLater = new HashMap<>();
 
+    /**
+     * All configured object caches are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
+     * and {@link Cacheable#cacheName()}).
+     */
     private static final Map<String,LRUCache<URI,Object>> caches = new HashMap<>();
 
+    /**
+     * The configuration the object store runs with.
+     */
     private static WSObjectStoreConfiguration configuration;
 
+    /**
+     * The name of the "common" object cache, which is used, if no explicit object cache name has been configured
+     * for a cache (see {@link Cacheable#cacheName()}).
+     */
     public static final String COMMON_CACHE_NAME="com.github.ahuemmer.wsobjectstore.cache.common";
 
+    /**
+     * Indicates whether the object store has already been initialized / configured.
+     */
     private static boolean initialized=false;
 
+    /**
+     * Depending on the state of {@link #initialized}, init the object store with the default configuration.
+     */
     private static void init() {
         if (!initialized) {
             init(WSObjectStoreConfigurationFactory.DEFAULT_CONFIGURATION);
         }
     }
 
+    /**
+     * Init the store with a new configuration. This should only be called initially, before using the store, as
+     * all caches are cleared during initialization!
+     * @param configuration The configuration to use
+     */
     public static void init(final WSObjectStoreConfiguration configuration) {
         WSObjectStore.configuration = configuration;
         clearAllCaches(true);
         initialized=true;
     }
 
+    /**
+     * Get the configuration of the store.
+     * Please note, that <i>changing</i> the configuration at runtime isn't possible (there are no public setters in
+     * {@link WSObjectStoreConfiguration} as it might have unexpected side effects. The only way to change the
+     * configuration is to use the {@link #init(WSObjectStoreConfiguration)} function (which should take place before
+     * any other operations of the store).
+     * @return The store configuration
+     */
     public static WSObjectStoreConfiguration getConfiguration() {
         return configuration;
     }
 
+    /**
+     * Return a specialized message converter, supplying {@link org.springframework.hateoas.MediaTypes#HAL_JSON_UTF8} support.
+     * @return HAL supporting message converter
+     */
     private static HttpMessageConverter getHalMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
@@ -80,12 +149,20 @@ public class WSObjectStore {
         return halConverter;
     }
 
+    /**
+     * Return a HTTP entity accepting HAL+JSON answers only
+     * @return HTTP entity accepting HAL+JSON answers only
+     */
     private static HttpEntity<String> getHttpEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(HAL_JSON_UTF8));
         return new HttpEntity<>(headers);
     }
 
+    /**
+     * Return a specialized {@link RestTemplate} able to demand and process HAL+JSON data.
+     * @return A specialized {@link RestTemplate} able to demand and process HAL+JSON data.
+     */
     private static RestTemplate getRestTemplateWithHalMessageConverter() {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -98,20 +175,17 @@ public class WSObjectStore {
         return restTemplate;
     }
 
-    private static String lcFirst(String input) {
-        if (input==null) {
-            return null;
-        }
-        return input.substring(0,1).toLowerCase()+input.substring(1);
-    }
-
-    private static String ucFirst(String input) {
-        if (input==null) {
-            return null;
-        }
-        return input.substring(0,1).toUpperCase()+input.substring(1);
-    }
-
+    /**
+     * Handle a collection encountered during object traversal
+     * @param l The link containing the collection
+     * @param m The setter method for the collection on the object being populated
+     * @param collections A map of known collections
+     * @param linksVisited A set of all links visited up to now
+     * @param intermediateResult The intermediate result object up to now
+     * @param depth The depth in the object tree at the moment (for recursion handling)
+     * @param <T> The type of the object having the collection
+     * @throws WSObjectStoreException if something fails and the collection cannot be retrieved or handled
+     */
     @SuppressWarnings("unchecked")
     private static <T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
@@ -175,7 +249,15 @@ public class WSObjectStore {
         }
     }
 
-    private static Object getObjectFromCache(URI uri, Class objectClass) {
+    /**
+     * Try to retrieve an object from the associated cache (or the common cache, if the {@link Cacheable} annotation does
+     * not state an explicit cache name).
+     * @param uri The object's URI
+     * @param objectClass The class of the object
+     * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
+     */
+    @SuppressWarnings("unchecked")
+    private static<T> T getObjectFromCache(URI uri, Class objectClass) {
 
         logger.debug("Trying to get object with URI "+uri+" from cache...");
 
@@ -186,10 +268,7 @@ public class WSObjectStore {
             return null;
         }
 
-        Object result = null;
-        if (cache!=null) {
-            result = cache.get(uri);
-        }
+        T result = (T)cache.get(uri);
 
         if (result!=null) {
             cacheHits.putIfAbsent(cache.getCacheName(), 0);
@@ -204,6 +283,12 @@ public class WSObjectStore {
         return result;
     }
 
+    /**
+     * Find the cache an object belongs into and put it there.
+     * @param uri The uri of the object
+     * @param object The object to be cached
+     */
+    @SuppressWarnings("unchecked")
     private static void putObjectInCache(URI uri, Object object) {
 
         LRUCache cache = getCache(object.getClass());
@@ -220,6 +305,12 @@ public class WSObjectStore {
 
     }
 
+    /**
+     * Get the cache for a specific object class.
+     * @param cls The object class
+     * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
+     */
+    @NotNull
     private static LRUCache<URI, Object> getCache(Class cls) {
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
@@ -229,13 +320,25 @@ public class WSObjectStore {
 
         int cacheSize = (annotation!=null)?annotation.cacheSize():configuration.getDefaultCacheSize();
 
-        caches.putIfAbsent(cacheName, new LRUCache<URI, Object>(cacheName, cacheSize));
+        caches.putIfAbsent(cacheName, new LRUCache<>(cacheName, cacheSize));
 
         return caches.get(cacheName);
     }
 
+    /**
+     * Follow a link encountered when parsing an object
+     * @param l The link to follow
+     * @param linksVisited A set of links that have been visited already
+     * @param objectClass The expected target object class
+     * @param collections A map of collections already known
+     * @param intermediateResult The intermediate result object up to now
+     * @param depth The current depth in the object tree (for reasons of recursion)
+     * @param <U> Type of the linked object
+     * @throws WSObjectStoreException If the link URL is invalid or an array collection is encountered
+     *         (array collections are not supported (yet?))
+     */
     @SuppressWarnings("unchecked")
-    private static <T> void followLink(Link l, Set<URI> linksVisited, Class<T> objectClass, Map<String,Collection> collections, T intermediateResult, int depth) throws WSObjectStoreException {
+    private static <U> void followLink(Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String,Collection> collections, U intermediateResult, int depth) throws WSObjectStoreException {
         if ("self".equals(l.getRel())) {
             return;
         }
@@ -248,13 +351,13 @@ public class WSObjectStore {
             throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
         }
 
-        Method m = searchForSetter(objectClass, l.getRel());
+        Method m = ReflectionHelper.searchForSetter(objectClass, l.getRel());
 
         if (m!=null) {
 
             Class type = m.getParameterTypes()[0];
 
-            Object subObject;
+            U subObject;
 
             if (transientObjects.contains(uri)) {
                 if (Collection.class.isAssignableFrom(type)) {
@@ -274,7 +377,7 @@ public class WSObjectStore {
                 throw new WSObjectStoreException("Array relations are not supported (yet?).");
             }
 
-            subObject = getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
+            subObject = (U) WSObjectStore.<U>getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
 
             invokeSetter(m, intermediateResult, subObject);
 
@@ -283,6 +386,16 @@ public class WSObjectStore {
         linksVisited.add(uri);
     }
 
+    /**
+     * Marks a method to be invoked "later", after the first full object traversal.
+     * This is necessary as e. g. a child object may have a relation to its parent object, which is still being
+     * traversed and therefore incomplete. It also avoids endless cycling within the object tree.
+     * See also {@link #transientObjects}.
+     * @param uri The URI for the object to be set later on
+     * @param object The object on which the method is to be called
+     * @param method The method (usually a setter) to be called on the given object. It will be given the object
+     *               retrieved via the `link` parameter as one and only parameter.
+     */
     private static void markForLaterInvocation(URI uri, Object object, Method method) {
         if (!invokeLater.containsKey(uri)) {
             invokeLater.put(uri, new LinkedList<>());
@@ -290,6 +403,13 @@ public class WSObjectStore {
         invokeLater.get(uri).add(new AbstractMap.SimpleEntry<>(object, method));
     }
 
+    /**
+     * Invokes a method (setter) on a given object, supplying exactly one parameter (the object to bet set)
+     * @param m The setter method
+     * @param applyTo The object on which the setter method is to be called
+     * @param parameter The parameter object to be set
+     * @throws WSObjectStoreException on reflection based problems
+     */
     private static void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
         try {
             m.invoke(applyTo, parameter);
@@ -298,6 +418,17 @@ public class WSObjectStore {
         }
     }
 
+    /**
+     * Internal representation of {@link #getObject(String, Class)}, used for recursion.
+     * @param url The URL representing the object.
+     * @param objectClass The destination class of the object.
+     * @param linksVisited A set of the links (URLs) visited so far.
+     * @param collections A map of the collections already known.
+     * @param depth The current recursion depth.
+     * @param <T> The expected type of the returned object.
+     * @return The object queried
+     * @throws WSObjectStoreException if the URL is invalid
+     */
     private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws WSObjectStoreException {
 
         URI uri;
@@ -308,10 +439,10 @@ public class WSObjectStore {
             throw new WSObjectStoreException("Could not create URI from url\""+url+"\"!", e);
         }
 
-        Object resultFromCache = getObjectFromCache(uri, objectClass);
+        T resultFromCache = getObjectFromCache(uri, objectClass);
 
         if (resultFromCache!=null) {
-            return (T) resultFromCache;
+            return resultFromCache;
         }
 
         httpCalls+=1;
@@ -319,7 +450,7 @@ public class WSObjectStore {
         logger.debug("Adding URI "+uri.toString()+" to transient objects...");
         transientObjects.add(uri);
 
-        //noinspection Convert2Diamond
+        @SuppressWarnings("Convert2Diamond")
         //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
         ResponseEntity<Resource<T>> response =
                 getRestTemplateWithHalMessageConverter().exchange(url,
@@ -373,89 +504,64 @@ public class WSObjectStore {
         return result;
     }
 
-    private static Method searchForSetter(Class objectClass, String rel) {
 
-        logger.debug("Searching setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\"");
-
-        if (configuration.isAnnotationless()) {
-            String methodName = "set"+ucFirst(rel);
-            Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
-            if (m==null) {
-                logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
-            }
-            else {
-                logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName()+" (annotationless mode!)");
-            }
-            return m;
-        }
-        else {
-            Set<Method> methods = ReflectionHelper.getMethodsAnnotatedWith(objectClass, HALRelation.class);
-            for (Method m: methods) {
-                if (m.getAnnotation(HALRelation.class).value().equals(rel)) {
-                    if (m.getParameterCount() == 1) {
-                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
-                        return m;
-                    }
-                    logger.warn("Method \""+m.getName()+"\" is annotated with \""+HALRelation.class.getName()+"\" and would be a suitable setter candidate for relation \""+rel+"\", but has the wrong number of parameters!");
-                }
-                else if (m.getAnnotation(HALRelation.class).value().equals("")) {
-                    if (lcFirst(m.getName().substring(3)).equals(rel)) {
-                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
-                        return m;
-                    }
-                }
-            }
-            //Nothing found up to now, let's go on and search the fields...
-            Set<Field> fields = ReflectionHelper.getFieldsAnnotatedWith(objectClass, HALRelation.class);
-            for (Field f: fields) {
-                if (f.getAnnotation(HALRelation.class).value().equals(rel)) {
-                    String methodName = "set"+ucFirst(f.getName());
-                    Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
-                    if (m!=null) {
-                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
-                        return m;
-                    }
-                }
-                else if (f.getAnnotation(HALRelation.class).value().equals("")) {
-                    String methodName = "set"+ucFirst(rel);
-                    Method m = ReflectionHelper.searchForSetterByMethodName(objectClass, methodName);
-                    if (m!=null) {
-                        logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
-                        return m;
-                    }
-                }
-            }
-            logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
-            return null;
-        }
-    }
-
-
-
+    /**
+     * Retrieve an object from an URL. Calling GET on the URL is expected to return UTF-8-encoded JSON. If the JSON
+     * content / object contains links, these are expected to conform to the
+     * <a href="http://stateless.co/hal_specification.html">HAL specifications</a>.
+     *
+     * The JSON content will be retrieved and any collections encountered will be followed, resulting in a "complete"
+     * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
+     * goes wrong (e. g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
+     *
+     * If not disabled (see {@link WSObjectStoreConfigurationFactory#setDisableCaching(boolean)}), caching is used to
+     * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
+     * multiple times will only have <i>one</i> representation in memory, so all references will point to the same
+     * (not just an equal) object.
+     *
+     * The exact behavior can be adjusted by {@link WSObjectStoreConfiguration} (see also {@link WSObjectStoreConfigurationFactory}
+     * and {@link #init(WSObjectStoreConfiguration)}).
+     *
+     * @param url The URL to retrieve the object from. Must be well-formed and absolute!
+     * @param objectClass The class of the object to be returned.
+     * @param <T> The type of the object (being consistent with the `objectClass`)
+     * @return The object structure retrieved from the URL.
+     * @throws WSObjectStoreException if something goes wrong
+     */
     public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
         init();
         logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
-
     }
 
     /**
      * Return some information on cache hits and misses
-     * ATTN: Only "direct" hits and misses are counted. E. g., if an object is retrieved from cache the subobject
-     * of which is also cached, the subobject cache hit will not be counted! (Nevertheless the subobject is correctly
+     * ATTN: Only "direct" hits and misses are counted. E. g., if an object is retrieved from cache the sub-object
+     * of which is also cached, the sub-object cache hit will not be counted! (Nevertheless the sub-object is correctly
      * retrieved from cache.)
-     * @return
+     * @return The cache statistics map
      */
     public static Map<String,Object> getStatistics() {
         return Map.of("httpCalls",httpCalls, "cacheHits", cacheHits, "cacheMisses", cacheMisses);
     }
 
+    /**
+     * Reset all statistics about HTTP calls, cache hits and cache misses.
+     */
     public static void resetStatistics() {
         httpCalls = 0;
         cacheHits.clear();
         cacheMisses.clear();
     }
 
+    /**
+     * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
+     * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
+     * a matching call to {@link #getObject(String, Class)} occurs).
+     * @param cacheName The cache to clear.
+     * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
+     *                              both of them to zero).
+     */
     public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
         if (caches.containsKey(cacheName)) {
             caches.get(cacheName).clear();
@@ -466,6 +572,12 @@ public class WSObjectStore {
         }
     }
 
+    /**
+     * Get the number of objects stored in a specific cache.
+     * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
+     * empty or doesn't exist (yet).
+     */
     public static int getCachedObjectCount(String cacheName) {
         if (caches.get(cacheName)==null) {
             return 0;
@@ -473,10 +585,18 @@ public class WSObjectStore {
         return caches.get(cacheName).size();
     }
 
+    /**
+     * Clear all caches, but do not clear the cache statistics.
+     */
     public static void clearAllCaches() {
         clearAllCaches(false);
     }
 
+    /**
+     * Clear all caches and possibly their related statistics as well.
+     * @param clearStatisticsAsWell Whether to clear all cache hit and miss statistics as well (resetting
+     *                              all of them to zero).
+     */
     public static void clearAllCaches(boolean clearStatisticsAsWell) {
         for (String key: caches.keySet()) {
             clearCache(key, clearStatisticsAsWell);
@@ -486,6 +606,9 @@ public class WSObjectStore {
         }
     }
 
+    /**
+     * For debugging purposes only: Print out some statistics to `stdout`.
+     */
     public static void printStatistics() {
         System.out.println("WSObjectStore statistics:");
         System.out.println("-------------------------");
