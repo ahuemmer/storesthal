@@ -2,7 +2,10 @@ package de.huemmerich.web.wsobjectstore.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ComplexChild1 {
+/**
+ * Simple "child" object having an id and a name
+ */
+public class ChildObject {
 
     @JsonProperty("objectId")
     private int childId;

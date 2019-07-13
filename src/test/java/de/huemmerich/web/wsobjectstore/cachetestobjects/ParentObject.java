@@ -2,11 +2,13 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.Cacheable;
-import de.huemmerich.web.wsobjectstore.complextestobjects.ComplexChildWithParentRelation;
+import de.huemmerich.web.wsobjectstore.complextestobjects.ChildObjectWithParentRelation;
 
 import java.util.List;
 
-
+/**
+ * "Parent" object having some more fields being read as well.
+ */
 @Cacheable(cacheName = "parents")
 public class ParentObject {
 
@@ -23,7 +25,7 @@ public class ParentObject {
 
         protected String comment;
 
-        protected List<ComplexChildWithParentRelation> children;
+        protected List<ChildObjectWithParentRelation> children;
 
         public Integer getCategoryId() {
             return categoryId;
@@ -73,11 +75,11 @@ public class ParentObject {
             this.comment = comment;
         }
 
-        public List<ComplexChildWithParentRelation> getChildren() {
+        public List<ChildObjectWithParentRelation> getChildren() {
         return children;
     }
 
-        public void setChildren(List<ComplexChildWithParentRelation> children) {
+        public void setChildren(List<ChildObjectWithParentRelation> children) {
         this.children = children;
     }
 }

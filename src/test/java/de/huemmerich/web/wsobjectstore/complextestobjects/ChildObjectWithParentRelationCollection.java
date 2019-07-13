@@ -5,7 +5,10 @@ import de.huemmerich.web.wsobjectstore.HALRelation;
 
 import java.util.List;
 
-public class ComplexChildWithParentRelationCollection {
+/**
+ * "Child" object, having an id, a name and a collection (!) of parent objects.
+ */
+public class ChildObjectWithParentRelationCollection {
 
     private int childId;
 

@@ -3,8 +3,11 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.Cacheable;
 
+/**
+ * Simple "child" object with relation to one single parent object, having a small cache size.
+ */
 @Cacheable(cacheName = "children")
-public class ChildWithParentRelation2 {
+public class ChildWithParentRelationWithSmallCache {
 
     private int childId;
 

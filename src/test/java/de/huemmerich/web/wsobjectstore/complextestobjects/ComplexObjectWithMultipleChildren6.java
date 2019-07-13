@@ -6,6 +6,10 @@ import de.huemmerich.web.wsobjectstore.HALRelation;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Like {@link ComplexObjectWithMultipleChildren5}, but having a parent relation itself.
+ * Note, that the child collection is implemented as a {@link LinkedList} here!
+ */
 public class ComplexObjectWithMultipleChildren6 {
 
     @JsonProperty("category_id")

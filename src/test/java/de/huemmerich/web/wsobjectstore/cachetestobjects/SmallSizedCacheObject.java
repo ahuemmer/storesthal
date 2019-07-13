@@ -3,6 +3,9 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.Cacheable;
 
+/**
+ * An object using a cache with a size of only five items.
+ */
 @Cacheable(cacheName = "de.huemmerich.web.wsobjectstore.cachetestobjects.SmallSizedCacheObject", cacheSize = 5)
 public class SmallSizedCacheObject {
 

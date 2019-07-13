@@ -3,77 +3,80 @@ package de.huemmerich.web.wsobjectstore.complextestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.HALRelation;
 
+/**
+ * Rather "complex" object, having members of different kinds and a relation to a single child object.
+ */
 public class ComplexObjectWithSingleChild {
 
-        @JsonProperty("category_id")
-        protected Integer categoryId;
+    @JsonProperty("category_id")
+    protected Integer categoryId;
 
-        protected Integer number;
+    protected Integer number;
 
-        protected String name;
+    protected String name;
 
-        protected Integer color;
+    protected Integer color;
 
-        protected String type;
+    protected String type;
 
-        protected String comment;
+    protected String comment;
 
-        @HALRelation("child")
-        protected ComplexChild1 child;
+    @HALRelation("child")
+    protected ChildObject child;
 
-        public Integer getCategoryId() {
-            return categoryId;
-        }
+    public Integer getCategoryId() {
+        return categoryId;
+    }
 
-        public void setCategoryId(Integer categoryId) {
-            this.categoryId = categoryId;
-        }
+    public void setCategoryId(Integer categoryId) {
+        this.categoryId = categoryId;
+    }
 
-        public Integer getNumber() {
-            return number;
-        }
+    public Integer getNumber() {
+        return number;
+    }
 
-        public void setNumber(Integer number) {
-            this.number = number;
-        }
+    public void setNumber(Integer number) {
+        this.number = number;
+    }
 
-        public String getName() {
-            return name;
-        }
+    public String getName() {
+        return name;
+    }
 
-        public void setName(String name) {
-            this.name = name;
-        }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-        public Integer getColor() {
-            return color;
-        }
+    public Integer getColor() {
+        return color;
+    }
 
-        public void setColor(Integer color) {
-            this.color = color;
-        }
+    public void setColor(Integer color) {
+        this.color = color;
+    }
 
-        public String getType() {
-            return type;
-        }
+    public String getType() {
+        return type;
+    }
 
-        public void setType(String type) {
-            this.type = type;
-        }
+    public void setType(String type) {
+        this.type = type;
+    }
 
-        public String getComment() {
-            return comment;
-        }
+    public String getComment() {
+        return comment;
+    }
 
-        public void setComment(String comment) {
-            this.comment = comment;
-        }
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 
-    public ComplexChild1 getChild() {
+    public ChildObject getChild() {
         return child;
     }
 
-    public void setChild(ComplexChild1 child) {
+    public void setChild(ChildObject child) {
         this.child = child;
     }
 }

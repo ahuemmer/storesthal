@@ -1,31 +1,19 @@
 package de.huemmerich.web.wsobjectstore;
 
-import com.github.jenspiegsa.wiremockextension.ConfigureWireMock;
-import com.github.jenspiegsa.wiremockextension.InjectServer;
-import com.github.jenspiegsa.wiremockextension.WireMockSettings;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.Options;
 import de.huemmerich.web.wsobjectstore.complextestobjects.*;
-import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
     @BeforeEach
-    public void clearCaches() {
+    public void init() {
         WSObjectStore.resetStatistics();
         WSObjectStore.clearAllCaches();
     }
@@ -36,7 +24,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         configureServerMock("/complexObjects/1", "complexObject1.json");
         serverMock.start();
 
-        ComplexObject1 test = WSObjectStore.<ComplexObject1>getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject1.class);
+        ComplexObject test = WSObjectStore.<ComplexObject>getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject.class);
 
         assertNotNull(test);
         assertEquals(1, test.getCategoryId());
@@ -64,7 +52,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(3, test.getNumber());
         assertEquals("income", test.getType());
 
-        ComplexChild1 child = test.getChild();
+        ChildObject child = test.getChild();
         assertNotNull(child);
         assertEquals("Testchild!", child.getChildName());
     }
@@ -93,7 +81,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(9, test.getNumber());
         assertEquals("neither", test.getType());
 
-        List<ComplexChild2> children = test.getChildren();
+        List<ChildObject> children = test.getChildren();
         assertNotNull(children);
         assertEquals(3, children.size());
         assertEquals("Testchild 1!", children.get(0).getChildName());
@@ -131,7 +119,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(45648, test.getNumber());
         assertEquals("type", test.getType());
 
-        List<ComplexChild2> children = test.getChildren();
+        List<ChildObject> children = test.getChildren();
         assertNotNull(children);
         assertEquals(3, children.size());
         assertEquals("Testchild 1!", children.get(0).getChildName());
@@ -213,7 +201,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(-1, test.getNumber());
         assertEquals("This is a type. Is it? Really??? Yes...", test.getType());
 
-        List<ComplexChildWithParentRelation> children = test.getChildren();
+        List<ChildObjectWithParentRelation> children = test.getChildren();
         assertNotNull(children);
         assertEquals(3, children.size());
         assertEquals("Testchild with parent 1.", children.get(0).getChildName());
@@ -228,7 +216,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         assertEquals(4,(Integer) WSObjectStore.getStatistics().get("httpCalls"));
 
-        for (ComplexChildWithParentRelation child: children) {
+        for (ChildObjectWithParentRelation child: children) {
             //Use == here --> really the same object!
             assertTrue(test==child.getParent());
         }
@@ -260,7 +248,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(12, test.getNumber());
         assertEquals("", test.getType());
 
-        List<ComplexChildWithParentRelationCollection> children = test.getChildren();
+        List<ChildObjectWithParentRelationCollection> children = test.getChildren();
         assertNotNull(test.getChildren());
         assertEquals(3, test.getChildren().size());
 
@@ -277,7 +265,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         assertEquals(4,(Integer) WSObjectStore.getStatistics().get("httpCalls"));
 
-        for (ComplexChildWithParentRelationCollection child: children) {
+        for (ChildObjectWithParentRelationCollection child: children) {
             assertEquals(1, child.getParents().size());
             //Use == here --> really the same object!
             assertTrue(test==child.getParents().get(0));

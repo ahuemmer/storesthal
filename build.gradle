@@ -19,29 +19,22 @@ ext {
     junitVersion="5.4.2"
 }
 
-/*ext.moduleName = 'wsobjectstore'
-
-compileJava {
-    inputs.property("moduleName", moduleName)
-    doFirst {
-        options.compilerArgs = [
-                '--module-path', classpath.asPath,
-        ]
-        classpath = files()
-    }
-}*/
-
 dependencies {
     compile group: 'org.springframework', name: 'spring-context', version: "${springVersion}"
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: "${junitVersion}"
     testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-    testCompile "com.github.tomakehurst:wiremock-jre8:2.23.2"
-    testCompile "com.github.JensPiegsa:wiremock-extension:0.4.0"
+
+    //Really no idea what the cause is, but the handlebars-related stuff from com.github.jknack won't be found,
+    //so it's excluded - does not make any problems!
+    testCompile ("com.github.tomakehurst:wiremock-jre8:2.23.2") {
+        exclude group: "com.github.jknack", module: '*'
+    }
+    testCompile ("com.github.JensPiegsa:wiremock-extension:0.4.0") {
+        exclude group: "com.github.jknack", module: '*'
+    }
     testCompile 'org.apache.commons:commons-text:1.6'
     testRuntime 'org.opentest4j:opentest4j:1.0.0-M1'
 
-    //testCompile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
-    //compile "org.springframework:spring-web:${springVersion}"
     compile 'org.springframework.hateoas:spring-hateoas:0.25.1.RELEASE'
     compile 'org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
@@ -67,4 +60,9 @@ publishing {
             from(components.java)
         }
     }
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
 }

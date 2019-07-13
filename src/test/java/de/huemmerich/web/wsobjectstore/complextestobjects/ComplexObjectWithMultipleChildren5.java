@@ -5,6 +5,11 @@ import de.huemmerich.web.wsobjectstore.HALRelation;
 
 import java.util.List;
 
+/**
+ * Like {@link ComplexObjectWithMultipleChildren1}, but having children with (back-)references to their parent.
+ * Note, that the child collection is implemented as an abstract {@link List} here and the {@link HALRelation}
+ * annotation is present.
+ */
 public class ComplexObjectWithMultipleChildren5 {
 
         @JsonProperty("category_id")
@@ -20,7 +25,7 @@ public class ComplexObjectWithMultipleChildren5 {
 
         protected String comment;
 
-        protected List<ComplexChildWithParentRelationCollection> children;
+        protected List<ChildObjectWithParentRelationCollection> children;
 
         public Integer getCategoryId() {
             return categoryId;
@@ -70,12 +75,12 @@ public class ComplexObjectWithMultipleChildren5 {
             this.comment = comment;
         }
 
-        public List<ComplexChildWithParentRelationCollection> getChildren() {
+        public List<ChildObjectWithParentRelationCollection> getChildren() {
         return children;
     }
 
         @HALRelation
-        public void setChildren(List<ComplexChildWithParentRelationCollection> children) {
+        public void setChildren(List<ChildObjectWithParentRelationCollection> children) {
         this.children = children;
     }
 }

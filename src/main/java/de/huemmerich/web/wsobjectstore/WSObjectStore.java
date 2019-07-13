@@ -3,7 +3,6 @@ package de.huemmerich.web.wsobjectstore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfiguration;
 import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfigurationFactory;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -310,7 +309,6 @@ public class WSObjectStore {
      * @param cls The object class
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
-    @NotNull
     private static LRUCache<URI, Object> getCache(Class cls) {
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 

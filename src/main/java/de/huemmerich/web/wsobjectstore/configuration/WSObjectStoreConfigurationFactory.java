@@ -40,6 +40,7 @@ public class WSObjectStoreConfigurationFactory {
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
      * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
      * @param defaultCacheSize The default cache size (default: 1000)
+     * @return This WSObjectStoreConfiguration factory (fluent interface)
      */
     public WSObjectStoreConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
         this.defaultCacheSize = defaultCacheSize;
@@ -60,7 +61,8 @@ public class WSObjectStoreConfigurationFactory {
      * The only cache that will still exist is the "intermediate cache" of the store, which is necessary to maintain
      * object structure integrity during one single getObject call. The intermediate cache will not be preserved
      * between consecutive getObject calls.
-     * @param disableCaching Whether to completely disable caching or not (default: false)
+     * @param disableCaching Whether to completely disable caching or not (default: false)     *
+     * @return This WSObjectStoreConfiguration factory (fluent interface)
      */
     public WSObjectStoreConfigurationFactory setDisableCaching(boolean disableCaching) {
         this.disableCaching = disableCaching;
@@ -78,6 +80,8 @@ public class WSObjectStoreConfigurationFactory {
     /**
      * Controls whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
      * ("true" means, the will be not be taken into account!)
+     * @param annotationless Whether to work annotationless or not
+     * @return This WSObjectStoreConfiguration factory (fluent interface)
      */
     public WSObjectStoreConfigurationFactory setAnnotationless(boolean annotationless) {
         this.annotationless = annotationless;

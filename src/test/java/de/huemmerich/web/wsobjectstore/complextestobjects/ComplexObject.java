@@ -1,9 +1,11 @@
 package de.huemmerich.web.wsobjectstore.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.hateoas.ResourceSupport;
 
-public class ComplexObject1 {
+/**
+ * Rather complex test object, having some members of different kinds.
+ */
+public class ComplexObject {
 
         @JsonProperty("category_id")
         protected Integer categoryId;

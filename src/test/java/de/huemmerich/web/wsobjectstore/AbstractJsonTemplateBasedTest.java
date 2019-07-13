@@ -18,6 +18,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
+/**
+ * Abstract test template, encapsulating the functionality to set up and utilize wiremock.
+ */
 @WireMockSettings(failOnUnmatchedRequests = true)
 public abstract class AbstractJsonTemplateBasedTest {
 

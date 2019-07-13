@@ -5,6 +5,10 @@ import de.huemmerich.web.wsobjectstore.HALRelation;
 
 import java.util.LinkedList;
 
+/**
+ * Quite the same as {@link ComplexObject}, but having a relation to multiple child objects.
+ * Note, that the child collection is implemented as an array here!
+ */
 public class ComplexObjectWithMultipleChildren3 {
 
         @JsonProperty("category_id")
@@ -21,7 +25,7 @@ public class ComplexObjectWithMultipleChildren3 {
         protected String comment;
 
         @HALRelation
-        protected ComplexChild2[] children;
+        protected ChildObject[] children;
 
         public Integer getCategoryId() {
             return categoryId;
@@ -71,11 +75,11 @@ public class ComplexObjectWithMultipleChildren3 {
             this.comment = comment;
         }
 
-        public ComplexChild2[] getChildren() {
+        public ChildObject[] getChildren() {
         return children;
     }
 
-        public void setChildren(ComplexChild2[] children) {
+        public void setChildren(ChildObject[] children) {
         this.children = children;
     }
 }

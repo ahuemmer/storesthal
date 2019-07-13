@@ -1,7 +1,6 @@
 package de.huemmerich.web.wsobjectstore;
 
 import de.huemmerich.web.wsobjectstore.cachetestobjects.*;
-import de.huemmerich.web.wsobjectstore.complextestobjects.ComplexChildWithParentRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,20 +10,45 @@ import java.util.Vector;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Test set to make sure that caching works as designed.
+ */
 public class CacheTest extends AbstractJsonTemplateBasedTest {
 
+    /**
+     * Name of the children cache (must match {@link Cacheable} annotation of related objects!)
+     */
     protected final static String CHILD_CACHE_NAME = "children";
+
+    /**
+     * Name of the parent cache (must match {@link Cacheable} annotation of related objects!)
+     */
     protected final static String PARENT_CACHE_NAME = "parents";
+
+    /**
+     * Name of the cache with small size (must match {@link Cacheable} annotation of related objects!)
+     */
     protected final static String SMALL_SIZE_CACHE_NAME = "de.huemmerich.web.wsobjectstore.cachetestobjects.SmallSizedCacheObject";
 
+    /**
+     * Clear caches and reset statistics before each test!
+     */
     @BeforeEach
     public void clearCaches() {
         WSObjectStore.resetStatistics();
         WSObjectStore.clearAllCaches();
     }
 
+    /**
+     * Retrieve eight different children, all having the same parent.
+     * Expected behavior: No cache hits in the children cache (but eight objects in it); seven cache hits in the
+     * parent cache (having one object in it).
+     * Also make sure, that the objects name field is filled correctly and their parent-relation is OK.
+     * @throws IOException if the template JSON response file cannot be accessed.
+     * @throws WSObjectStoreException if object retrieval fails.
+     */
     @Test
-    public void simpleCacheTest() throws IOException, WSObjectStoreException {
+    public void doesCacheEveryNewObject() throws IOException, WSObjectStoreException {
         configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "12", "childName", "Testchild 1!", "parent", "/parentObjects/124"));
         configureServerMock("/complexChildren1/2", "simpleChildObjectWithParentRelation.json", Map.of("childId", "23", "childName", "Testchild 2!", "parent", "/parentObjects/124"));
         configureServerMock("/complexChildren1/3", "simpleChildObjectWithParentRelation.json", Map.of("childId", "34", "childName", "Testchild 3!", "parent", "/parentObjects/124"));
@@ -56,8 +80,14 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
 
     }
 
+    /**
+     * Make sure, when retrieving an object without {@link Cacheable} annotation ten times, there will be ten HTTP
+     * calls (resp. ten "fresh" retrievals) of the object.
+     * @throws IOException if the template JSON response file cannot be accessed.
+     * @throws WSObjectStoreException if object retrieval fails.
+     */
     @Test
-    public void uncacheableObjectTest() throws WSObjectStoreException, IOException {
+    public void doesntCacheUncacheableObjects() throws WSObjectStoreException, IOException {
 
         configureServerMock("/objects/1", "simpleObject2.json", Map.of("objectId", "5483790", "name", "Test 1... 2... 3..."));
 
@@ -78,8 +108,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(10, (Integer) WSObjectStore.getStatistics().get("httpCalls"));
     }
 
+    /**
+     * Make sure that caches are cleared correctly on demand.
+     * @throws IOException if the template JSON response file cannot be accessed.
+     * @throws WSObjectStoreException if object retrieval fails.
+     **/
     @Test
-    public void clearCacheTest() throws IOException, WSObjectStoreException {
+    public void doesClearCachesCorrectly() throws IOException, WSObjectStoreException {
 
         configureServerMock("/objects/1", "complexObject1.json", Map.of("childId", "12", "childName", "Testchild 1!", "parent", "/parentObjects/124"));
 
@@ -133,15 +168,19 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
             WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
-
         assertEquals(1, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
         assertEquals(10, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(1, WSObjectStore.getStatistics().get("httpCalls"));
 
     }
 
+    /**
+     * Make sure, the cache size limitations (see {@link Cacheable#cacheSize()}) are respected.
+     * @throws IOException if the template JSON response file cannot be accessed.
+     * @throws WSObjectStoreException if object retrieval fails.
+     **/
     @Test
-    public void cacheSizeTest() throws IOException, WSObjectStoreException {
+    public void doesRespectCacheSize() throws IOException, WSObjectStoreException {
 
         for (int i = 1; i < 9; i++) {
             configureServerMock("/objects/" + i, "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i), "childName", "Testchild " + i + "!", "parent", "/parentObjects/" + i));
@@ -155,7 +194,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         serverMock.start();
 
         for (int i = 1; i < 6; i++) {
-            ChildWithParentRelation2 test = WSObjectStore.<ChildWithParentRelation2>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelation2.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -168,7 +207,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(10, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 6; i < 9; i++) {
-            ChildWithParentRelation2 test = WSObjectStore.<ChildWithParentRelation2>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelation2.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -181,7 +220,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(16, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
-            ChildWithParentRelation2 test = WSObjectStore.<ChildWithParentRelation2>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelation2.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -194,7 +233,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(24, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
-            ChildWithParentRelation2 test = WSObjectStore.<ChildWithParentRelation2>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelation2.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -221,8 +260,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
 
     }
 
+    /**
+     * Make sure, parent and child relations are kept with integrity, even if some caches are cleared.
+     * @throws IOException if the template JSON response file cannot be accessed.
+     * @throws WSObjectStoreException if object retrieval fails.
+     */
     @Test
-    public void cacheObjectIntegrityTest() throws IOException, WSObjectStoreException {
+    public void doesMaintainObjectIntegrity() throws IOException, WSObjectStoreException {
 
         configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124"));
         configureServerMock("/parentObjects/124", "complexObject1.json");

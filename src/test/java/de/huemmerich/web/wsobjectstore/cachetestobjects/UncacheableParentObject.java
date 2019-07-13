@@ -2,6 +2,9 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * "Parent" object without cache usage
+ */
 public class UncacheableParentObject {
 
     @JsonProperty("objectId")

@@ -2,8 +2,10 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.Cacheable;
-import de.huemmerich.web.wsobjectstore.complextestobjects.ComplexObjectWithMultipleChildren4;
 
+/**
+ * Simple "child" test object with relation to a single parent object
+ */
 @Cacheable(cacheName = "children")
 public class ChildWithParentRelation {
 
