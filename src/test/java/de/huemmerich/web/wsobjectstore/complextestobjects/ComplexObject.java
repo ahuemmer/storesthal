@@ -8,17 +8,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ComplexObject {
 
         @JsonProperty("category_id")
-        protected Integer categoryId;
+        private Integer categoryId;
 
-        protected Integer number;
+        private Integer number;
 
-        protected String name;
+        private String name;
 
-        protected Integer color;
+        private Integer color;
 
-        protected String type;
+        private String type;
 
-        protected String comment;
+        private String comment;
 
         public Integer getCategoryId() {
             return categoryId;

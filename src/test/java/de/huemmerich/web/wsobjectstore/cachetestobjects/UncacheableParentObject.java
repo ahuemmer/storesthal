@@ -2,6 +2,8 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Objects;
+
 /**
  * "Parent" object without cache usage
  */
@@ -36,7 +38,7 @@ public class UncacheableParentObject {
         UncacheableParentObject that = (UncacheableParentObject) o;
 
         if (id != that.id) return false;
-        return name != null ? name.equals(that.name) : that.name == null;
+        return Objects.equals(name, that.name);
     }
 
     @Override

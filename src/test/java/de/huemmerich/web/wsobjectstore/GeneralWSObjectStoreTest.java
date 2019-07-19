@@ -10,21 +10,33 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * A big bunch of general tests for the whole thing. This version works with annotations (see {@link HALRelation}), but
+ * there is a tiny derivation of this test class ({@link AnnotationlessGeneralWSObjectStoreTest}) doing so without.
+ */
 public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
+    /**
+     * Reset the statistics and empty the caches before each test run.
+     */
     @BeforeEach
     public void init() {
         WSObjectStore.resetStatistics();
         WSObjectStore.clearAllCaches();
     }
 
+    /**
+     * Make sure, a "complex" object (having some attributes of different data types) can be correctly retrieved.
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testWSObjectStoreGetComplexObject1() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObject() throws WSObjectStoreException, IOException {
 
         configureServerMock("/complexObjects/1", "complexObject1.json");
         serverMock.start();
 
-        ComplexObject test = WSObjectStore.<ComplexObject>getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject.class);
+        ComplexObject test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjects/1", ComplexObject.class);
 
         assertNotNull(test);
         assertEquals(1, test.getCategoryId());
@@ -35,14 +47,19 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals("expense", test.getType());
     }
 
+    /**
+     * Make sure, a "complex" object having one relation to one single child object can be correctly retrieved.
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testWSObjectStoreGetComplexObjectWithSingleChild() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObjectWithSingleChild() throws WSObjectStoreException, IOException {
         configureServerMock("/complexObjectsWithSingleChildren/1", "complexObjectWithSingleChild1.json");
         configureServerMock("/complexChildren/1", "simpleObject1.json", Map.of("name","Testchild!"));
 
         serverMock.start();
 
-        ComplexObjectWithSingleChild test = WSObjectStore.<ComplexObjectWithSingleChild>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
+        ComplexObjectWithSingleChild test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
 
         assertNotNull(test);
         assertEquals(4711, test.getCategoryId());
@@ -57,8 +74,14 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals("Testchild!", child.getChildName());
     }
 
+    /**
+     * Make sure, a "complex" object having multiple children (relation implemented as an abstract {@link List} here)
+     * can be correctly retrieved.
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildren1() throws WSObjectStoreException, IOException {
+    public void canRetriebeComplexObjectWithMultipleChildren1() throws WSObjectStoreException, IOException {
 
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "itsme...","categoryId","1508", "name", "Test3!", "number", "9", "type", "neither", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
@@ -71,7 +94,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren1 test = WSObjectStore.<ComplexObjectWithMultipleChildren1>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
+        ComplexObjectWithMultipleChildren1 test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
 
         assertNotNull(test);
         assertEquals(1508, test.getCategoryId());
@@ -93,11 +116,17 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         assertEquals(4711, children.get(2).getChildId());
     }
 
+    /**
+     * Make sure, a "complex" object having multiple children (relation implemented as a {@link java.util.LinkedList} here)
+     * can be correctly retrieved.
+     * (Pretty much the same as before (in {@link #canRetriebeComplexObjectWithMultipleChildren1()}), but now we use
+     * {@link ComplexObjectWithMultipleChildren2} which has a concrete implementation of a collection
+     * ({@link java.util.LinkedList}) instead of an interface.)
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    //Pretty much the same as before (in testWSObjectStoreGetComplexObjectWithMultipleChildren1), but now we use
-    //ComplexObjectWithMultipleChildren2 which has a concrete implementation of a collection (LinkedList) instead
-    //of an interface.
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildren2() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObjectWithMultipleChildren2() throws WSObjectStoreException, IOException {
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "hello!", "categoryId","4711", "name", "Blubb", "number", "45648", "type", "type",  "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
                 "http://localhost:${port}/complexChildren2/2",
@@ -109,7 +138,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
-        ComplexObjectWithMultipleChildren2 test = WSObjectStore.<ComplexObjectWithMultipleChildren2>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
+        ComplexObjectWithMultipleChildren2 test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
 
         assertNotNull(test);
         assertEquals(4711, test.getCategoryId());
@@ -132,10 +161,16 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
     }
 
+    /**
+     * Make sure, a "complex" object having multiple children (relation implemented as an Array here)
+     * canNOT be retrieved (at the moment...).
+     * (Pretty much the same as the two before (in {@link #canRetriebeComplexObjectWithMultipleChildren1()} and
+     * {@link #canRetrieveComplexObjectWithMultipleChildren2()}), but now we use
+     * {@link ComplexObjectWithMultipleChildren3} which has an array as collection instead of a (Linked)List.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    //Pretty much the same as the two before (in testWSObjectStoreGetComplexObjectWithMultipleChildren1), but now we use
-    //ComplexObjectWithMultipleChildren3 which has an array as collection insted of a (Linked)List.
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildrenInArray() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObjectWithMultipleChildrenInArray() throws IOException {
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "", "categoryId","9999", "name", "Xyz123!", "number", "1", "type", "mööööp", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
                 "http://localhost:${port}/complexChildren2/2",
@@ -148,7 +183,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         serverMock.start();
 
         assertThrows(WSObjectStoreException.class, () -> {
-            ComplexObjectWithMultipleChildren3 test = WSObjectStore.<ComplexObjectWithMultipleChildren3>getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
+            ComplexObjectWithMultipleChildren3 test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
         });
 
         //ARRAYS ARE NOT SUPPORTED (YET??)
@@ -175,8 +210,14 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
     }
 
+    /**
+     * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
+     * to the parent object can be correctly retrieved and only one single instance of the parent object is created.
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelation() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObjectWithMultipleChildrenAndParentRelation() throws WSObjectStoreException, IOException {
 
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "887766", "comment", "", "categoryId","12345", "name", "Äußerst umlautig!", "number", "-1",  "type", "This is a type. Is it? Really??? Yes...", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
@@ -191,7 +232,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren4 test = WSObjectStore.<ComplexObjectWithMultipleChildren4>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
+        ComplexObjectWithMultipleChildren4 test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
 
         assertNotNull(test);
         assertEquals(12345, test.getCategoryId());
@@ -218,12 +259,21 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         for (ChildObjectWithParentRelation child: children) {
             //Use == here --> really the same object!
-            assertTrue(test==child.getParent());
+            assertSame(test, child.getParent());
         }
     }
 
+    /**
+     * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
+     * to a collection of parent objects can be correctly retrieved and only one single instance of the parent object is
+     * created.
+     * (This is pretty much like {@link #canRetrieveComplexObjectWithMultipleChildrenAndParentRelation()} above, but
+     * here the possible parents are stored in a collection inside the child objects.)
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testWSObjectStoreGetComplexObjectWithMultipleChildrenAndParentRelationCollection() throws WSObjectStoreException, IOException {
+    public void canRetrieveComplexObjectWithMultipleChildrenAndParentRelationCollection() throws WSObjectStoreException, IOException {
 
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "456456", "comment", "abcABC", "categoryId","123459876", "name", "Das ist ein Name.", "number", "12", "type", "", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
@@ -238,7 +288,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren5 test = WSObjectStore.<ComplexObjectWithMultipleChildren5>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
+        ComplexObjectWithMultipleChildren5 test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
 
         assertNotNull(test);
         assertEquals(123459876, test.getCategoryId());
@@ -268,12 +318,19 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
         for (ChildObjectWithParentRelationCollection child: children) {
             assertEquals(1, child.getParents().size());
             //Use == here --> really the same object!
-            assertTrue(test==child.getParents().get(0));
+            assertSame(test, child.getParents().get(0));
         }
     }
 
+    /**
+     * Make sure, a very complex object structure with many levels of relation can be correctly retrieved.
+     * Please note: The test structure created is not completely "logic" in a sense of correct
+     * "parent-child-grandchild"-relations. This is intentional as it allows testing such structures as well.
+     * @throws WSObjectStoreException if something fails.
+     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+     */
     @Test
-    public void testVeryComplexObjectStructure() throws IOException, WSObjectStoreException {
+    public void canHandleVeryComplexObjectStructure() throws IOException, WSObjectStoreException {
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "0", "comment", ".", "categoryId","2", "name", "Complexity...", "number", "14", "type", "987epyt", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
                 "http://localhost:${port}/complexChildren2/2",
@@ -304,7 +361,7 @@ public class GeneralWSObjectStoreTest extends AbstractJsonTemplateBasedTest {
 
         WSObjectStore.resetStatistics();
 
-        ComplexObjectWithMultipleChildren6 test = WSObjectStore.<ComplexObjectWithMultipleChildren6>getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
+        ComplexObjectWithMultipleChildren6 test = WSObjectStore.getObject("http://localhost:"+serverMock.port()+"/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
 
         assertEquals(0,test.getColor());
         assertEquals(".",test.getComment());

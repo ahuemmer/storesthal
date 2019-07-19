@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test set to make sure that caching works as designed.
  */
-public class CacheTest extends AbstractJsonTemplateBasedTest {
+class CacheTest extends AbstractJsonTemplateBasedTest {
 
     /**
      * Name of the children cache (must match {@link Cacheable} annotation of related objects!)
@@ -64,14 +64,14 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         Vector<ChildWithParentRelation> testChildren = new Vector<>();
 
         for (int i = 1; i < 9; i++) {
-            testChildren.add((i - 1), WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/" + i, ChildWithParentRelation.class));
+            testChildren.add((i - 1), WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/complexChildren1/" + i, ChildWithParentRelation.class));
         }
 
         for (int i = 0; i < 7; i++) {
             assertEquals("Testchild " + (i + 1) + "!", testChildren.get(i).getChildName());
             assertNotNull(testChildren.get(i).getParent());
             //Using == here intentionally!
-            assertTrue(testChildren.get(i).getParent() == testChildren.get(i + 1).getParent());
+            assertSame(testChildren.get(i).getParent(), testChildren.get(i + 1).getParent());
         }
 
         assertEquals(9, (Integer) WSObjectStore.getStatistics().get("httpCalls"));
@@ -94,13 +94,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         UncacheableParentObject lastObject = null;
 
         for (int i = 0; i < 10; i++) {
-            UncacheableParentObject po = WSObjectStore.<UncacheableParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", UncacheableParentObject.class);
+            UncacheableParentObject po = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", UncacheableParentObject.class);
             assertEquals(5483790, po.getId());
             assertEquals("Test 1... 2... 3...", po.getName());
             if (i != 0) {
                 //Objects must be equal but not same...
                 assertEquals(lastObject, po);
-                assertFalse(lastObject == po);
+                assertNotSame(lastObject, po);
             }
             lastObject = po;
         }
@@ -123,13 +123,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(0, WSObjectStore.getStatistics().get("httpCalls"));
 
-        WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+        WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
         assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(1, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
-            WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+            WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
         assertEquals(10, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
@@ -142,13 +142,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(10, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(1, WSObjectStore.getStatistics().get("httpCalls"));
 
-        WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+        WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
         assertEquals(10, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
-            WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+            WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
         assertEquals(20, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
@@ -159,13 +159,13 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(0, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
         assertEquals(0, WSObjectStore.getStatistics().get("httpCalls"));
 
-        WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+        WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
         assertEquals(0, ((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
         assertEquals(1, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
-            WSObjectStore.<ParentObject>getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
+            WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
         assertEquals(1, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
@@ -194,7 +194,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         serverMock.start();
 
         for (int i = 1; i < 6; i++) {
-            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -207,7 +207,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(10, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 6; i < 9; i++) {
-            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -220,7 +220,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(16, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
-            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -233,7 +233,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(24, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
-            ChildWithParentRelationWithSmallCache test = WSObjectStore.<ChildWithParentRelationWithSmallCache>getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
+            ChildWithParentRelationWithSmallCache test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
             assertEquals("Testchild "+i+"!", test.getChildName());
             assertNotNull(test.getParent());
@@ -248,7 +248,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(24, WSObjectStore.getStatistics().get("httpCalls"));
 
         for (int i = 1; i < 5; i++) {
-            SmallSizedCacheObject test = WSObjectStore.<SmallSizedCacheObject>getObject("http://localhost:" + serverMock.port() + "/parentObjects/"+i, SmallSizedCacheObject.class);
+            SmallSizedCacheObject test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/parentObjects/"+i, SmallSizedCacheObject.class);
             assertEquals("Testparent "+i, test.getName());
             assertEquals(i, test.getId());
         }
@@ -273,7 +273,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
-        ChildWithParentRelation test = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+        ChildWithParentRelation test = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
         assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
@@ -283,7 +283,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(1, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
         assertEquals(1, WSObjectStore.getCachedObjectCount(CHILD_CACHE_NAME));
 
-        ChildWithParentRelation test2 = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+        ChildWithParentRelation test2 = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
         //NULL because no _direct_ access:
@@ -302,7 +302,7 @@ public class CacheTest extends AbstractJsonTemplateBasedTest {
 
         assertEquals(0, WSObjectStore.getCachedObjectCount(PARENT_CACHE_NAME));
 
-        ChildWithParentRelation test3 = WSObjectStore.<ChildWithParentRelation>getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
+        ChildWithParentRelation test3 = WSObjectStore.getObject("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, WSObjectStore.getStatistics().get("httpCalls"));
         assertNull(((Map) WSObjectStore.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));

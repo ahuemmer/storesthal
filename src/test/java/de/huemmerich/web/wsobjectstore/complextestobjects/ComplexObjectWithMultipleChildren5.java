@@ -13,19 +13,19 @@ import java.util.List;
 public class ComplexObjectWithMultipleChildren5 {
 
         @JsonProperty("category_id")
-        protected Integer categoryId;
+        private Integer categoryId;
 
-        protected Integer number;
+        private Integer number;
 
-        protected String name;
+        private String name;
 
-        protected Integer color;
+        private Integer color;
 
-        protected String type;
+        private String type;
 
-        protected String comment;
+        private String comment;
 
-        protected List<ChildObjectWithParentRelationCollection> children;
+        private List<ChildObjectWithParentRelationCollection> children;
 
         public Integer getCategoryId() {
             return categoryId;

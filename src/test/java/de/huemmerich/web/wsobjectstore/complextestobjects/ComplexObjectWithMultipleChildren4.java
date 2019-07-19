@@ -12,20 +12,20 @@ import java.util.List;
 public class ComplexObjectWithMultipleChildren4 {
 
         @JsonProperty("category_id")
-        protected Integer categoryId;
+        private Integer categoryId;
 
-        protected Integer number;
+        private Integer number;
 
-        protected String name;
+        private String name;
 
-        protected Integer color;
+        private Integer color;
 
-        protected String type;
+        private String type;
 
-        protected String comment;
+        private String comment;
 
         @HALRelation("children")
-        protected List<ChildObjectWithParentRelation> children;
+        private List<ChildObjectWithParentRelation> children;
 
         public Integer getCategoryId() {
             return categoryId;

@@ -1,6 +1,5 @@
 package de.huemmerich.web.wsobjectstore;
 
-import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfiguration;
 import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfigurationFactory;
 import org.junit.jupiter.api.BeforeEach;
 

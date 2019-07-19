@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.HALRelation;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Like {@link ComplexObjectWithMultipleChildren5}, but having a parent relation itself.
@@ -13,22 +12,22 @@ import java.util.List;
 public class ComplexObjectWithMultipleChildren6 {
 
     @JsonProperty("category_id")
-    protected Integer categoryId;
+    private Integer categoryId;
 
-    protected Integer number;
+    private Integer number;
 
-    protected String name;
+    private String name;
 
-    protected Integer color;
+    private Integer color;
 
-    protected String type;
+    private String type;
 
-    protected String comment;
+    private String comment;
 
     @HALRelation
-    protected ComplexObjectWithMultipleChildren6 parent;
+    private ComplexObjectWithMultipleChildren6 parent;
 
-    protected LinkedList<ComplexObjectWithMultipleChildren6> children;
+    private LinkedList<ComplexObjectWithMultipleChildren6> children;
 
     public Integer getCategoryId() {
         return categoryId;

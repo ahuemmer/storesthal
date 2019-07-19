@@ -3,8 +3,6 @@ package de.huemmerich.web.wsobjectstore.complextestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.HALRelation;
 
-import java.util.LinkedList;
-
 /**
  * Quite the same as {@link ComplexObject}, but having a relation to multiple child objects.
  * Note, that the child collection is implemented as an array here!
@@ -12,20 +10,20 @@ import java.util.LinkedList;
 public class ComplexObjectWithMultipleChildren3 {
 
         @JsonProperty("category_id")
-        protected Integer categoryId;
+        private Integer categoryId;
 
-        protected Integer number;
+        private Integer number;
 
-        protected String name;
+        private String name;
 
-        protected Integer color;
+        private Integer color;
 
-        protected String type;
+        private String type;
 
-        protected String comment;
+        private String comment;
 
         @HALRelation
-        protected ChildObject[] children;
+        private ChildObject[] children;
 
         public Integer getCategoryId() {
             return categoryId;

@@ -9,20 +9,20 @@ import de.huemmerich.web.wsobjectstore.HALRelation;
 public class ComplexObjectWithSingleChild {
 
     @JsonProperty("category_id")
-    protected Integer categoryId;
+    private Integer categoryId;
 
-    protected Integer number;
+    private Integer number;
 
-    protected String name;
+    private String name;
 
-    protected Integer color;
+    private Integer color;
 
-    protected String type;
+    private String type;
 
-    protected String comment;
+    private String comment;
 
     @HALRelation("child")
-    protected ChildObject child;
+    private ChildObject child;
 
     public Integer getCategoryId() {
         return categoryId;

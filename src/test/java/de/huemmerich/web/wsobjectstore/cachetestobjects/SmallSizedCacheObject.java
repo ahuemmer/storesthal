@@ -3,6 +3,8 @@ package de.huemmerich.web.wsobjectstore.cachetestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.Cacheable;
 
+import java.util.Objects;
+
 /**
  * An object using a cache with a size of only five items.
  */
@@ -38,7 +40,7 @@ public class SmallSizedCacheObject {
         SmallSizedCacheObject that = (SmallSizedCacheObject) o;
 
         if (id != that.id) return false;
-        return name != null ? name.equals(that.name) : that.name == null;
+        return Objects.equals(name, that.name);
     }
 
     @Override

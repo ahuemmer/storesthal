@@ -5,9 +5,16 @@ import de.huemmerich.web.wsobjectstore.configuration.WSObjectStoreConfigurationF
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Test suite for the {@link WSObjectStoreConfiguration} and {@link WSObjectStoreConfigurationFactory}.
+ */
 public class WSObjectStoreConfigurationTest {
 
+    /**
+     * Make sure, a default configuration can be created and is initialized correctly.
+     */
     @Test
     public void canCreateDefaultConfiguration() {
         WSObjectStoreConfiguration conf = WSObjectStoreConfigurationFactory.getDefaultConfiguration();
@@ -16,6 +23,10 @@ public class WSObjectStoreConfigurationTest {
         assertEquals(WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED, conf.isCachingDisabled());
     }
 
+    /**
+     * Make sure, a configuration based on some custom values can be created and modified with the values being
+     * taken over correctly.
+     */
     @Test
     public void canCreateCustomConfiguration() {
         WSObjectStoreConfigurationFactory factory = new WSObjectStoreConfigurationFactory();
@@ -27,22 +38,22 @@ public class WSObjectStoreConfigurationTest {
                 .getConfiguration();
 
         assertEquals(10, conf.getDefaultCacheSize());
-        assertEquals(true, conf.isAnnotationless());
-        assertEquals(true, conf.isCachingDisabled());
+        assertTrue(conf.isAnnotationless());
+        assertTrue(conf.isCachingDisabled());
 
         assertEquals(10, factory.getDefaultCacheSize());
-        assertEquals(true, factory.isAnnotationless());
-        assertEquals(true, factory.isCachingDisabled());
+        assertTrue(factory.isAnnotationless());
+        assertTrue(factory.isCachingDisabled());
 
         conf = factory.setDefaultCacheSize(1234).getConfiguration();
 
         assertEquals(1234, conf.getDefaultCacheSize());
-        assertEquals(true, conf.isAnnotationless());
-        assertEquals(true, conf.isCachingDisabled());
+        assertTrue(conf.isAnnotationless());
+        assertTrue(conf.isCachingDisabled());
 
         assertEquals(1234, factory.getDefaultCacheSize());
-        assertEquals(true, factory.isAnnotationless());
-        assertEquals(true, factory.isCachingDisabled());
+        assertTrue(factory.isAnnotationless());
+        assertTrue(factory.isCachingDisabled());
 
 
     }

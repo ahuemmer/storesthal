@@ -9,20 +9,19 @@ import org.apache.commons.text.StringSubstitutor;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 /**
  * Abstract test template, encapsulating the functionality to set up and utilize wiremock.
  */
-@WireMockSettings(failOnUnmatchedRequests = true)
-public abstract class AbstractJsonTemplateBasedTest {
+@WireMockSettings()
+abstract class AbstractJsonTemplateBasedTest {
 
     /**
      * The folder (within the test resources) where the json files are stored.
@@ -59,22 +58,21 @@ public abstract class AbstractJsonTemplateBasedTest {
     }
 
     protected static String createJsonHrefArray(String[] entries) {
-        String result = "[";
+        StringBuilder result = new StringBuilder("[");
         for(int i=0;i<entries.length;i++) {
-            result+="    {\"href\":\""+entries[i]+"\"}";
+            result.append("    {\"href\":\"").append(entries[i]).append("\"}");
             if (i!=entries.length-1) {
-                result+=",";
+                result.append(",");
             }
         }
-        result+="]";
-        return result;
+        result.append("]");
+        return result.toString();
     }
 
     protected static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {
-        File file = new File(GeneralWSObjectStoreTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER+"/"+fileName).getFile());
-        String fileContent = new String(Files.readAllBytes(file.toPath()), Charset.forName("UTF-8"));
-        StringSubstitutor sub = new StringSubstitutor(substitutes, "${", "}");
-        return sub.replace(fileContent,substitutes);
+        File file = new File(Objects.requireNonNull(GeneralWSObjectStoreTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER + "/" + fileName)).getFile());
+        String fileContent = Files.readString(file.toPath());
+        return StringSubstitutor.replace(fileContent,substitutes);
     }
 
 }

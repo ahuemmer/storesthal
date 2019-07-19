@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huemmerich.web.wsobjectstore.HALRelation;
 
 /**
- * "Child" object, habing an id, a name and a relation to its parent.
+ * "Child" object, having an id, a name and a relation to its parent.
  */
 public class ChildObjectWithParentRelation {
 
