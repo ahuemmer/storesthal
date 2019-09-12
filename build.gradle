@@ -46,7 +46,7 @@ dependencies {
 
 }
 
-group = 'de.huemmerich-web'
+group = 'de.huemmerich.web'
 sourceCompatibility = '11'
 
 test {
