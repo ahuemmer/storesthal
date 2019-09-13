@@ -14,11 +14,28 @@ Another speciality of storestahl is, that is will automatically follow [HAL](htt
 - Customizable relation and caching settings
 - Comprehensive documentation
 
+## Third-Party software
+
+!TODO
+
 ## Example
-Consider the following JSON+HAL data retrieved from a web service:
+
+Here is an example of what Storesthal can do for you, regarding an exemplary object structure.
+
+### Object structure
+Consider the following object structure:
+
+```
+         Testparent
+          /      \
+  Testchild 1    Testchild 2
+       |
+Test-Subchild 1
+```
+
+This structure matches with the following JSON+HAL data retrieved from a web service, e. g. at `https://mygreatwebservice.com/api/`:
 
 ### Parent object
-
 (Accessible at `https://mygreatwebservice.com/api/parents/3`)
 
 ```json 
@@ -91,17 +108,6 @@ Consider the following JSON+HAL data retrieved from a web service:
 }
 ```
 
-### Resulting structure
-The object structure represented by this responses is as follows:
-
-```
-         Testparent
-          /      \
-  Testchild 1    Testchild 2
-       |
-Test-Subchild 1
-```
-
 (All of the objects, of course, having their individual attributes as well.)
 
 ### Here comes Storesthal
@@ -122,7 +128,43 @@ Also, the classes _should_ have senseful `@Cacheable` annotations, so Storesthal
 
 You will find some examples below.
 
-### What's that name about... :thinking:?
+## Usage
+
+When designing Storesthal, special emphasis was placed on ease of usage and convention over configuration. Especially when using "annotationless mode" (see below) and the default configuration, it will "just work" for a lot of common use cases. Nevertheless, it's possible (and advised) to customize and fine-tune Storesthal's settings.
+
+Explaining the usage of Storesthal, we will mainly stick to the example object structure given [above](#example).
+
+### Basic invocation
+In order to retrieve an object via Storesthal, you basically just need one call:
+
+```java
+ParentObject Testparent = Storesthal.getObject("https://mygreatwebservice.com/api/parents/3", ParentObject.class);
+```
+
+Storesthal will then retrieve and examine the object found at the given URL and traverse the object structure as it discovers it and add matching sub-objects to every level of object relations.
+Especially, Storesthal is able to handle back-references and references to (yet) unknown or "incomplete" objects correctly!
+Additionally, Storesthal will use an object cache by default, making subsequent calls to the same URL performant.
+
+### Relations
+As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work, every object class needs to have
+_either_ a matching setter method (e. g., if the relation is called `customer` in JSON, there must be a `setCustomer`) _or_ an arbitrary method (or attribute)
+annotated with `@HALRelation(name=...)`. So, if your setter is called `setCustomer`, but the JSON relation is named `cstmr`, you would need to use
+`@HALRelation(name="cstmr")` and could annotate any method with it, as long as it takes only one argument of the correct type.
+
+The same scheme applies to any type of relation: 1 to 1, 1 to many, backreferences, ...
+
+For convenience, it is also possible to annotate a class field with `@HALRelation`. If doing so, Storesthal will again expect a setter method with the correspondent name to be
+present in your class. So, if the annotated field is named `studends`, there must be a method called `setStudents`, accepting any java `Collection` type as first and only parameter.
+If that collection type is an abstract one, Storesthal will try to use an appropriate implementation, otherwise it will try and instantiate a new collection of the given type.
+For details, see method `handleCollection` in `Storesthal.java`.
+
+Please note, that - at least for the moment - Storesthal is not able to handle arrays instead of `Collection`s.
+
+### Caching
+!TODO
+
+
+## What's that name about... :thinking:?
 
 I'm not a very creative person when it comes to such things... :wink: It's just a word composed of "Store", "REST" and "HAL". :simple_smile:
 

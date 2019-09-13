@@ -2,20 +2,20 @@ package de.huemmerich.web.storesthal.configuration;
 
 import de.huemmerich.web.storesthal.Cacheable;
 import de.huemmerich.web.storesthal.HALRelation;
-import de.huemmerich.web.storesthal.WSObjectStore;
+import de.huemmerich.web.storesthal.Storesthal;
 
 /**
- * This class holds the configuration of the runtime behavior of the WSObjectStore.
- * The configuration itself is not to be changed at runtime (meaning: after calling {@link WSObjectStore#init(WSObjectStoreConfiguration)}),
+ * This class holds the configuration of the runtime behavior of the Storesthal.
+ * The configuration itself is not to be changed at runtime (meaning: after calling {@link Storesthal#init(StoresthalConfiguration)}),
  * as this might lead to unexpected results. Therefore all setters are package-private and new configuration instances
- * are to be created using {@link WSObjectStoreConfigurationFactory}.
+ * are to be created using {@link StoreresthalConfigurationFactory}.
  */
-public class WSObjectStoreConfiguration {
+public class StoresthalConfiguration {
 
     /**
-     * Empty constructor - package private in order to be accessible only by {@link WSObjectStoreConfigurationFactory}, for the reasons mentioned above.
+     * Empty constructor - package private in order to be accessible only by {@link StoreresthalConfigurationFactory}, for the reasons mentioned above.
      */
-    WSObjectStoreConfiguration(){}
+    StoresthalConfiguration(){}
 
     /**
      * The default for the default of the size of an object cache.

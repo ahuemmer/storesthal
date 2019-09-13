@@ -3,13 +3,13 @@ package de.huemmerich.web.storesthal;
 /**
  * Exception thrown during JSON-HAL-object retrieval
  */
-public class WSObjectStoreException extends Exception {
+public class StoresthalException extends Exception {
 
     /**
      * "Direct" Exception without root cause
      * @param errorMessage The message of the exception
      */
-    public WSObjectStoreException(String errorMessage) {
+    public StoresthalException(String errorMessage) {
         super(errorMessage);
     }
 
@@ -18,7 +18,7 @@ public class WSObjectStoreException extends Exception {
      * @param errorMessage The message of the exception
      * @param cause The root cause
      */
-    public WSObjectStoreException(String errorMessage, Throwable cause) {
+    public StoresthalException(String errorMessage, Throwable cause) {
         super(errorMessage,cause);
     }
 

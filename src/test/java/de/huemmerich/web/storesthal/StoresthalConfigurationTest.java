@@ -1,26 +1,26 @@
 package de.huemmerich.web.storesthal;
 
-import de.huemmerich.web.storesthal.configuration.WSObjectStoreConfiguration;
-import de.huemmerich.web.storesthal.configuration.WSObjectStoreConfigurationFactory;
+import de.huemmerich.web.storesthal.configuration.StoresthalConfiguration;
+import de.huemmerich.web.storesthal.configuration.StoreresthalConfigurationFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test suite for the {@link WSObjectStoreConfiguration} and {@link WSObjectStoreConfigurationFactory}.
+ * Test suite for the {@link StoresthalConfiguration} and {@link StoreresthalConfigurationFactory}.
  */
-public class WSObjectStoreConfigurationTest {
+public class StoresthalConfigurationTest {
 
     /**
      * Make sure, a default configuration can be created and is initialized correctly.
      */
     @Test
     public void canCreateDefaultConfiguration() {
-        WSObjectStoreConfiguration conf = WSObjectStoreConfigurationFactory.getDefaultConfiguration();
-        assertEquals(WSObjectStoreConfiguration.DEFAULT_DEFAULT_CACHE_SIZE, conf.getDefaultCacheSize());
-        assertEquals(WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS, conf.isAnnotationless());
-        assertEquals(WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED, conf.isCachingDisabled());
+        StoresthalConfiguration conf = StoreresthalConfigurationFactory.getDefaultConfiguration();
+        assertEquals(StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE, conf.getDefaultCacheSize());
+        assertEquals(StoresthalConfiguration.DEFAULT_ANNOTATIONLESS, conf.isAnnotationless());
+        assertEquals(StoresthalConfiguration.DEFAULT_CACHING_DISABLED, conf.isCachingDisabled());
     }
 
     /**
@@ -29,9 +29,9 @@ public class WSObjectStoreConfigurationTest {
      */
     @Test
     public void canCreateCustomConfiguration() {
-        WSObjectStoreConfigurationFactory factory = new WSObjectStoreConfigurationFactory();
+        StoreresthalConfigurationFactory factory = new StoreresthalConfigurationFactory();
 
-        WSObjectStoreConfiguration conf = factory
+        StoresthalConfiguration conf = factory
                 .setAnnotationless(true)
                 .setDefaultCacheSize(10)
                 .setDisableCaching(true)

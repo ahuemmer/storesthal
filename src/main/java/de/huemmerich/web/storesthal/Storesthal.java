@@ -1,8 +1,8 @@
 package de.huemmerich.web.storesthal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.huemmerich.web.storesthal.configuration.WSObjectStoreConfiguration;
-import de.huemmerich.web.storesthal.configuration.WSObjectStoreConfigurationFactory;
+import de.huemmerich.web.storesthal.configuration.StoresthalConfiguration;
+import de.huemmerich.web.storesthal.configuration.StoreresthalConfigurationFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -33,7 +33,7 @@ import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
  * The main class of the whole library, encapsulating the core functionality needed. Callers should mainly need just
  * the {@link #getObject(String, Class)} method which will take of everything else...
  */
-public class WSObjectStore {
+public class Storesthal {
 
     /**
      * The total number of HTTP calls made.
@@ -59,7 +59,7 @@ public class WSObjectStore {
     /**
      * The logger.
      */
-    private static final Logger logger = LoggerFactory.getLogger(WSObjectStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(Storesthal.class);
 
     /**
      * The name of the intermediate cache. This cache is only used while traversing the objects / relations found during
@@ -90,7 +90,7 @@ public class WSObjectStore {
     /**
      * The configuration the object store runs with.
      */
-    private static WSObjectStoreConfiguration configuration;
+    private static StoresthalConfiguration configuration;
 
     /**
      * The name of the "common" object cache, which is used, if no explicit object cache name has been configured
@@ -108,7 +108,7 @@ public class WSObjectStore {
      */
     private static void init() {
         if (!initialized) {
-            init(WSObjectStoreConfigurationFactory.DEFAULT_CONFIGURATION);
+            init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
         }
     }
 
@@ -117,8 +117,8 @@ public class WSObjectStore {
      * all caches are cleared during initialization!
      * @param configuration The configuration to use
      */
-    public static void init(final WSObjectStoreConfiguration configuration) {
-        WSObjectStore.configuration = configuration;
+    public static void init(final StoresthalConfiguration configuration) {
+        Storesthal.configuration = configuration;
         clearAllCaches(true);
         initialized=true;
     }
@@ -126,12 +126,12 @@ public class WSObjectStore {
     /**
      * Get the configuration of the store.
      * Please note, that <i>changing</i> the configuration at runtime isn't possible (there are no public setters in
-     * {@link WSObjectStoreConfiguration} as it might have unexpected side effects. The only way to change the
-     * configuration is to use the {@link #init(WSObjectStoreConfiguration)} function (which should take place before
+     * {@link StoresthalConfiguration} as it might have unexpected side effects. The only way to change the
+     * configuration is to use the {@link #init(StoresthalConfiguration)} function (which should take place before
      * any other operations of the store).
      * @return The store configuration
      */
-    public static WSObjectStoreConfiguration getConfiguration() {
+    public static StoresthalConfiguration getConfiguration() {
         return configuration;
     }
 
@@ -183,10 +183,10 @@ public class WSObjectStore {
      * @param intermediateResult The intermediate result object up to now
      * @param depth The depth in the object tree at the moment (for recursion handling)
      * @param <T> The type of the object having the collection
-     * @throws WSObjectStoreException if something fails and the collection cannot be retrieved or handled
+     * @throws StoresthalException if something fails and the collection cannot be retrieved or handled
      */
     @SuppressWarnings("unchecked")
-    private static <T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws WSObjectStoreException {
+    private static <T> void handleCollection(Link l, Method m, Map<String,Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
         Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
@@ -212,7 +212,7 @@ public class WSObjectStore {
                 try {
                     coll = (Collection) type.getConstructor().newInstance();
                 } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new WSObjectStoreException("Could not instantiate collection of type \""+type.getCanonicalName()+"\".", e);
+                    throw new StoresthalException("Could not instantiate collection of type \""+type.getCanonicalName()+"\".", e);
                 }
             }
             collections.put(l.getRel(),coll);
@@ -223,7 +223,7 @@ public class WSObjectStore {
         try {
             uri = new URI(l.getHref());
         } catch (URISyntaxException e) {
-            throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
+            throw new StoresthalException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
         }
 
         if (transientObjects.contains(uri)) {
@@ -231,7 +231,7 @@ public class WSObjectStore {
             try {
                 addMethod = Objects.requireNonNull(coll).getClass().getMethod("add", Object.class);
             } catch (NoSuchMethodException e) {
-                throw new WSObjectStoreException("Could not find \"add\" method for collection class "+ Objects.requireNonNull(coll).getClass().getCanonicalName());
+                throw new StoresthalException("Could not find \"add\" method for collection class "+ Objects.requireNonNull(coll).getClass().getCanonicalName());
             }
 
             markForLaterInvocation(uri, coll, addMethod);
@@ -244,7 +244,7 @@ public class WSObjectStore {
         try {
             m.invoke(intermediateResult,coll);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new WSObjectStoreException("Could not invoke method \""+m.getName()+"("+coll.getClass().getCanonicalName()+")\" on instance of \""+intermediateResult.getClass().getCanonicalName()+"\" class.", e);
+            throw new StoresthalException("Could not invoke method \""+m.getName()+"("+coll.getClass().getCanonicalName()+")\" on instance of \""+intermediateResult.getClass().getCanonicalName()+"\" class.", e);
         }
     }
 
@@ -332,11 +332,11 @@ public class WSObjectStore {
      * @param intermediateResult The intermediate result object up to now
      * @param depth The current depth in the object tree (for reasons of recursion)
      * @param <U> Type of the linked object
-     * @throws WSObjectStoreException If the link URL is invalid or an array collection is encountered
+     * @throws StoresthalException If the link URL is invalid or an array collection is encountered
      *         (array collections are not supported (yet?))
      */
     @SuppressWarnings("unchecked")
-    private static <U> void followLink(Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String,Collection> collections, U intermediateResult, int depth) throws WSObjectStoreException {
+    private static <U> void followLink(Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String,Collection> collections, U intermediateResult, int depth) throws StoresthalException {
         if ("self".equals(l.getRel())) {
             return;
         }
@@ -346,7 +346,7 @@ public class WSObjectStore {
         try {
             uri = new URI(l.getHref());
         } catch (URISyntaxException e) {
-            throw new WSObjectStoreException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
+            throw new StoresthalException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
         }
 
         Method m = ReflectionHelper.searchForSetter(objectClass, l.getRel());
@@ -372,10 +372,10 @@ public class WSObjectStore {
                 return;
             }
             else if (type.getComponentType() != null) {
-                throw new WSObjectStoreException("Array relations are not supported (yet?).");
+                throw new StoresthalException("Array relations are not supported (yet?).");
             }
 
-            subObject = (U) WSObjectStore.<U>getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
+            subObject = (U) Storesthal.<U>getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
 
             invokeSetter(m, intermediateResult, subObject);
 
@@ -406,13 +406,13 @@ public class WSObjectStore {
      * @param m The setter method
      * @param applyTo The object on which the setter method is to be called
      * @param parameter The parameter object to be set
-     * @throws WSObjectStoreException on reflection based problems
+     * @throws StoresthalException on reflection based problems
      */
-    private static void invokeSetter(Method m, Object applyTo, Object parameter) throws WSObjectStoreException {
+    private static void invokeSetter(Method m, Object applyTo, Object parameter) throws StoresthalException {
         try {
             m.invoke(applyTo, parameter);
         } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
-            throw new WSObjectStoreException("Could not invoke method \"" + m.getName() + "(" + applyTo.getClass().getCanonicalName() + ")\" on instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
+            throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + applyTo.getClass().getCanonicalName() + ")\" on instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
         }
     }
 
@@ -425,16 +425,16 @@ public class WSObjectStore {
      * @param depth The current recursion depth.
      * @param <T> The expected type of the returned object.
      * @return The object queried
-     * @throws WSObjectStoreException if the URL is invalid
+     * @throws StoresthalException if the URL is invalid
      */
-    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws WSObjectStoreException {
+    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String,Collection> collections, int depth) throws StoresthalException {
 
         URI uri;
 
         try {
             uri = new URI(url);
         } catch (URISyntaxException e) {
-            throw new WSObjectStoreException("Could not create URI from url\""+url+"\"!", e);
+            throw new StoresthalException("Could not create URI from url\""+url+"\"!", e);
         }
 
         T resultFromCache = getObjectFromCache(uri, objectClass);
@@ -512,21 +512,21 @@ public class WSObjectStore {
      * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
      * goes wrong (e. g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
      *
-     * If not disabled (see {@link WSObjectStoreConfigurationFactory#setDisableCaching(boolean)}), caching is used to
+     * If not disabled (see {@link StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
      * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
      * multiple times will only have <i>one</i> representation in memory, so all references will point to the same
      * (not just an equal) object.
      *
-     * The exact behavior can be adjusted by {@link WSObjectStoreConfiguration} (see also {@link WSObjectStoreConfigurationFactory}
-     * and {@link #init(WSObjectStoreConfiguration)}).
+     * The exact behavior can be adjusted by {@link StoresthalConfiguration} (see also {@link StoreresthalConfigurationFactory}
+     * and {@link #init(StoresthalConfiguration)}).
      *
      * @param url The URL to retrieve the object from. Must be well-formed and absolute!
      * @param objectClass The class of the object to be returned.
      * @param <T> The type of the object (being consistent with the `objectClass`)
      * @return The object structure retrieved from the URL.
-     * @throws WSObjectStoreException if something goes wrong
+     * @throws StoresthalException if something goes wrong
      */
-    public static <T> T getObject(String url, Class<T> objectClass) throws WSObjectStoreException {
+    public static <T> T getObject(String url, Class<T> objectClass) throws StoresthalException {
         init();
         logger.info("Getting object of class \""+objectClass.getCanonicalName()+"\" from URL \""+url+"\".");
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
@@ -608,7 +608,7 @@ public class WSObjectStore {
      * For debugging purposes only: Print out some statistics to `stdout`.
      */
     public static void printStatistics() {
-        System.out.println("WSObjectStore statistics:");
+        System.out.println("Storesthal statistics:");
         System.out.println("-------------------------");
         System.out.println("- HTTP Calls: "+httpCalls);
         System.out.println("- Cache hits:");

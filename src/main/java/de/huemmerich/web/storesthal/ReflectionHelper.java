@@ -1,6 +1,6 @@
 package de.huemmerich.web.storesthal;
 
-import de.huemmerich.web.storesthal.configuration.WSObjectStoreConfiguration;
+import de.huemmerich.web.storesthal.configuration.StoresthalConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,12 +102,12 @@ public class ReflectionHelper {
      * Search for the setter method for a relation of a specific object class.
      * The search is carried out like this:
      * <ul>
-     *     <li>If {@link WSObjectStoreConfiguration#isAnnotationless()} is `true`, the setter will only be searched by
+     *     <li>If {@link StoresthalConfiguration#isAnnotationless()} is `true`, the setter will only be searched by
      *         the method name (`set${relationName}`) is expected, where ${relationName} is the name of the relation
      *         als retrieved from the JSON content, with the first letter capitalized.
      *     </li>
      *     <li>
-     *         If {@link WSObjectStoreConfiguration#isAnnotationless()} is `false` (which is the default!):
+     *         If {@link StoresthalConfiguration#isAnnotationless()} is `false` (which is the default!):
      *         <ul>
      *             <li>
      *                 The class will be searched for <i>methods</i> annotated with {@link HALRelation} and a value matching
@@ -135,7 +135,7 @@ public class ReflectionHelper {
 
         ReflectionHelper.logger.debug("Searching setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\"");
 
-        if (WSObjectStore.getConfiguration().isAnnotationless()) {
+        if (Storesthal.getConfiguration().isAnnotationless()) {
             String methodName = "set"+ ReflectionHelper.ucFirst(rel);
             Method m = searchForSetterByMethodName(objectClass, methodName);
             if (m==null) {

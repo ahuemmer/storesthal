@@ -70,7 +70,7 @@ abstract class AbstractJsonTemplateBasedTest {
     }
 
     protected static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {
-        File file = new File(Objects.requireNonNull(GeneralWSObjectStoreTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER + "/" + fileName)).getFile());
+        File file = new File(Objects.requireNonNull(GeneralStoresthalTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER + "/" + fileName)).getFile());
         String fileContent = Files.readString(file.toPath());
         return StringSubstitutor.replace(fileContent,substitutes);
     }

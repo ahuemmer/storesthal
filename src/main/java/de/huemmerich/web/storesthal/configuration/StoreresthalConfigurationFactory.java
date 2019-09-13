@@ -4,29 +4,29 @@ import de.huemmerich.web.storesthal.Cacheable;
 import de.huemmerich.web.storesthal.HALRelation;
 
 /**
- * Factory for {@link WSObjectStoreConfiguration}s. These are not to be modified after creation, therefore this factory
- * will initialize an instance once and return in then. (See description at {@link WSObjectStoreConfiguration}).
+ * Factory for {@link StoresthalConfiguration}s. These are not to be modified after creation, therefore this factory
+ * will initialize an instance once and return in then. (See description at {@link StoresthalConfiguration}).
  */
-public class WSObjectStoreConfigurationFactory {
+public class StoreresthalConfigurationFactory {
 
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
      */
-    private int defaultCacheSize=WSObjectStoreConfiguration.DEFAULT_DEFAULT_CACHE_SIZE;
+    private int defaultCacheSize= StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE;
 
     /**
      * Controls whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
      */
-    private boolean disableCaching=WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED;
+    private boolean disableCaching= StoresthalConfiguration.DEFAULT_CACHING_DISABLED;
 
     /**
      * Controls whether the object store works without annotations.
      * It'll try to find relation "target" setters by their name only then.
      */
-    private boolean annotationless=WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS;
+    private boolean annotationless= StoresthalConfiguration.DEFAULT_ANNOTATIONLESS;
 
-    public static final WSObjectStoreConfiguration DEFAULT_CONFIGURATION=getDefaultConfiguration();
+    public static final StoresthalConfiguration DEFAULT_CONFIGURATION=getDefaultConfiguration();
 
     /**
      * Get the default size of an object cache.
@@ -40,9 +40,9 @@ public class WSObjectStoreConfigurationFactory {
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
      * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
      * @param defaultCacheSize The default cache size (default: 1000)
-     * @return This WSObjectStoreConfiguration factory (fluent interface)
+     * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public WSObjectStoreConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
+    public StoreresthalConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
         this.defaultCacheSize = defaultCacheSize;
         return this;
     }
@@ -62,9 +62,9 @@ public class WSObjectStoreConfigurationFactory {
      * object structure integrity during one single getObject call. The intermediate cache will not be preserved
      * between consecutive getObject calls.
      * @param disableCaching Whether to completely disable caching or not (default: false)     *
-     * @return This WSObjectStoreConfiguration factory (fluent interface)
+     * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public WSObjectStoreConfigurationFactory setDisableCaching(boolean disableCaching) {
+    public StoreresthalConfigurationFactory setDisableCaching(boolean disableCaching) {
         this.disableCaching = disableCaching;
         return this;
     }
@@ -81,19 +81,19 @@ public class WSObjectStoreConfigurationFactory {
      * Controls whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
      * ("true" means, the will be not be taken into account!)
      * @param annotationless Whether to work annotationless or not
-     * @return This WSObjectStoreConfiguration factory (fluent interface)
+     * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public WSObjectStoreConfigurationFactory setAnnotationless(boolean annotationless) {
+    public StoreresthalConfigurationFactory setAnnotationless(boolean annotationless) {
         this.annotationless = annotationless;
         return this;
     }
 
     /**
-     * Returns a customized {@link WSObjectStoreConfiguration} using the parameters applied by the setters.
+     * Returns a customized {@link StoresthalConfiguration} using the parameters applied by the setters.
      * @return Customized configuration instance
      */
-    public WSObjectStoreConfiguration getConfiguration() {
-        WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
+    public StoresthalConfiguration getConfiguration() {
+        StoresthalConfiguration result = new StoresthalConfiguration();
         result.setAnnotationless(this.annotationless);
         result.setDefaultCacheSize(this.defaultCacheSize);
         result.setDisableCaching(this.disableCaching);
@@ -101,15 +101,15 @@ public class WSObjectStoreConfigurationFactory {
     }
 
     /**
-     * Returns a {@link WSObjectStoreConfiguration} initialized with the default values (see public static vars
-     * of {@link WSObjectStoreConfiguration}.
+     * Returns a {@link StoresthalConfiguration} initialized with the default values (see public static vars
+     * of {@link StoresthalConfiguration}.
      * @return Default configuration instance
      */
-    public static WSObjectStoreConfiguration getDefaultConfiguration() {
-        WSObjectStoreConfiguration result = new WSObjectStoreConfiguration();
-        result.setAnnotationless(WSObjectStoreConfiguration.DEFAULT_ANNOTATIONLESS);
-        result.setDefaultCacheSize(WSObjectStoreConfiguration.DEFAULT_DEFAULT_CACHE_SIZE);
-        result.setDisableCaching(WSObjectStoreConfiguration.DEFAULT_CACHING_DISABLED);
+    public static StoresthalConfiguration getDefaultConfiguration() {
+        StoresthalConfiguration result = new StoresthalConfiguration();
+        result.setAnnotationless(StoresthalConfiguration.DEFAULT_ANNOTATIONLESS);
+        result.setDefaultCacheSize(StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE);
+        result.setDisableCaching(StoresthalConfiguration.DEFAULT_CACHING_DISABLED);
         return result;
     }
 
