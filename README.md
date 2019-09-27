@@ -14,9 +14,6 @@ Another speciality of storestahl is, that is will automatically follow [HAL](htt
 - Customizable relation and caching settings
 - Comprehensive documentation
 
-## Third-Party software
-
-!TODO
 
 ## Example
 
@@ -161,8 +158,33 @@ For details, see method `handleCollection` in `Storesthal.java`.
 Please note, that - at least for the moment - Storesthal is not able to handle arrays instead of `Collection`s.
 
 ### Caching
-!TODO
 
+One speciality about Storesthal is, that it brings along a simple, yet powerful, caching facility that comes out of the box.
+This does especially make sense, as caching is often very helpful (/ performance increasing / resource saving) when it comes to JSON+HAL object retrieval.
+Imagine you have 10.000 items each of which is linked to one of 20 categories. When loading the 10.000 items, it's not necessary to query one and the same category more than one single time and then
+"link" it to every item associated. This will not only speed up your application and save network and hardware resources, it will also lead to a more convenient and comprehensible in-memory object structure.
+
+By default, nevertheless caching is not applied to any object, as Storesthal can not know beforehand, if there are fast-changing objects in your object structure, that might change very
+quickly and therefore shouldn't be cached. The only caching that takes place by default (and cannot be disabled) is the "intermediate caching" described below.
+
+To add "rudimentary" caching to an object class, you would simply annotate it with `@Cacheable`. Instances of classes with this annotation will then be cached automatically.
+Anyway, it is suggested to use the `cacheName` and `cacheSize` attributes of the annotation as well: If you omit the `cacheName`, the object will be stored in the "common" cache,
+where any object of any kind will be stored, if no other cache name is given. Using a cache name, you have a better control about cache size and clearing of the cache. So, in the simple
+example above, it should be best to annotate your item class with `@Cacheable(cacheName="ItemCache")` and your category class with `@Cacheable(cacheName="CategoryCache")`.
+The `cacheSize` attribute allows you to specify, how many object instances the cache will hold. We're using a LRU (last recently used) cache here, so if the cache is full, the object
+last recently _accessed_ will be evicted from it. This is not necessarily the object last recently added to the cache! If you use a cache name, you will also be able to clear the
+whole Cache at once using the `Storesthal.clearCache` function and supplying that cache name. All the other caches won't be touched.
+
+Caching happens based on the URL of the object retrieved. This means, if caching is enabled, only the first request for http://my.web.service/api/cagetory/42 will really cause
+an HTTP call to that URL. Subsequent requests for the same URL will just retrieve the cached object from the memory as long it is not evicted from the cache or the cache is cleared.
+
+#### The intermediate cache
+There is one special cache, that can't be disabled: It's the _intermediate cache_. When traversing an object structure, it might occur that Storesthal finds one and the same related
+URI (and therefore object) multiple times. In these cases, all references but the first one are fetched from the intermediate cache - everything else would result in an inconsistent
+object structure as two references to the same URI would result in two different objects.
+
+Please note, that the intermediate cache is only used within one single `getObject` call. It will be cleared before the next one starts. So, it will probably be in use for a few seconds
+(or probably less) only.
 
 ## What's that name about... :thinking:?
 
@@ -178,3 +200,24 @@ If the project will have some kind of a bigger impact (I'm aware it will never b
 
  - I love Spring Boot and would like to integrate Storesthal better with it, perhaps even as kind of a plug-in. But I have not had the time to investigate on how to do this up to now.
  - See the "Issues" tab :simple_smile:
+
+## Third-Party software
+
+Storesthal makes heavy use of third-party software and libraries during the build process as well as during runtime. A detailed list of the third-party dependencies can be found
+in [`build.gradle`](./build.gradle).
+
+Different license terms may apply to this software packages and must be considered before usage. There is no relation between the author(s) of Storesthal and the people or companies
+supplying third-party software. These packages are - gratefully! - used within Storesthal, but not maintained, merchandised, licensed or anything else by Storesthals author(s).
+
+## Disclaimer
+This program is free software. It comes without any warranty, not even for merchantability or fitness for a particular purpose.
+
+Another disclaimer may apply to [third-party software included in Storesthal](#third-party_software), please see the respective license models.
+
+Please see [the License section](#license) for more details.
+
+## License
+Storesthal is licensed und the terms of the GNU Lesser General Public License (LPGL). Please see [LICENSE.md](./LICENSE.md) for details.
+
+Please consider the information in the ["Third-Party software"](#third-party-software) and ["Disclaimer"](#disclaimer) sections also.
+
