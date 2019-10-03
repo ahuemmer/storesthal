@@ -1,0 +1,12 @@
+{
+  "_links": {
+      "self": {"href":"http://localhost:${port}/complexObjectsWithSingleChildren/1"},
+      "child":{"href":"http://localhost:${port}/complexChildren/1"}
+  },
+  "color": 101579,
+  "comment": "oi...",
+  "category_id": 4711,
+  "name": "Test2!",
+  "number": 3,
+  "type": "income"
+}
