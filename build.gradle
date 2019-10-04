@@ -63,14 +63,6 @@ test {
     testLogging.showStandardStreams = true
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from(components.java)
-        }
-    }
-}
-
 javadoc {
     options.encoding = 'UTF-8'
     options.charSet = 'UTF-8'
@@ -86,6 +78,16 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from(components.java)
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
 semanticRelease {
     repo {
         ghToken = project.ghToken
@@ -99,4 +101,4 @@ tocme {
     doc(file('README.md'))
 }
 
-tasks.release.dependsOn insertTocs
+tasks.release.dependsOn checkTocs
