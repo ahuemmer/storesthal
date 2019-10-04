@@ -59,7 +59,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/5"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": [{
         "href": "https://mygreatwebservice.com/api/subchildren/99"
     }]
@@ -79,7 +79,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/14"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": []
   },
   "number": 5,
@@ -96,7 +96,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/subchildren/99"},
-    "parent: {"href": "https://mygreatwebservice.com/api/children/5" },
+    "parent": {"href": "https://mygreatwebservice.com/api/children/5" },
     "children": []
   },
   "number": 9,

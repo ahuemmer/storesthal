@@ -4,6 +4,13 @@ plugins {
     id 'de.gliderpilot.semantic-release' version '1.4.0'
 }
 
+apply from: 'secrets.gradle'
+/*
+ * This file isn't uploaded to GitHub.
+ * At the moment, it just contains the GitHub token for the semantic release plugin,
+ * so you should come along very well without it. :)
+ */
+
 repositories {
     mavenLocal()
     maven {
@@ -13,6 +20,7 @@ repositories {
         url = 'http://repo.maven.apache.org/maven2'
     }
 }
+
 
 ext {
     springVersion="5.1.6.RELEASE"
@@ -65,4 +73,23 @@ publishing {
 javadoc {
     options.encoding = 'UTF-8'
     options.charSet = 'UTF-8'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+semanticRelease {
+    repo {
+        ghToken = project.ghToken
+        releaseAsset jar, label: 'JAR file', contentType: 'application/zip'
+        releaseAsset sourcesJar, label: 'JAR file including sources', contentType: 'application/zip'
+        releaseAsset javadocJar, label: 'JAR file including javadoc', contentType: 'application/zip'
+    }
 }
