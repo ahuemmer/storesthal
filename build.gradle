@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'de.gliderpilot.semantic-release' version '1.4.0'
+    id 'com.github.blueboxware.tocme' version '1.1'
 }
 
 apply from: 'secrets.gradle'
@@ -93,3 +94,9 @@ semanticRelease {
         releaseAsset javadocJar, label: 'JAR file including javadoc', contentType: 'application/zip'
     }
 }
+
+tocme {
+    doc(file('README.md'))
+}
+
+tasks.release.dependsOn insertTocs
