@@ -12,6 +12,8 @@ apply from: 'secrets.gradle'
  * so you should come along very well without it. :)
  */
 
+group='com.github.ahuemmer'
+
 repositories {
     mavenLocal()
     jcenter()
