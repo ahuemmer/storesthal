@@ -1,5 +1,12 @@
+
+
+
 # Storesthal
 A simple solution for JSON-HAL object retrieval and caching.
+
+## Table of contents
+<!-- toc -->
+<!-- /toc -->
 
 ## What is it?
 It is a helper software (library) to make retrieving "JSON+HAL" objects (possibly from REST web services) easy. Additionally, it will _optionally_ cache the objects retrieved, so there won't be subsequent HTTP calls for fetching one and the some object.
@@ -59,7 +66,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/5"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": [{
         "href": "https://mygreatwebservice.com/api/subchildren/99"
     }]
@@ -79,7 +86,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/14"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": []
   },
   "number": 5,
@@ -96,7 +103,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/subchildren/99"},
-    "parent: {"href": "https://mygreatwebservice.com/api/children/5" },
+    "parent": {"href": "https://mygreatwebservice.com/api/children/5" },
     "children": []
   },
   "number": 9,
@@ -220,4 +227,3 @@ Please see [the License section](#license) for more details.
 Storesthal is licensed und the terms of the GNU Lesser General Public License (LPGL). Please see [LICENSE.md](./LICENSE.md) for details.
 
 Please consider the information in the ["Third-Party software"](#third-party-software) and ["Disclaimer"](#disclaimer) sections also.
-

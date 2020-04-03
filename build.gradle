@@ -2,7 +2,15 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'de.gliderpilot.semantic-release' version '1.4.0'
+    id 'com.github.blueboxware.tocme' version '1.1'
 }
+
+apply from: 'secrets.gradle'
+/*
+ * This file isn't uploaded to GitHub.
+ * At the moment, it just contains the GitHub token for the semantic release plugin,
+ * so you should come along very well without it. :)
+ */
 
 repositories {
     mavenLocal()
@@ -16,17 +24,17 @@ repositories {
 }
 
 ext {
-    springVersion='5.2.5.RELEASE'
-    junitVersion='5.6.1'
-    wiremockVersion='2.26.3'
-    wiremockExtensionVersion='0.4.0'
-    springCorePluginVersion='2.0.0.RELEASE'
-    jacksonVersion='2.10.3'
-    commonsLang3Version='3.10'
-    commonsTextVersion='1.8'
-    log4JVersion='2.13.1'
-    openTestVersion='1.2.0'
-    springHateoasVersion='1.0.4.RELEASE'
+    springVersion = '5.2.5.RELEASE'
+    junitVersion = '5.6.1'
+    wiremockVersion = '2.26.3'
+    wiremockExtensionVersion = '0.4.0'
+    springCorePluginVersion = '2.0.0.RELEASE'
+    jacksonVersion = '2.10.3'
+    commonsLang3Version = '3.10'
+    commonsTextVersion = '1.8'
+    log4JVersion = '2.13.1'
+    openTestVersion = '1.2.0'
+    springHateoasVersion = '1.0.4.RELEASE'
 }
 
 dependencies {
@@ -48,26 +56,50 @@ dependencies {
 
     testRuntime group: 'org.opentest4j', name:'opentest4j', version: "${openTestVersion}"
     testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: "${junitVersion}"
-
 }
 
-group = 'com.github.ahuemmer'
-sourceCompatibility = '11'
 
 test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from(components.java)
-        }
-    }
-}
-
 javadoc {
     options.encoding = 'UTF-8'
     options.charSet = 'UTF-8'
 }
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from(components.java)
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+semanticRelease {
+    repo {
+        ghToken = project.ghToken
+        releaseAsset jar, label: 'JAR file', contentType: 'application/zip'
+        releaseAsset sourcesJar, label: 'JAR file including sources', contentType: 'application/zip'
+        releaseAsset javadocJar, label: 'JAR file including javadoc', contentType: 'application/zip'
+    }
+}
+
+tocme {
+    doc(file('README.md'))
+}
+
+tasks.release.dependsOn checkTocs
