@@ -164,7 +164,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
     /**
      * Make sure, a "complex" object having multiple children (relation implemented as an Array here)
      * canNOT be retrieved (at the moment...).
-     * (Pretty much the same as the two before (in {@link #canRetriebeComplexObjectWithMultipleChildren1()} and
+     * (Pretty much the same as the two before (in {@link #canRetrieveComplexObjectWithMultipleChildren1()} and
      * {@link #canRetrieveComplexObjectWithMultipleChildren2()}), but now we use
      * {@link ComplexObjectWithMultipleChildren3} which has an array as collection instead of a (Linked)List.
      * @throws IOException if the JSON template for the mocked service answer can't be accessed.
