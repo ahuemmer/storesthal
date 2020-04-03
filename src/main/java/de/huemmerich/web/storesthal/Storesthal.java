@@ -7,10 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.Resource;
-import org.springframework.hateoas.ResourceSupport;
-import org.springframework.hateoas.hal.Jackson2HalModule;
-import org.springframework.hateoas.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
+import org.springframework.hateoas.server.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
-import static org.springframework.hateoas.MediaTypes.HAL_JSON_UTF8;
+import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 
 /**
  * The main class of the whole library, encapsulating the core functionality needed. Callers should mainly need just
@@ -136,14 +136,14 @@ public class Storesthal {
     }
 
     /**
-     * Return a specialized message converter, supplying {@link org.springframework.hateoas.MediaTypes#HAL_JSON_UTF8} support.
+     * Return a specialized message converter, supplying {@link org.springframework.hateoas.MediaTypes#HAL_JSON} support.
      * @return HAL supporting message converter
      */
     private static HttpMessageConverter getHalMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
-        MappingJackson2HttpMessageConverter halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(ResourceSupport.class);
-        halConverter.setSupportedMediaTypes(Collections.singletonList(HAL_JSON_UTF8));
+        MappingJackson2HttpMessageConverter halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(RepresentationModel.class);
+        halConverter.setSupportedMediaTypes(Collections.singletonList(HAL_JSON));
         halConverter.setObjectMapper(objectMapper);
         return halConverter;
     }
@@ -154,7 +154,7 @@ public class Storesthal {
      */
     private static HttpEntity<String> getHttpEntity() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Collections.singletonList(HAL_JSON_UTF8));
+        headers.setAccept(Collections.singletonList(HAL_JSON));
         return new HttpEntity<>(headers);
     }
 
@@ -193,7 +193,7 @@ public class Storesthal {
 
         Class type = m.getParameterTypes()[0];
 
-        Collection coll = collections.get(l.getRel());
+        Collection coll = collections.get(l.getRel().value());
 
         if (coll==null) {
             if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
@@ -215,7 +215,7 @@ public class Storesthal {
                     throw new StoresthalException("Could not instantiate collection of type \""+type.getCanonicalName()+"\".", e);
                 }
             }
-            collections.put(l.getRel(),coll);
+            collections.put(l.getRel().value(),coll);
         }
 
         URI uri;
@@ -349,7 +349,7 @@ public class Storesthal {
             throw new StoresthalException("Could not create URI from URL \""+l.getHref()+"\"to visited links collection!", e);
         }
 
-        Method m = ReflectionHelper.searchForSetter(objectClass, l.getRel());
+        Method m = ReflectionHelper.searchForSetter(objectClass, l.getRel().value());
 
         if (m!=null) {
 
@@ -450,16 +450,16 @@ public class Storesthal {
 
         @SuppressWarnings("Convert2Diamond")
         //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
-        ResponseEntity<Resource<T>> response =
+        ResponseEntity<EntityModel<T>> response =
                 getRestTemplateWithHalMessageConverter().exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<Resource<T>>() {
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<EntityModel<T>>() {
                             @Override
                             @NonNull
                             public Type getType() {
                                 Type type = super.getType();
                                 if (type instanceof ParameterizedType) {
                                     Type[] responseWrapperActualTypes = {objectClass};
-                                    return parameterize(Resource.class,
+                                    return parameterize(EntityModel.class,
                                             responseWrapperActualTypes);
                                 }
                                 return type;

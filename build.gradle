@@ -26,7 +26,7 @@ ext {
     commonsTextVersion='1.8'
     log4JVersion='2.13.1'
     openTestVersion='1.2.0'
-    springHateoasVersion='0.25.1.RELEASE'
+    springHateoasVersion='1.0.4.RELEASE'
 }
 
 dependencies {
