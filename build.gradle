@@ -6,47 +6,52 @@ plugins {
 
 repositories {
     mavenLocal()
+    jcenter()
     maven {
         url = 'https://jitpack.io'
     }
     maven {
-        url = 'http://repo.maven.apache.org/maven2'
+        url = 'https://repo.maven.apache.org/maven2'
     }
 }
 
 ext {
-    springVersion="5.1.6.RELEASE"
-    junitVersion="5.4.2"
+    springVersion='5.2.5.RELEASE'
+    junitVersion='5.6.1'
+    wiremockVersion='2.26.3'
+    wiremockExtensionVersion='0.4.0'
+    springCorePluginVersion='2.0.0.RELEASE'
+    jacksonVersion='2.10.3'
+    commonsLang3Version='3.10'
+    commonsTextVersion='1.8'
+    log4JVersion='2.13.1'
+    openTestVersion='1.2.0'
+    springHateoasVersion='0.25.1.RELEASE'
 }
 
 dependencies {
     compile group: 'org.springframework', name: 'spring-context', version: "${springVersion}"
+    compile group: 'org.springframework.hateoas', name: 'spring-hateoas', version: "${springHateoasVersion}"
+    compile group: 'org.springframework.plugin', name: 'spring-plugin-core', version: "${springCorePluginVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: "${jacksonVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "${jacksonVersion}"
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: "${jacksonVersion}"
+    compile group: 'org.apache.commons', name:'commons-lang3', version: "${commonsLang3Version}"
+
+    runtime group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${log4JVersion}"
+
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: "${junitVersion}"
-    testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    testCompile group: 'com.github.tomakehurst', name: 'wiremock', version: "${wiremockVersion}"
+    testCompile group: 'com.github.JensPiegsa', name: 'wiremock-extension', version: "${wiremockExtensionVersion}"
+    testCompile group: 'org.apache.commons', name: 'commons-text', version: "${commonsTextVersion}"
 
-    //Really no idea what the cause is, but the handlebars-related stuff from com.github.jknack won't be found,
-    //so it's excluded - does not make any problems!
-    testCompile ("com.github.tomakehurst:wiremock-jre8:2.23.2") {
-        exclude group: "com.github.jknack", module: '*'
-    }
-    testCompile ("com.github.JensPiegsa:wiremock-extension:0.4.0") {
-        exclude group: "com.github.jknack", module: '*'
-    }
-    testCompile 'org.apache.commons:commons-text:1.6'
-    testRuntime 'org.opentest4j:opentest4j:1.0.0-M1'
-
-    compile 'org.springframework.hateoas:spring-hateoas:0.25.1.RELEASE'
-    compile 'org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
-    compile 'com.fasterxml.jackson.core:jackson-core:2.9.8'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.8'
-    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
-    compile 'org.apache.commons:commons-lang3:3.9'
-    runtime group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.2'
+    testRuntime group: 'org.opentest4j', name:'opentest4j', version: "${openTestVersion}"
+    testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: "${junitVersion}"
 
 }
 
-group = 'de.huemmerich.web'
+group = 'com.github.ahuemmer'
 sourceCompatibility = '11'
 
 test {

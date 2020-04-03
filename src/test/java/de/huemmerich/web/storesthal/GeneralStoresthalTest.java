@@ -81,7 +81,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
      * @throws IOException if the JSON template for the mocked service answer can't be accessed.
      */
     @Test
-    public void canRetriebeComplexObjectWithMultipleChildren1() throws StoresthalException, IOException {
+    public void canRetrieveComplexObjectWithMultipleChildren1() throws StoresthalException, IOException {
 
         configureServerMock("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "itsme...","categoryId","1508", "name", "Test3!", "number", "9", "type", "neither", "children", createJsonHrefArray(new String[] {
                 "http://localhost:${port}/complexChildren2/1",
