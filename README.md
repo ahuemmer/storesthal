@@ -6,6 +6,26 @@ A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
 <!-- toc -->
+- __[What is it?](#what-is-it)__
+- __[Features](#features)__
+- __[Example](#example)__
+  - __[Object structure](#object-structure)__
+  - __[Parent object](#parent-object)__
+  - __[First child object](#first-child-object)__
+  - __[Second child object](#second-child-object)__
+  - __[First (and only) subchild object](#first-and-only-subchild-object)__
+  - __[Here comes Storesthal](#here-comes-storesthal)__
+  - __[How does that work?](#how-does-that-work)__
+- __[Usage](#usage)__
+  - __[Basic invocation](#basic-invocation)__
+  - __[Relations](#relations)__
+  - __[Caching](#caching)__
+- __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
+- __[TODOs and future of the project](#todos-and-future-of-the-project)__
+  - __[Possible future plans](#possible-future-plans)__
+- __[Third-Party software](#third-party-software)__
+- __[Disclaimer](#disclaimer)__
+- __[License](#license)__
 <!-- /toc -->
 
 ## What is it?

@@ -119,7 +119,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
     /**
      * Make sure, a "complex" object having multiple children (relation implemented as a {@link java.util.LinkedList} here)
      * can be correctly retrieved.
-     * (Pretty much the same as before (in {@link #canRetriebeComplexObjectWithMultipleChildren1()}), but now we use
+     * (Pretty much the same as before (in {@link #canRetrieveComplexObjectWithMultipleChildren1()}), but now we use
      * {@link ComplexObjectWithMultipleChildren2} which has a concrete implementation of a collection
      * ({@link java.util.LinkedList}) instead of an interface.)
      * @throws StoresthalException if something fails.
