@@ -1,5 +1,31 @@
+
+
+
 # Storesthal
 A simple solution for JSON-HAL object retrieval and caching.
+
+## Table of contents
+<!-- toc -->- __[What is it?](#what-is-it)__
+- __[Features](#features)__
+- __[Example](#example)__
+  - __[Object structure](#object-structure)__
+  - __[Parent object](#parent-object)__
+  - __[First child object](#first-child-object)__
+  - __[Second child object](#second-child-object)__
+  - __[First (and only) subchild object](#first-and-only-subchild-object)__
+  - __[Here comes Storesthal](#here-comes-storesthal)__
+  - __[How does that work?](#how-does-that-work)__
+- __[Usage](#usage)__
+  - __[Basic invocation](#basic-invocation)__
+  - __[Relations](#relations)__
+  - __[Caching](#caching)__
+- __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
+- __[TODOs and future of the project](#todos-and-future-of-the-project)__
+  - __[Possible future plans](#possible-future-plans)__
+- __[Third-Party software](#third-party-software)__
+- __[Disclaimer](#disclaimer)__
+- __[License](#license)__
+<!-- /toc -->
 
 ## What is it?
 It is a helper software (library) to make retrieving "JSON+HAL" objects (possibly from REST web services) easy. Additionally, it will _optionally_ cache the objects retrieved, so there won't be subsequent HTTP calls for fetching one and the some object.
@@ -59,7 +85,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/5"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": [{
         "href": "https://mygreatwebservice.com/api/subchildren/99"
     }]
@@ -79,7 +105,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/children/14"},
-    "parent: {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
     "children": []
   },
   "number": 5,
@@ -96,7 +122,7 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 {
   "_links": {
     "self": {"href": "https://mygreatwebservice.com/api/subchildren/99"},
-    "parent: {"href": "https://mygreatwebservice.com/api/children/5" },
+    "parent": {"href": "https://mygreatwebservice.com/api/children/5" },
     "children": []
   },
   "number": 9,
@@ -220,4 +246,3 @@ Please see [the License section](#license) for more details.
 Storesthal is licensed und the terms of the GNU Lesser General Public License (LPGL). Please see [LICENSE.md](./LICENSE.md) for details.
 
 Please consider the information in the ["Third-Party software"](#third-party-software) and ["Disclaimer"](#disclaimer) sections also.
-
