@@ -5,8 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -481,6 +480,21 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         //  END Subchild nr. 3.4
 
         //END Child nr. 3
+    }
+
+    @Test
+    public void canRetrieveCollections() throws IOException, StoresthalException {
+        configureServerMock("/collection/coll", "collection.json");
+        serverMock.start();
+
+        Storesthal.resetStatistics();
+
+        ArrayList<ChildObject> children = Storesthal.getCollection("http://localhost:"+serverMock.port()+"/collection/coll", ChildObject.class);
+
+        assertEquals(4,children.size());
+        assertEquals(759034, children.get(2).getChildId());
+        assertEquals("collObject673896873", children.get(3).getChildName());
+
     }
 
 }
