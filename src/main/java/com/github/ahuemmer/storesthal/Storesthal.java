@@ -140,12 +140,19 @@ public class Storesthal {
     /**
      * Return a specialized message converter, supplying {@link org.springframework.hateoas.MediaTypes#HAL_JSON} support.
      *
+     * @param collection Whether to regard REST response as a collection, therefore using ArrayList as type
      * @return HAL supporting message converter
      */
-    private static HttpMessageConverter getHalMessageConverter() {
+    private static HttpMessageConverter getHalMessageConverter(boolean collection) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
-        MappingJackson2HttpMessageConverter halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(RepresentationModel.class);
+        MappingJackson2HttpMessageConverter halConverter;
+        if (collection) {
+            halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(ArrayList.class);
+        }
+        else {
+            halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(RepresentationModel.class);
+        }
         halConverter.setSupportedMediaTypes(Collections.singletonList(HAL_JSON));
         halConverter.setObjectMapper(objectMapper);
         return halConverter;
@@ -165,14 +172,15 @@ public class Storesthal {
     /**
      * Return a specialized {@link RestTemplate} able to demand and process HAL+JSON data.
      *
+     * @param collection Whether to regard REST response as a collection
      * @return A specialized {@link RestTemplate} able to demand and process HAL+JSON data.
      */
-    private static RestTemplate getRestTemplateWithHalMessageConverter() {
+    private static RestTemplate getRestTemplateWithHalMessageConverter(boolean collection) {
         RestTemplate restTemplate = new RestTemplate();
 
         List<HttpMessageConverter<?>> existingConverters = restTemplate.getMessageConverters();
         List<HttpMessageConverter<?>> newConverters = new ArrayList<>();
-        newConverters.add(getHalMessageConverter());
+        newConverters.add(getHalMessageConverter(collection));
         newConverters.addAll(existingConverters);
         restTemplate.setMessageConverters(newConverters);
 
@@ -446,8 +454,8 @@ public class Storesthal {
         transientObjects.add(uri);
 
         ResponseEntity response =
-                getRestTemplateWithHalMessageConverter().exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<T[]>() {
+                getRestTemplateWithHalMessageConverter(true).exchange(url,
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
                             @Override
                             @NonNull
                             public Type getType() {
@@ -527,7 +535,7 @@ public class Storesthal {
 
         //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
         ResponseEntity<EntityModel<T>> response =
-                getRestTemplateWithHalMessageConverter().exchange(url,
+                getRestTemplateWithHalMessageConverter(false).exchange(url,
                         HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<EntityModel<T>>() {
                             @Override
                             @NonNull

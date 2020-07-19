@@ -1,0 +1,32 @@
+[
+  {
+    "_links": {
+      "self": {
+        "href": "/complexCollObjects/1432"
+      },
+      "children":${children1432}
+    },
+    "objectId": 1432,
+    "name": "complexCollObject1432"
+  },
+  {
+    "_links": {
+      "self": {
+        "href": "/complexCollObjects/52"
+      },
+      "children":${children52}
+    },
+    "objectId": 52,
+    "name": "complexCollObject52"
+  },
+  {
+    "_links": {
+      "self": {
+        "href": "/complexCollObjects/7486465"
+      },
+      "children":${children7486465}
+    },
+    "objectId": 7486465,
+    "name": "collObject7486465"
+  }
+]
