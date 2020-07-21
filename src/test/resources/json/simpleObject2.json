@@ -1,5 +1,6 @@
 {
 "_links": {"self": {"href":"${self}"}},
     "objectId": ${objectId},
-    "name": "${name}"
+    "name": "${name}",
+    "tags": ${tags}
 }

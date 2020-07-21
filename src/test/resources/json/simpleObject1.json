@@ -2,5 +2,6 @@
   "_links": {
     "self": {"href":"${self}"}
   },
-  "name": "${name}"
+  "name": "${name}",
+  "tags": ${tags}
 }

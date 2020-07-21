@@ -431,7 +431,7 @@ public class Storesthal {
         }
     }
 
-    public static <T> ArrayList<T> getCollection(String url, Class objectClass) throws StoresthalException {
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
 
         init();
         logger.info("Getting object collection of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
@@ -515,7 +515,7 @@ public class Storesthal {
      * @return The object queried
      * @throws StoresthalException if the URL is invalid
      */
-    private static <T> T getObject(String url, Class objectClass, Set<URI> linksVisited, Map<String, Collection> collections, int depth) throws StoresthalException {
+    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String, Collection> collections, int depth) throws StoresthalException {
 
         URI uri;
 
@@ -614,6 +614,13 @@ public class Storesthal {
      * @throws StoresthalException if something goes wrong
      */
     public static <T> T getObject(String url, Class<T> objectClass) throws StoresthalException {
+
+        if (Collection.class.isAssignableFrom(objectClass)) {
+            logger.warn("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.\n" +
+                    "Please consider using Storesthal.getCollection in that case.\n" +
+                    "(Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)\n");
+        }
+
         init();
         logger.info("Getting object of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);

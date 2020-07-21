@@ -54,7 +54,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void canRetrieveComplexObjectWithSingleChild() throws StoresthalException, IOException {
         configureServerMock("/complexObjectsWithSingleChildren/1", "complexObjectWithSingleChild1.json");
-        configureServerMock("/complexChildren/1", "simpleObject1.json", Map.of("name","Testchild!"));
+        configureServerMock("/complexChildren/1", "simpleObject1.json", Map.of("name","Testchild!", "tags", "[ \"tag_a\", \"tag_b\"]"));
 
         serverMock.start();
 
@@ -71,6 +71,9 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         ChildObject child = test.getChild();
         assertNotNull(child);
         assertEquals("Testchild!", child.getChildName());
+        assertEquals(2, child.getTags().size());
+        assertEquals("tag_a", child.getTags().get(0));
+        assertEquals("tag_b", child.getTags().get(1));
     }
 
     /**
@@ -87,9 +90,9 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
                 "http://localhost:${port}/complexChildren2/2",
                 "http://localhost:${port}/complexChildren2/3"}
         ), "parent", ""));
-        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!"));
-        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!"));
-        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!"));
+        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!", "tags", "[\"tag\"]"));
+        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!", "tags", "[ \"green\", \"big\", \"fluffy\"]"));
+        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!", "tags", "null"));
 
         serverMock.start();
 
@@ -111,8 +114,17 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("Testchild 3!", children.get(2).getChildName());
 
         assertEquals(12345, children.get(0).getChildId());
+        assertEquals(1, children.get(0).getTags().size());
+        assertEquals("tag", children.get(0).getTags().get(0));
+
         assertEquals(815, children.get(1).getChildId());
+        assertEquals(3, children.get(1).getTags().size());
+        assertEquals("green", children.get(1).getTags().get(0));
+        assertEquals("big", children.get(1).getTags().get(1));
+        assertEquals("fluffy", children.get(1).getTags().get(2));
+
         assertEquals(4711, children.get(2).getChildId());
+        assertNull(children.get(2).getTags());
     }
 
     /**
@@ -131,9 +143,9 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
                 "http://localhost:${port}/complexChildren2/2",
                 "http://localhost:${port}/complexChildren2/3"}
         ), "parent", ""));
-        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!"));
-        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!"));
-        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!"));
+        configureServerMock("/complexChildren2/1", "simpleObject2.json", Map.of("objectId","12345", "name", "Testchild 1!", "tags", "null"));
+        configureServerMock("/complexChildren2/2", "simpleObject2.json", Map.of("objectId","815", "name", "Testchild 2!", "tags", "null"));
+        configureServerMock("/complexChildren2/3", "simpleObject2.json", Map.of("objectId","4711", "name", "Testchild 3!", "tags", "null"));
 
         serverMock.start();
 
@@ -716,6 +728,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         Storesthal.resetStatistics();
 
     }
+
+    //TODO: Collection außerhalb von Relations??
 
 
 }

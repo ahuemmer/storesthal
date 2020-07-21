@@ -2,6 +2,8 @@ package com.github.ahuemmer.storesthal.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 /**
  * Simple "child" object having an id and a name
  */
@@ -12,6 +14,8 @@ public class ChildObject {
 
     @JsonProperty("name")
     private String childName;
+
+    private List<String> tags;
 
     public int getChildId() {
         return childId;
@@ -27,5 +31,13 @@ public class ChildObject {
 
     public void setChildName(String childName) {
         this.childName = childName;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 }
