@@ -200,14 +200,16 @@ public class Storesthal {
      * @throws StoresthalException if something fails and the collection cannot be retrieved or handled
      */
     @SuppressWarnings("unchecked")
-    private static <T> void handleCollection(Link l, Method m, Map<String, Collection> collections, Set<URI> linksVisited, T intermediateResult, int depth) throws StoresthalException {
+    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, Set<URI> linksVisited, T intermediateResult, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
         Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
 
         Class type = m.getParameterTypes()[0];
 
-        Collection coll = collections.get(l.getRel().value());
+        String collectionKey= parentObject+":"+objectCounter+":"+l.getRel().value();
+
+        Collection coll = collections.get(collectionKey);
 
         if (coll == null) {
             if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
@@ -226,7 +228,7 @@ public class Storesthal {
                     throw new StoresthalException("Could not instantiate collection of type \"" + type.getCanonicalName() + "\".", e);
                 }
             }
-            collections.put(l.getRel().value(), coll);
+            collections.put(collectionKey, coll);
         }
 
         URI uri;
@@ -349,7 +351,7 @@ public class Storesthal {
      *                             (array collections are not supported (yet?))
      */
     @SuppressWarnings("unchecked")
-    private static <U> void followLink(Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, U intermediateResult, int depth) throws StoresthalException {
+    private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
         if ("self".equals(l.getRel())) {
             return;
         }
@@ -372,7 +374,7 @@ public class Storesthal {
 
             if (transientObjects.contains(uri)) {
                 if (Collection.class.isAssignableFrom(type)) {
-                    handleCollection(l, m, collections, linksVisited, intermediateResult, depth + 1);
+                    handleCollection(parentObject, l, m, collections, objectCounter, linksVisited, intermediateResult, depth + 1);
                 } else {
                     markForLaterInvocation(uri, intermediateResult, m);
                 }
@@ -380,7 +382,7 @@ public class Storesthal {
             }
 
             if (Collection.class.isAssignableFrom(type)) {
-                handleCollection(l, m, collections, linksVisited, intermediateResult, depth + 1);
+                handleCollection(parentObject, l, m, collections, objectCounter, linksVisited, intermediateResult, depth + 1);
                 return;
             } else if (type.getComponentType() != null) {
                 throw new StoresthalException("Array relations are not supported (yet?).");
@@ -473,14 +475,15 @@ public class Storesthal {
         Map<String, Collection> collections = new HashMap<>();
 
         linksVisited.add(uri);
+        int objectCounter = 0;
         for (EntityModel<T> entry : result) {
             realResult.add(entry.getContent());
             for (Link l : entry.getLinks()) {
-                followLink(l, linksVisited, objectClass, collections, entry.getContent(), 0);
+                followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
             }
+            objectCounter++;
         }
         putObjectInCache(uri, realResult);
-
 
         for (URI invokeUri : invokeLater.keySet()) {
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
@@ -554,7 +557,7 @@ public class Storesthal {
 
         linksVisited.add(uri);
         for (Link l : response.getBody().getLinks()) {
-            followLink(l, linksVisited, objectClass, collections, result, depth);
+            followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
         }
         putObjectInCache(uri, result);
 
