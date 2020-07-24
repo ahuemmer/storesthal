@@ -1,0 +1,13 @@
+{
+  "_links": {
+    "self": {"href":"${self}"},
+    "children":${children}
+    ${parent}
+  },
+  "color": ${color},
+  "comment": "${comment}",
+  "category_id": ${categoryId},
+  "name": "${name}",
+  "number": ${number},
+  "types": ${types}
+}
