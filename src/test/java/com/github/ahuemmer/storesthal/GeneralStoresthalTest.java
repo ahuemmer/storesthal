@@ -545,7 +545,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
                 }
         ), "parent", ""));
         configureServerMock("/complexChildren2/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "5431", "comment", "Number 4...", "categoryId","5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[] {
-                        "http://localhost:${port}/complexChildren3/1"
+                        "http://localhost:${port}/complexChildren3/6"
                 }
         ), "parent", ""));
         configureServerMock("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId","10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[] {}
@@ -557,6 +557,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         configureServerMock("/complexChildren3/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "types", "[\"${myType}\"]", "children", createJsonHrefArray(new String[] {}), "parent", ""));
         configureServerMock("/complexChildren3/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","types", "[\"Object Mark IV\"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
         configureServerMock("/complexChildren3/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId","3521", "name", "ipsum","number","-7561","types", "[\"Knödel\"]", "children", createJsonHrefArray(new String[] {}), "parent", ""));
+        configureServerMock("/complexChildren3/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "456123", "comment", "I'm the sixth subchild", "categoryId","2323", "name", "dolor","number","5743534","types", "[\"Knödel\", \"heyho\"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/4\"}"));
 
         serverMock.start();
 
@@ -703,7 +704,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
         //END Object nr. 1, Child nr. 3
 
-
+        //Object nr. 2
 
         test = objects.get(1);
         assertEquals(438290, test.getCategoryId());
@@ -723,6 +724,19 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(5547, test.getChildren().get(0).getNumber());
         assertEquals(1, test.getChildren().get(0).getTypes().size());
         assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
+        assertEquals(1, test.getChildren().get(0).getChildren().size());
+
+        // Object nr. 2, Child nr. 1, subchild Nr. 1 (the only one)
+        subChild = test.getChildren().get(0).getChildren().get(0);
+        assertEquals(5743534, subChild.getNumber());
+        assertEquals(456123, subChild.getColor());
+        assertEquals("I'm the sixth subchild", subChild.getComment());
+        assertEquals(2323, subChild.getCategoryId());
+        assertEquals("dolor", subChild.getName());
+        assertEquals(2, subChild.getTypes().size());
+        assertEquals("Knödel", subChild.getTypes().get(0));
+        assertEquals("heyho", subChild.getTypes().get(1));
+        assertNull(subChild.getChildren());
 
         // Object nr. 2, Child nr. 2
 
@@ -735,7 +749,11 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(1, test.getChildren().get(1).getTypes().size());
         assertEquals("some type", test.getChildren().get(1).getTypes().get(0));
 
-        assertEquals(11, Storesthal.getStatistics().get("httpCalls"));
+        assertNull(test.getChildren().get(1).getChildren());
+
+
+
+        assertEquals(12, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.resetStatistics();
 
