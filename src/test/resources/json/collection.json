@@ -1,0 +1,38 @@
+[
+  {
+    "_links": {
+      "self": {
+        "href": "/collObjects/1"
+      }
+    },
+    "objectId": 1,
+    "name": "collObject1"
+  },
+  {
+    "_links": {
+      "self": {
+        "href": "/collObjects/2"
+      }
+    },
+    "objectId": 2,
+    "name": "collObject2"
+  },
+  {
+    "_links": {
+      "self": {
+        "href": "/collObjects/759034"
+      }
+    },
+    "objectId": 759034,
+    "name": "collObject759034"
+  },
+  {
+    "_links": {
+      "self": {
+        "href": "/collObjects/673896873"
+      }
+    },
+    "objectId": 673896873,
+    "name": "collObject673896873"
+  }
+]

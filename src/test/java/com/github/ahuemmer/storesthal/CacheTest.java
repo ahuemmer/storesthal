@@ -89,7 +89,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesntCacheUncacheableObjects() throws StoresthalException, IOException {
 
-        configureServerMock("/objects/1", "simpleObject2.json", Map.of("objectId", "5483790", "name", "Test 1... 2... 3..."));
+        configureServerMock("/objects/1", "simpleObject2.json", Map.of("objectId", "5483790", "name", "Test 1... 2... 3...", "tags", "null"));
 
         UncacheableParentObject lastObject = null;
 
@@ -184,7 +184,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
 
         for (int i = 1; i < 9; i++) {
             configureServerMock("/objects/" + i, "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i), "childName", "Testchild " + i + "!", "parent", "/parentObjects/" + i));
-            configureServerMock("/parentObjects/" + i, "simpleObject2.json", Map.of("objectId", String.valueOf(i), "name", "Testparent " + i));
+            configureServerMock("/parentObjects/" + i, "simpleObject2.json", Map.of("objectId", String.valueOf(i), "name", "Testparent " + i, "tags", "null"));
         }
 
         for (int i = 1; i < 5; i++) {

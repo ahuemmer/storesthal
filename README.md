@@ -5,7 +5,8 @@
 A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
-<!-- toc -->- __[What is it?](#what-is-it)__
+<!-- toc -->
+- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
   - __[Object structure](#object-structure)__
@@ -167,6 +168,43 @@ ParentObject Testparent = Storesthal.getObject("https://mygreatwebservice.com/ap
 Storesthal will then retrieve and examine the object found at the given URL and traverse the object structure as it discovers it and add matching sub-objects to every level of object relations.
 Especially, Storesthal is able to handle back-references and references to (yet) unknown or "incomplete" objects correctly!
 Additionally, Storesthal will use an object cache by default, making subsequent calls to the same URL performant.
+
+### Collections
+
+There's one caveat using Storesthal: When intending to retrieve a _collection_ of objects from the first level URL, `getObject` isn't sufficient, you'll have to use `getCollection`.
+
+Example:
+
+Let's say you want to retrieve the content from a JSON body like this:
+
+```json 
+[
+{
+  "_links": {
+    "self": {"href": "https://mygreatwebservice.com/api/characters/1"},
+  },
+  "name": "Mr. Spock"
+},
+{
+  "_links": {
+    "self": {"href": "https://mygreatwebservice.com/api/characters/2"},
+  },
+  "name": "Commander Data"
+},
+{
+  "_links": {
+    "self": {"href": "https://mygreatwebservice.com/api/characters/3"},
+  },
+  "name": "Seven of Nine"
+}
+]
+```
+
+You would write something like `ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class)` and get an ArrayList containing the three entries of the JSON array in return.
+
+This is due to technical limitations of Java and perhaps also my own knowledge or creativity. :wink:
+Please note that this doesn't apply to any collections on any other level of the object hierarchy. They will be retrieved correctly in any way.
+The separate objects within the collection will be treated like single objects retrieved by `getObject`, what refers to caching, relation handling etc.
 
 ### Relations
 As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work, every object class needs to have
