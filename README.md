@@ -5,8 +5,7 @@
 A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
-<!-- toc -->
-- __[What is it?](#what-is-it)__
+<!-- toc -->- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
   - __[Object structure](#object-structure)__
@@ -18,6 +17,7 @@ A simple solution for JSON-HAL object retrieval and caching.
   - __[How does that work?](#how-does-that-work)__
 - __[Usage](#usage)__
   - __[Basic invocation](#basic-invocation)__
+  - __[Collections](#collections)__
   - __[Relations](#relations)__
   - __[Caching](#caching)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
