@@ -524,9 +524,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
                         ),
                         "children7486465",
                         createJsonHrefArray(new String[] {
-                                "http://localhost:${port}/complexChildren2/1",
-                                "http://localhost:${port}/complexChildren2/2",
-                                "http://localhost:${port}/complexChildren2/3"}
+                                "http://localhost:${port}/complexChildren2/6",
+                                "http://localhost:${port}/complexChildren2/1"}
                         )
                         , "parent", "", "types", "[]"));
 
@@ -549,6 +548,10 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
                 }
         ), "parent", ""));
         configureServerMock("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId","10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[] {}
+        ), "parent", ""));
+        configureServerMock("/complexChildren2/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "5324", "comment", "Number [6]...", "categoryId","5234789", "name", "5834543", "number", "-17", "types", "[]", "children", createJsonHrefArray(new String[] {
+                "http://localhost:${port}/complexChildren3/3"
+                }
         ), "parent", ""));
 
 
@@ -574,6 +577,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
         assertEquals(3,objects.size());
 
+        // Object nr. 1
         ComplexObjectWithMultipleChildren7 test = objects.get(0);
         assertEquals(234, test.getCategoryId());
         assertEquals("Object No. 1", test.getComment());
@@ -738,28 +742,92 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("heyho", subChild.getTypes().get(1));
         assertNull(subChild.getChildren());
 
-        // Object nr. 2, Child nr. 2
 
+        // Object nr. 2, Child nr. 2
         assertEquals(43289,test.getChildren().get(1).getColor());
         assertEquals("blah", test.getChildren().get(1).getName());
         assertEquals("Number 5...",test.getChildren().get(1).getComment());
         assertEquals(10101,test.getChildren().get(1).getCategoryId());
-        assertNull(test.getChildren().get(1).getChildren());
         assertEquals(45465, test.getChildren().get(1).getNumber());
         assertEquals(1, test.getChildren().get(1).getTypes().size());
         assertEquals("some type", test.getChildren().get(1).getTypes().get(0));
 
+        // Object nr. 2, child nr. 2 has no children
         assertNull(test.getChildren().get(1).getChildren());
 
+        // Object nr. 3
+        test = objects.get(2);
+        assertEquals(543890, test.getCategoryId());
+        assertNull(test.getComment());
+        assertNull(test.getColor());
+        assertEquals(2, test.getChildren().size());
+        assertEquals(542, test.getNumber());
+        assertEquals("complexCollObject7486465", test.getName());
+        assertEquals(4, test.getTypes().size());
+        assertEquals("some ", test.getTypes().get(0));
+        assertEquals("list ", test.getTypes().get(1));
+        assertEquals("of   ", test.getTypes().get(2));
+        assertEquals("types", test.getTypes().get(3));
+
+        //Object nr. 3, Child nr. 1
+
+        assertEquals(5324,test.getChildren().get(0).getColor());
+        assertEquals("5834543", test.getChildren().get(0).getName());
+        assertEquals("Number [6]...",test.getChildren().get(0).getComment());
+        assertEquals(5234789,test.getChildren().get(0).getCategoryId());
+        assertEquals(-17, test.getChildren().get(0).getNumber());
+        assertEquals(0, test.getChildren().get(0).getTypes().size());
+        assertEquals(1, test.getChildren().get(0).getChildren().size());
+
+        // Object nr. 3, child nr. 1 has one children the same as object nr. 1, Child nr. 3
+        subChild = test.getChildren().get(0).getChildren().get(0);
+        assertSame(subChild, objects.get(0).getChildren().get(2).getChildren().get(1));
+        assertEquals(574389, subChild.getNumber());
+        assertEquals(818147, subChild.getColor());
+        assertEquals("I'm the third subchild", subChild.getComment());
+        assertNull(subChild.getParent());
+        assertEquals(0, subChild.getCategoryId());
+        assertEquals("mind!", subChild.getName());
+        assertEquals(1, subChild.getTypes().size());
+        assertEquals("${myType}", subChild.getTypes().get(0));
+        assertNull(subChild.getChildren());
 
 
-        assertEquals(12, Storesthal.getStatistics().get("httpCalls"));
+        //Object nr. 3, child nr. 2 equals object nr. 1, child nr. 1!
+        //Object nr. 3, Child nr. 2
+        test = objects.get(2).getChildren().get(1);
+        assertSame(test, objects.get(0).getChildren().get(0));
+        assertEquals(1345,test.getColor());
+        assertEquals("is...", test.getName());
+        assertEquals("Number 1...",test.getComment());
+        assertEquals(5,test.getCategoryId());
+        assertEquals(1,test.getChildren().size());
+        assertEquals(5547, test.getNumber());
+        assertEquals(1, test.getTypes().size());
+        assertEquals("$myGreatType", test.getTypes().get(0));
+
+        //  Subchild nr. 3.1
+
+        subChild1 = test.getChildren().get(0);
+        assertSame(subChild1, objects.get(0).getChildren().get(0).getChildren().get(0));
+        assertEquals(747474, subChild1.getColor());
+        assertEquals("I'm the first subchild", subChild1.getComment());
+        assertNotNull(subChild1.getParent());
+        assertSame(subChild1.getParent(), test);
+        assertEquals(10000, subChild1.getCategoryId());
+        assertEquals("state...", subChild1.getName());
+        assertEquals(1, subChild1.getTypes().size());
+        assertEquals("   ", subChild1.getTypes().get(0));
+        assertNull(subChild1.getChildren());
+        assertNull(subChild1.getNumber());
+
+        //  End subchild nr. 3.1
+
+
+        assertEquals(13, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.resetStatistics();
 
     }
-
-    //TODO: Collection außerhalb von Relations??
-
 
 }

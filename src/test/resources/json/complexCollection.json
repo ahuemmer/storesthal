@@ -33,6 +33,10 @@
       },
       "children":${children7486465}
 },
-  "name": "collObject7486465"
+  "name": "complexCollObject7486465",
+  "category_id": 543890,
+  "comment": null,
+  "number": 542,
+  "types": ["some ", "list ", "of   ", "types"]
   }
 ]

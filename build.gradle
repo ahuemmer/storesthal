@@ -26,17 +26,17 @@ repositories {
 }
 
 ext {
-    springVersion = '5.2.5.RELEASE'
-    junitVersion = '5.6.1'
-    wiremockVersion = '2.26.3'
+    springVersion = '5.2.8.RELEASE'
+    junitVersion = '5.6.2'
+    wiremockVersion = '2.27.1'
     wiremockExtensionVersion = '0.4.0'
     springCorePluginVersion = '2.0.0.RELEASE'
-    jacksonVersion = '2.10.3'
-    commonsLang3Version = '3.10'
-    commonsTextVersion = '1.8'
-    log4JVersion = '2.13.1'
+    jacksonVersion = '2.11.1'
+    commonsLang3Version = '3.11'
+    commonsTextVersion = '1.9'
+    log4JVersion = '2.13.3'
     openTestVersion = '1.2.0'
-    springHateoasVersion = '1.0.4.RELEASE'
+    springHateoasVersion = '1.1.1.RELEASE'
 }
 
 dependencies {
