@@ -34,7 +34,6 @@ ext {
     jacksonVersion = '2.11.1'
     commonsLang3Version = '3.11'
     commonsTextVersion = '1.9'
-    log4JVersion = '2.13.3'
     openTestVersion = '1.2.0'
     springHateoasVersion = '1.1.1.RELEASE'
 }
@@ -48,8 +47,6 @@ dependencies {
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "${jacksonVersion}"
     compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: "${jacksonVersion}"
     compile group: 'org.apache.commons', name:'commons-lang3', version: "${commonsLang3Version}"
-
-    runtime group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${log4JVersion}"
 
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: "${junitVersion}"
     testCompile group: 'com.github.tomakehurst', name: 'wiremock', version: "${wiremockVersion}"
