@@ -352,9 +352,8 @@ public class Storesthal {
      */
     @SuppressWarnings("unchecked")
     private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
-        if ("self".equals(l.getRel())) {
-            return;
-        }
+
+        logger.debug("Following link: "+l.toUri());
 
         URI uri;
 
@@ -427,7 +426,7 @@ public class Storesthal {
         try {
             m.invoke(applyTo, parameter);
         } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
-            throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + applyTo.getClass().getCanonicalName() + ")\" on instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
+            throw new StoresthalException("Could not invoke method \"" + m.getName() + " of " + applyTo.getClass().getCanonicalName() + " with instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
         }
     }
 
@@ -479,7 +478,15 @@ public class Storesthal {
         for (EntityModel<T> entry : result) {
             realResult.add(entry.getContent());
             for (Link l : entry.getLinks()) {
-                followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
+                if ("self".equals(l.getRel().value())) {
+                    logger.debug("Self-Link for object: "+l.toUri());
+                    if (!(l.getRel().value().isBlank())) {
+                        putObjectInCache(l.toUri(), entry.getContent());
+                    }
+                }
+                else {
+                    followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
+                }
             }
             objectCounter++;
         }
@@ -557,7 +564,15 @@ public class Storesthal {
 
         linksVisited.add(uri);
         for (Link l : response.getBody().getLinks()) {
-            followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
+            if ("self".equals(l.getRel().value())) {
+                logger.debug("Self-Link for object: "+l.toUri());
+                if (!(l.getRel().value().isBlank())) {
+                    putObjectInCache(l.toUri(), result);
+                }
+            }
+            else {
+                followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
+            }
         }
         putObjectInCache(uri, result);
 
