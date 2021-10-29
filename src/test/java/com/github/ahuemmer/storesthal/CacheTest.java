@@ -195,6 +195,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
+        System.out.println("Serving at http://localhost:" + serverMock.port());
+
         for (int i = 1; i < 6; i++) {
             ChildWithParentRelationWithSmallCache test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
