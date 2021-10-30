@@ -5,8 +5,7 @@
 A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
-<!-- toc -->
-- __[What is it?](#what-is-it)__
+<!-- toc -->- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
   - __[Object structure](#object-structure)__
@@ -18,6 +17,7 @@ A simple solution for JSON-HAL object retrieval and caching.
   - __[How does that work?](#how-does-that-work)__
 - __[Usage](#usage)__
   - __[Basic invocation](#basic-invocation)__
+  - __[Collections](#collections)__
   - __[Relations](#relations)__
   - __[Caching](#caching)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
@@ -206,6 +206,9 @@ This is due to technical limitations of Java and perhaps also my own knowledge o
 Please note that this doesn't apply to any collections on any other level of the object hierarchy. They will be retrieved correctly in any way.
 The separate objects within the collection will be treated like single objects retrieved by `getObject`, what refers to caching, relation handling etc.
 
+Please note, that in case of querying top-level collections, every member of the collection should have a valid `self`-relation in order to make caching and relationship mechanisms work properly. 
+(When retrieving a top-level collection, Storesthal is just given one single URL for multiple object, so it can't determine the specific URL for every single object automatically.)
+
 ### Relations
 As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work, every object class needs to have
 _either_ a matching setter method (e. g., if the relation is called `customer` in JSON, there must be a `setCustomer`) _or_ an arbitrary method (or attribute)
@@ -220,6 +223,8 @@ If that collection type is an abstract one, Storesthal will try to use an approp
 For details, see method `handleCollection` in `Storesthal.java`.
 
 Please note, that - at least for the moment - Storesthal is not able to handle arrays instead of `Collection`s.
+
+If an object has a `self`-relation, Storesthal will also take this into account concerning caching. Please see the note [above](#collections) concerning `self`-relations when retrieving collections on first level.
 
 ### Caching
 
