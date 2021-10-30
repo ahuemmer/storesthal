@@ -28,7 +28,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     /**
      * Name of the cache with small size (must match {@link Cacheable} annotation of related objects!)
      */
-    protected final static String SMALL_SIZE_CACHE_NAME = "de.huemmerich.web.wsobjectstore.cachetestobjects.SmallSizedCacheObject";
+    protected final static String SMALL_SIZE_CACHE_NAME = "com.github.ahuemmer.storesthal.cachetestobjects.SmallSizedCacheObject";
 
     /**
      * Clear caches and reset statistics before each test!
@@ -60,6 +60,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         configureServerMock("/parentObjects/124", "complexObject1.json");
 
         serverMock.start();
+
+        System.out.println("Serving at: http://localhost:"+serverMock.port()+"/complexChildren1/1");
 
         Vector<ChildWithParentRelation> testChildren = new Vector<>();
 
@@ -116,7 +118,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesClearCachesCorrectly() throws IOException, StoresthalException {
 
-        configureServerMock("/objects/1", "complexObject1.json", Map.of("childId", "12", "childName", "Testchild 1!", "parent", "/parentObjects/124"));
+        configureServerMock("/objects/1", "complexObject1.json", Map.of("childId", "12", "childName", "Testchild 1!", "self", "http://localhost:${port}/objects/1"));
 
         serverMock.start();
 
@@ -193,6 +195,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
+        System.out.println("Serving at http://localhost:" + serverMock.port());
+
         for (int i = 1; i < 6; i++) {
             ChildWithParentRelationWithSmallCache test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/objects/"+i, ChildWithParentRelationWithSmallCache.class);
             assertEquals(i, test.getChildId());
@@ -268,7 +272,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesMaintainObjectIntegrity() throws IOException, StoresthalException {
 
-        configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124"));
+        configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124", "self", "http://localhost:${port}/complexChildren1/1"));
         configureServerMock("/parentObjects/124", "complexObject1.json");
 
         serverMock.start();

@@ -89,7 +89,7 @@ public class StoresthalConfiguration {
 
     /**
      * Return whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
-     * @return "true", if annotations they will be not be taken into account
+     * @return "true", if annotations will not be taken into account
      */
     public boolean isAnnotationless() {
         return annotationless;

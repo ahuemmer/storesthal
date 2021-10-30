@@ -208,7 +208,6 @@ public class Storesthal {
         Class type = m.getParameterTypes()[0];
 
         String collectionKey= parentObject+":"+objectCounter+":"+l.getRel().value();
-
         Collection coll = collections.get(collectionKey);
 
         if (coll == null) {
@@ -352,9 +351,8 @@ public class Storesthal {
      */
     @SuppressWarnings("unchecked")
     private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
-        if ("self".equals(l.getRel())) {
-            return;
-        }
+
+        logger.debug("Following link: "+l.toUri());
 
         URI uri;
 
@@ -427,8 +425,88 @@ public class Storesthal {
         try {
             m.invoke(applyTo, parameter);
         } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
-            throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + applyTo.getClass().getCanonicalName() + ")\" on instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
+            throw new StoresthalException("Could not invoke method \"" + m.getName() + " of " + applyTo.getClass().getCanonicalName() + " with instance of \"" + parameter.getClass().getCanonicalName() + "\" class.", e);
         }
+    }
+
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
+
+        init();
+        logger.info("Getting object collection of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
+
+        URI uri;
+
+        try {
+            uri = new URI(url);
+        } catch (URISyntaxException e) {
+            throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
+        }
+
+        ArrayList<T> resultFromCache = getObjectFromCache(uri, objectClass);
+
+        if (resultFromCache != null) {
+            return resultFromCache;
+        }
+
+        httpCalls += 1;
+
+        logger.debug("Adding URI " + uri.toString() + " to transient objects...");
+        transientObjects.add(uri);
+
+        ResponseEntity response =
+                getRestTemplateWithHalMessageConverter(true).exchange(url,
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
+                            @Override
+                            @NonNull
+                            public Type getType() {
+                                Type[] responseWrapperActualTypes = {objectClass};
+                                return parameterize(ArrayList.class,
+                                        parameterize(EntityModel.class, responseWrapperActualTypes));
+                            }
+                        });
+
+        ArrayList<EntityModel<T>> result = (ArrayList<EntityModel<T>>) response.getBody();
+
+        ArrayList realResult = new ArrayList<T>();
+
+        Set<URI> linksVisited = new HashSet<>();
+        Map<String, Collection> collections = new HashMap<>();
+
+        linksVisited.add(uri);
+        int objectCounter = 0;
+        for (EntityModel<T> entry : result) {
+            realResult.add(entry.getContent());
+            for (Link l : entry.getLinks()) {
+                if ("self".equals(l.getRel().value())) {
+                    logger.debug("Self-Link for object: "+l.toUri());
+                    if (!(l.getRel().value().isBlank())) {
+                        putObjectInCache(l.toUri(), entry.getContent());
+                    }
+                }
+                else {
+                    followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
+                }
+            }
+            objectCounter++;
+        }
+        putObjectInCache(uri, realResult);
+
+        for (URI invokeUri : invokeLater.keySet()) {
+            List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
+            for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
+                Object cachedObject = getObjectFromCache(invokeUri, objectClass);
+                invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
+            }
+        }
+
+        transientObjects.clear();
+        clearCache(INTERMEDIATE_CACHE_NAME, true);
+        invokeLater.clear();
+
+        logger.debug("Removing URI " + uri.toString() + " from transient objects...");
+        transientObjects.remove(uri);
+
+        return realResult;
     }
 
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
@@ -557,7 +635,16 @@ public class Storesthal {
 
         linksVisited.add(uri);
         for (Link l : response.getBody().getLinks()) {
-            followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
+
+            if ("self".equals(l.getRel().value())) {
+                logger.debug("Self-Link for object: "+l.toUri());
+                if (!(l.getRel().value().isBlank())) {
+                    putObjectInCache(l.toUri(), result);
+                }
+            }
+            else {
+                followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
+            }
         }
         putObjectInCache(uri, result);
 
