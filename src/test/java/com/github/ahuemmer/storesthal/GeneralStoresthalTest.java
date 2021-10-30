@@ -495,6 +495,9 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
     }
 
     @Test
+    /**
+     * Make sure, everything works as desired if the "top-level-object" is a collection.
+     */
     public void canRetrieveCollections() throws IOException, StoresthalException {
         configureServerMock("/collection/coll", "collection.json");
         serverMock.start();
@@ -507,6 +510,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(759034, children.get(2).getChildId());
         assertEquals("collObject673896873", children.get(3).getChildName());
     }
+
 
     @Test
     public void canRetrieveComplexCollections() throws IOException, StoresthalException {
@@ -829,5 +833,4 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         Storesthal.resetStatistics();
 
     }
-
 }

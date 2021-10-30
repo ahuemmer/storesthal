@@ -1,6 +1,6 @@
 {
   "_links": {
-    "self": {"href":"${self}"},
+    "self": {"href":"http://localhost:${port}/${self}"},
     "children":${children}
     ${parent}
   },

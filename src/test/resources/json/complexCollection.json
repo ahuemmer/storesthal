@@ -2,7 +2,7 @@
   {
     "_links": {
       "self": {
-        "href": "/complexCollObjects/1432"
+        "href": "http://localhost:${port}/complexCollObjects/1432"
       },
       "children":${children1432}
 },
@@ -16,7 +16,7 @@
   {
     "_links": {
       "self": {
-        "href": "/complexCollObjects/52"
+        "href": "http://localhost:${port}/complexCollObjects/52"
       },
       "children":${children52}
 },
@@ -29,7 +29,7 @@
   {
     "_links": {
       "self": {
-        "href": "/complexCollObjects/7486465"
+        "href": "http://localhost:${port}/complexCollObjects/7486465"
       },
       "children":${children7486465}
 },

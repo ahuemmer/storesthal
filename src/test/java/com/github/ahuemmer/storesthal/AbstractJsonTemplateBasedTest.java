@@ -40,7 +40,7 @@ abstract class AbstractJsonTemplateBasedTest {
 
         Map<String, String> substitutions =  new HashMap<>();
         substitutions.put("port", String.valueOf(serverMock.port()));
-        substitutions.put("self", url);
+        substitutions.put("self", "http://localhost:"+serverMock.port()+url);
 
         if (additionalSubstitutions!=null) {
             substitutions.putAll(additionalSubstitutions);

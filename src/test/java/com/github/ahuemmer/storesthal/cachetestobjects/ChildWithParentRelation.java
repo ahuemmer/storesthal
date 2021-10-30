@@ -2,6 +2,7 @@ package com.github.ahuemmer.storesthal.cachetestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.ahuemmer.storesthal.Cacheable;
+import com.github.ahuemmer.storesthal.HALRelation;
 
 /**
  * Simple "child" test object with relation to a single parent object
@@ -14,6 +15,7 @@ public class ChildWithParentRelation {
     @JsonProperty("name")
     private String childName;
 
+    @HALRelation("parent")
     private ParentObject parent;
 
     public int getChildId() {

@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * An object using a cache with a size of only five items.
  */
-@Cacheable(cacheName = "de.huemmerich.web.wsobjectstore.cachetestobjects.SmallSizedCacheObject", cacheSize = 5)
+@Cacheable(cacheName = "com.github.ahuemmer.storesthal.cachetestobjects.SmallSizedCacheObject", cacheSize = 5)
 public class SmallSizedCacheObject {
 
     @JsonProperty("objectId")
