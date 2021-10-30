@@ -23,6 +23,7 @@ group='com.github.ahuemmer'
 
 repositories {
     mavenLocal()
+    jcenter()
     maven {
         url = 'https://jitpack.io'
     }
