@@ -5,8 +5,7 @@
 A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
-<!-- toc -->
-- __[What is it?](#what-is-it)__
+<!-- toc -->- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
   - __[Object structure](#object-structure)__
@@ -21,6 +20,7 @@ A simple solution for JSON-HAL object retrieval and caching.
   - __[Collections](#collections)__
   - __[Relations](#relations)__
   - __[Caching](#caching)__
+  - __[Caveats](#caveats)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
   - __[Possible future plans](#possible-future-plans)__
@@ -255,6 +255,11 @@ object structure as two references to the same URI would result in two different
 
 Please note, that the intermediate cache is only used within one single `getObject` call. It will be cleared before the next one starts. So, it will probably be in use for a few seconds
 (or probably less) only.
+
+### Caveats
+
+- Please make sure, your HTTP answer has the correct `Content-Type` set in its header: `application/hal+json` (and possibly a `charset=...` appended) . Otherwise, relations might not be found even though they are delivered correctly via `_links`!
+- The standard demands a valid URL for each relation link. So, `"_links": {"child": {"href": null}}` is not allowed to indicate that there is no child object! In this case, there must not be any `"child"` link, otherwise an error will occur.
 
 ## What's that name about... :thinking:?
 
