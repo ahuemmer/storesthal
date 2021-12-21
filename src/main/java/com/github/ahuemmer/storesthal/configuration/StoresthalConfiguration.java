@@ -18,6 +18,12 @@ public class StoresthalConfiguration {
     StoresthalConfiguration(){}
 
     /**
+     * The name of the intermediate cache. This cache is only used while traversing the objects / relations found during
+     * a single http call.
+     */
+    public static final String INTERMEDIATE_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.intermediate";
+
+    /**
      * The default for the default of the size of an object cache.
      */
     public static final int DEFAULT_DEFAULT_CACHE_SIZE=1000;
