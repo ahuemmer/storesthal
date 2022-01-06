@@ -694,11 +694,9 @@ public class Storesthal {
     public static <T> T getObject(String url, Class<T> objectClass) throws StoresthalException {
 
         if (Collection.class.isAssignableFrom(objectClass)) {
-            logger.warn("""
-                    You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.
-                    Please consider using Storesthal.getCollection in that case.
-                    (Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)
-                    """);
+            logger.warn("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.\n"+
+                    "Please consider using Storesthal.getCollection in that case.\n"+
+                    "(Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)");
         }
 
         logger.info("Getting object of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
