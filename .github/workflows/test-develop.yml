@@ -27,5 +27,7 @@ jobs:
       run: ./gradlew -si insertTocs
     - name: Commit and push updated TOC
       run: |
-        git commit -am "docs: update TOC [automated task]"
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+        git commit -am "docs: update TOC"
         git push origin develop
