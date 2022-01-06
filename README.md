@@ -19,6 +19,7 @@ A simple solution for JSON-HAL object retrieval and caching.
   - __[Relations](#relations)__
   - __[Caching](#caching)__
   - __[Caveats](#caveats)__
+  - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
   - __[Possible future plans](#possible-future-plans)__
