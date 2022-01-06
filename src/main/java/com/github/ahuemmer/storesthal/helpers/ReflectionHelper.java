@@ -15,6 +15,7 @@ import java.util.Set;
 /**
  * Static helper class bundling some reflection related methods.
  */
+@SuppressWarnings("rawtypes")
 public class ReflectionHelper {
 
     /**
@@ -27,6 +28,7 @@ public class ReflectionHelper {
      * @param objectClass The class to search for the annotation
      * @return All methods of the object class having the annotation specified (if any)
      */
+    @SuppressWarnings("rawtypes")
     private static Set<Method> getMethodsAnnotatedWith(Class objectClass) {
 
         Set<Method> result = new HashSet<>();

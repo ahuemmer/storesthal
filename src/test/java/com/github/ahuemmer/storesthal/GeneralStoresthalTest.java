@@ -193,9 +193,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
-        assertThrows(StoresthalException.class, () -> {
-            ComplexObjectWithMultipleChildren3 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class);
-        });
+        assertThrows(StoresthalException.class, () -> Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class));
 
         //ARRAYS ARE NOT SUPPORTED (YET??)
         //Whenever this is the case, the following assertions should succeed:
@@ -569,11 +567,6 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         serverMock.start();
 
         System.out.println("http://localhost:"+serverMock.port()+"/collection/coll");
-
-/*        try {
-            Thread.sleep(30000);
-        }
-        catch (Exception e) {}*/
 
         Storesthal.resetStatistics();
 

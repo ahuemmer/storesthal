@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("rawtypes")
 public class CacheManager {
 
     private static CacheManager instance;
@@ -45,6 +46,7 @@ public class CacheManager {
 
     private CacheManager(){}
 
+    @SuppressWarnings("InstantiationOfUtilityClass")
     public static CacheManager getInstance(StoresthalConfiguration configuration) {
         if (instance == null) {
             instance = new CacheManager();
@@ -105,7 +107,6 @@ public class CacheManager {
      * @param cacheName The name of the cache to put the object in. Use NULL here for automatic cache name detection
      *                  (default).
      */
-    @SuppressWarnings("unchecked")
     public static void putObjectInCache(URI uri, Object object, String cacheName) {
 
         LRUCache<URI, Object> cache;
@@ -135,6 +136,7 @@ public class CacheManager {
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
     private static LRUCache<URI, Object> getCache(Class cls) {
+        //noinspection unchecked
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
         String cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;

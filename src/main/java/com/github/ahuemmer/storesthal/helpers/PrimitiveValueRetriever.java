@@ -8,22 +8,21 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class ScalarValueRetriever {
+public class PrimitiveValueRetriever {
 
-    private ScalarValueRetriever() {};
-
-    private final static CacheManager cacheManager = CacheManager.getInstance(Storesthal.getConfiguration());
+    private PrimitiveValueRetriever() {}
 
     private static int httpCalls = 0;
 
     /**
-     * Retrieve an Integer (just an Integer, no special object...) from the given URL.
-     * @param url       The URL to retrieve the integer from.
-     * @param cacheName The name of the cache to used when retrieving the integer.
-     * @return The integer retrieved.
-     * @throws com.github.ahuemmer.storesthal.StoresthalException If it was not possible to retrieve an Integ
+     * Retrieve a primitive value (no special object...) from the given URL.
+     * @param url       The URL to retrieve the primitive from.
+     * @param doCache   Whether to cache the results or not. See cacheName parameter for details.
+     * @param cacheName The name of the cache to used when retrieving the primitive or NULL, if no cache is to be used.
+     * @return The primitive retrieved.
+     * @throws com.github.ahuemmer.storesthal.StoresthalException If it was not possible to retrieve a Primitive
      */
-    public static Integer getInteger(String url, boolean doCache, String cacheName) throws StoresthalException {
+    public static <T> T getPrimitive(Class<T> primitiveClass, String url, boolean doCache, String cacheName) throws StoresthalException {
 
         URI uri;
 
@@ -33,14 +32,14 @@ public class ScalarValueRetriever {
             throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
         }
 
-        Integer result;
+        T result;
         String cacheNameToUse = Storesthal.COMMON_CACHE_NAME;
 
         if (doCache) {
             if (cacheName != null) {
                 cacheNameToUse = cacheName;
             }
-            result = cacheManager.getObjectFromCache(uri, Integer.class, cacheNameToUse);
+            result = CacheManager.getObjectFromCache(uri, primitiveClass, cacheNameToUse);
             if (result != null) {
                 return result;
             }
@@ -50,13 +49,13 @@ public class ScalarValueRetriever {
 
         try {
             httpCalls += 1;
-            result = restTemplate.getForObject(uri, Integer.class);
+            result = restTemplate.getForObject(uri, primitiveClass);
         } catch (RestClientException e) {
-            throw new StoresthalException("Unable to extract scalar of type Integer from url \""+url+"\"!", e);
+            throw new StoresthalException("Unable to extract scalar of type \""+primitiveClass.getName()+"\" from url \""+url+"\"!", e);
         }
 
         if (doCache) {
-            cacheManager.putObjectInCache(uri, result, cacheNameToUse);
+            CacheManager.putObjectInCache(uri, result, cacheNameToUse);
         }
 
         return result;

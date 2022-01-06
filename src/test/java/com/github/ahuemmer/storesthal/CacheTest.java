@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test set to make sure that caching works as designed.
  */
+@SuppressWarnings("rawtypes")
 class CacheTest extends AbstractJsonTemplateBasedTest {
 
     /**
@@ -299,8 +300,6 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(1, Storesthal.getCachedObjectCount(CHILD_CACHE_NAME));
         assertSame(test, test2);
         assertSame(test.getParent(), test2.getParent());
-
-        ParentObject testParent = test.getParent();
 
         Storesthal.clearCache(PARENT_CACHE_NAME,false);
 

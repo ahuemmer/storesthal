@@ -29,6 +29,7 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
      * Make sure, a collection of very complex object structures with many levels of relation can be correctly retrieved.
      * Please note: The test structure created is not completely "logic" in a sense of correct
      * "parent-child-grandchild"-relations. This is intentional as it allows testing such structures as well.
+     *
      * @throws StoresthalException if something fails.
      * @throws java.io.IOException if the JSON template for the mocked service answer can't be accessed.
      */
@@ -96,11 +97,6 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         serverMock.start();
 
         System.out.println("Serving at: http://localhost:"+serverMock.port()+"/collection/coll");
-
-        /*try {
-            Thread.sleep(3000000);
-        }
-        catch (Exception e) {}*/
 
         Storesthal.resetStatistics();
 
