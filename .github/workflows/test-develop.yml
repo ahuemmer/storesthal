@@ -25,3 +25,7 @@ jobs:
       run: ./gradlew -si test
     - name: Update README.md's TOC
       run: ./gradlew -si insertTocs
+    - name: Commit and push updated TOC
+      run: |
+        git commit -am "docs: update TOC [automated task]"
+        git push origin develop
