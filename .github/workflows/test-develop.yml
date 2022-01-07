@@ -6,9 +6,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
       with:
@@ -35,3 +33,6 @@ jobs:
           || (git commit -am "docs: update TOC" && git push origin develop)
     - name: Release Snapshot
       run: ./gradlew -si release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
