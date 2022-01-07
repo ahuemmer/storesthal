@@ -32,7 +32,7 @@ jobs:
         (git diff --quiet && git diff --staged --quiet) \
           || (git commit -am "docs: update TOC" && git push origin develop)
     - name: Create settings.xml file
-      run: envsubst < settings.xml.template && mv settings.xml.template settings.xml
+      run: echo $(envsubst < settings.xml.template) > settings.xml
     - name: Release Snapshot
       run: ./gradlew -si --debug release
       #run: ./gradlew -si publish
