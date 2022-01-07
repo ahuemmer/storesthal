@@ -87,12 +87,36 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+def pomConfig = {
+    scm {
+        url 'https://github.com/ahuemmer/storesthal'
+    }
+    distributionManagement {
+        repository {
+            id 'github'
+            name 'Storesthal Apache Maven Packages'
+            url 'https://maven.pkg.github.com/ahuemmer/storesthal'
+        }
+    }
+    servers {
+        server {
+            id 'github'
+            username project.ghActor
+            password project.ghToken
+        }
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from(components.java)
             artifact sourcesJar
             artifact javadocJar
+
+            pom.withXml {
+                asNode().children().last() + pomConfig
+            }
         }
     }
     repositories {
