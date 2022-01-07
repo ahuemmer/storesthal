@@ -32,7 +32,8 @@ jobs:
         (git diff --quiet && git diff --staged --quiet) \
           || (git commit -am "docs: update TOC" && git push origin develop)
     - name: Release Snapshot
-      run: ./gradlew -si release
+      #run: ./gradlew -si release
+      run: ./gradlew -si publish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
