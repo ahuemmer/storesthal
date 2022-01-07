@@ -105,13 +105,6 @@ def pomConfig = {
             url 'https://maven.pkg.github.com/ahuemmer/storesthal'
         }
     }
-    servers {
-        server {
-            id 'github'
-            username project.ghActor
-            password project.ghToken
-        }
-    }
 }
 
 publishing {
