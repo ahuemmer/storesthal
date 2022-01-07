@@ -16,6 +16,7 @@ if (file('secrets.gradle').exists()) {
 else {
     //Possibly we're using GitHub Actions, where the token is set automatically:
     ext.ghToken =  "$System.env.GITHUB_TOKEN"
+    ext.ghActor =  "$System.env.GITHUB_ACTOR"
 }
 
 
@@ -99,8 +100,8 @@ publishing {
             name = "GitHubPackages"
             url = "https://maven.pkg.github.com/ahuemmer/storesthal"
             credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+                username = project.ghActor
+                password = project.ghToken
             }
         }
     }

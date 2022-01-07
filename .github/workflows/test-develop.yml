@@ -21,7 +21,7 @@ jobs:
       run: chmod +x gradlew
     - name: Test with Gradle
       run: ./gradlew -si test
-    - name: Update README.md's TOC
+    - name: Update README.md's TOC (if necessary)
       run: ./gradlew -si insertTocs
     - name: Commit and push updated TOC (if necessary)
       run: |
