@@ -15,8 +15,8 @@ if (file('secrets.gradle').exists()) {
 }
 else {
     //Possibly we're using GitHub Actions, where the token is set automatically:
-    ext.ghToken =  "$System.env.GITHUB_TOKEN"
-    ext.ghActor =  "$System.env.GITHUB_ACTOR"
+    ext.ghToken = "$System.env.GITHUB_TOKEN"
+    ext.ghActor = "$System.env.GITHUB_ACTOR"
 }
 
 
