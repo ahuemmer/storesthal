@@ -32,7 +32,11 @@ jobs:
         (git diff --quiet && git diff --staged --quiet) \
           || (git commit -am "docs: update TOC" && git push origin develop)
     - name: Create settings.xml file
-      run: echo $(envsubst < settings.xml.template) > settings.xml && mkdir -p ~/.m2 && mv settings.xml ~/.m2 && cat ~/.m2/settings.xml
+      run: echo $(envsubst < settings.xml.template) > settings.xml && mkdir -p ~/.m2 && mv settings.xml ~/.m2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Debug
+      run: cat ~/.m2/settings.xml
     - name: Release Snapshot
       run: ./gradlew -si --debug release
       #run: ./gradlew -si publish
