@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
       with:
         fetch-depth: 0
     - name: Set up JDK 11
@@ -31,14 +31,15 @@ jobs:
         #Commit only if there are changes:
         (git diff --quiet && git diff --staged --quiet) \
           || (git commit -am "docs: update TOC" && git push origin develop)
-    - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v2
-      id: semantic
+    - name: Setup Node.js and semantic-release plugins
+      uses: actions/setup-node@v1
       with:
-        extra_plugins: |
-          @semantic-release/git
-          @semantic-release/changelog
+        node-version: 12
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      run: npm install -g semantic-release @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/exec semantic-release/git semantic-release/release-notes-generator
+    - name: Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: chmod +x ./prepare-release.sh && npx semantic-release
 
