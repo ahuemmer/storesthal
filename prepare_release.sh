@@ -8,6 +8,6 @@ echo "jar = $JAR_VERSION"
 
 ./gradlew -Pversion=${JAR_VERSION} build
 
-mkdir release && cp target/*.jar release
+mkdir release && cp build/libs/*.jar release
 
 printenv
