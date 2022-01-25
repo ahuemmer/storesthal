@@ -1,5 +1,5 @@
 {
-     "branches": "master",
+     "branches": ["master","develop"],
      "repositoryUrl": "https://github.com/ahuemmer/storesthal",
      "debug": "true",
      "plugins": [
