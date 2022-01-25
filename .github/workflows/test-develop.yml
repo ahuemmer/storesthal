@@ -42,5 +42,5 @@ jobs:
     - name: Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: chmod +x ./prepare-release.sh && npx semantic-release
+      run: chmod +x ./prepare_release.sh && npx semantic-release
 
