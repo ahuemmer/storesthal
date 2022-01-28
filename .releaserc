@@ -1,5 +1,8 @@
 {
-     "branches": ["master","develop"],
+     "branches": [
+       {name: "master"},
+       {name: "develop", prerelease: true},
+     ],
      "repositoryUrl": "https://github.com/ahuemmer/storesthal",
      "debug": "true",
      "plugins": [
@@ -31,7 +34,7 @@
             {
                 "assets": [
                     {
-                        "path": "release/**"
+                        "path": "build/libs/**"
                     }
                 ]
             }

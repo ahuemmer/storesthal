@@ -2,7 +2,7 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ master, develop ]
 
 jobs:
   build:
@@ -32,15 +32,15 @@ jobs:
         #Commit only if there are changes:
         (git diff --quiet && git diff --staged --quiet) \
           || (git commit -am "docs: update TOC" && git push origin develop)
-    - name: Setup Node.js and semantic-release plugins
+    - name: Setup Node.js
       uses: actions/setup-node@v1
       with:
         node-version: 17
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - run: npm install -g semantic-release @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/exec semantic-release/git semantic-release/release-notes-generator
-    - name: Release
+    - name: Install semantic-release plugins
+      run: npm install -g semantic-release @semantic-release/changelog @semantic-release/commit-analyzer @semantic-release/exec semantic-release/git semantic-release/release-notes-generator
+    - name: Publish and release
+      run: chmod +x ./prepare_release.sh && npx semantic-release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: chmod +x ./prepare_release.sh && npx semantic-release
-
