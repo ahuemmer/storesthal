@@ -117,8 +117,6 @@ publishing {
             pom.withXml {
                 asNode().children().last() + pomConfig
             }
-
-
         }
     }
     repositories {
