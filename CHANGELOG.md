@@ -1,5 +1,12 @@
 # Semantic Versioning Changelog
 
+## [1.3.1](https://github.com/ahuemmer/storesthal/compare/v1.3.0...v1.3.1) (2022-01-25)
+
+
+### Bug Fixes
+
+* make it look like a fix... ([3bf1c0a](https://github.com/ahuemmer/storesthal/commit/3bf1c0add0760fe9a69538d36f1208beb91f0198))
+
 # [1.3.0](https://github.com/ahuemmer/storesthal/compare/v1.2.0...v1.3.0) (2022-01-25)
 
 
