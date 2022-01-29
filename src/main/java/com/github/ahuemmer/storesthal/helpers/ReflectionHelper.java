@@ -1,5 +1,7 @@
-package com.github.ahuemmer.storesthal;
+package com.github.ahuemmer.storesthal.helpers;
 
+import com.github.ahuemmer.storesthal.HALRelation;
+import com.github.ahuemmer.storesthal.Storesthal;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,7 @@ import java.util.Set;
 /**
  * Static helper class bundling some reflection related methods.
  */
+@SuppressWarnings("rawtypes")
 public class ReflectionHelper {
 
     /**
@@ -25,6 +28,7 @@ public class ReflectionHelper {
      * @param objectClass The class to search for the annotation
      * @return All methods of the object class having the annotation specified (if any)
      */
+    @SuppressWarnings("rawtypes")
     private static Set<Method> getMethodsAnnotatedWith(Class objectClass) {
 
         Set<Method> result = new HashSet<>();
@@ -131,7 +135,7 @@ public class ReflectionHelper {
      * @param rel The name of the relation
      * @return A matching setter method or `null` if none was found.
      */
-    static Method searchForSetter(Class objectClass, String rel) {
+    public static Method searchForSetter(Class objectClass, String rel) {
 
         ReflectionHelper.logger.debug("Searching setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\"");
 

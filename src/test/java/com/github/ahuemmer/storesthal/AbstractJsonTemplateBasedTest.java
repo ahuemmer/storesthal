@@ -36,7 +36,15 @@ abstract class AbstractJsonTemplateBasedTest {
             .dynamicPort();
     //.notifier(new ConsoleNotifier(true));
 
-    protected void configureServerMock(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {
+    protected void configureServerMock(String url, String answerToSend) {
+        serverMock.addStubMapping(stubFor(get(urlEqualTo(url))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                        .withBody(answerToSend))));
+    }
+
+    protected void configureServerMockWithResponseFile(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {
 
         Map<String, String> substitutions =  new HashMap<>();
         substitutions.put("port", String.valueOf(serverMock.port()));
@@ -46,15 +54,11 @@ abstract class AbstractJsonTemplateBasedTest {
             substitutions.putAll(additionalSubstitutions);
         }
 
-        serverMock.addStubMapping(stubFor(get(urlEqualTo(url))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
-                        .withBody(getJsonFileContent(responseFileName, substitutions)))));
+        configureServerMock(url, getJsonFileContent(responseFileName, substitutions));
     }
 
-    protected void configureServerMock(String url, String responseFileName) throws IOException {
-        configureServerMock(url,responseFileName,null);
+    protected void configureServerMockWithResponseFile(String url, String responseFileName) throws IOException {
+        configureServerMockWithResponseFile(url, responseFileName,null);
     }
 
     protected static String createJsonHrefArray(String[] entries) {

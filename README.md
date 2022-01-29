@@ -1,6 +1,3 @@
-
-
-
 # Storesthal
 A simple solution for JSON-HAL object retrieval and caching.
 
@@ -20,6 +17,8 @@ A simple solution for JSON-HAL object retrieval and caching.
   - __[Collections](#collections)__
   - __[Relations](#relations)__
   - __[Caching](#caching)__
+  - __[Caveats](#caveats)__
+  - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
   - __[Possible future plans](#possible-future-plans)__
@@ -40,7 +39,6 @@ Another speciality of storestahl is, that is will automatically follow [HAL](htt
 - Extensive test set
 - Customizable relation and caching settings
 - Comprehensive documentation
-
 
 ## Example
 
@@ -254,6 +252,33 @@ object structure as two references to the same URI would result in two different
 
 Please note, that the intermediate cache is only used within one single `getObject` call. It will be cleared before the next one starts. So, it will probably be in use for a few seconds
 (or probably less) only.
+
+### Caveats
+
+- Please make sure, your HTTP answer has the correct `Content-Type` set in its header: `application/hal+json` (and possibly a `charset=...` appended) . Otherwise, relations might not be found even though they are delivered correctly via `_links`! (See (Non-HAL-answer retrieval)[#non-hal-answer-retrieval] below for alternatives.)
+- The standard demands a valid URL for each relation link. So, `"_links": {"child": {"href": null}}` is not allowed to indicate that there is no child object! In this case, there must not be any `"child"` link, otherwise an error will occur.
+
+### Non-HAL-answer retrieval
+
+Sometimes, you might need to retrieve non-HAL-answer from a remote web service. Storesthal supports this as well, even in combination with the [caching mechanisms described](#caching).
+I'll refer these non-HAL answers as "primitives" here, though `String` is not a primitive in Java language sense.
+There are four ways of retrieving primitives using Storesthal:
+
+|Method|Description|Example web service answer|Result|
+|---|---|---|---|
+|`Storesthal.getInteger()`|Retrieves integer values|`-56438`|`-56448` as an `Integer`|
+|`Storesthal.getDouble()`|Retrieves double values|`-53995.232`|`-53995.232` as `Double`|
+|`Storesthal.getBoolean()`|Retrieves boolean values|`true`|`Boolean` with `true` value|
+|`Storesthal.getString()`|Retrieves string values|`Hello, this is a string`|`String` containing `Hello, this is a string` value|
+
+Please note, that the final conversion of the web service answer is done by Spring's [`RestTemplate.getForObject()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html#getForObject-java.net.URI-java.lang.Class-) method,
+so you might find further information there.
+
+Each of the methods above has two overloaded methods for convenience, allowing you finer-grained caching control:
+
+ - `get[Integer|Doouble|Boolean|String](String url)`: The method call with just the web service URL as parameter will return the desired primitive _without any caching_.
+ - `get[Integer|Doouble|Boolean|String](String url, boolean doCache)`: If `doCache` is `true`, the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by `Storesthal.COMMON_CACHE_NAME`.
+ - `get[Integer|Doouble|Boolean|String](String url, String cacheName)`: If `cacheName` is not `null`, the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by `cacheName`, otherwise the cache denoted by `Storesthal.COMMON_CACHE_NAME` will be used.
 
 ## What's that name about... :thinking:?
 

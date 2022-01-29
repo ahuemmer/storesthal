@@ -15,7 +15,8 @@ if (file('secrets.gradle').exists()) {
 }
 else {
     //Possibly we're using GitHub Actions, where the token is set automatically:
-    ext.ghToken =  "$System.env.GITHUB_TOKEN"
+    ext.ghToken = "$System.env.GITHUB_TOKEN"
+    ext.ghActor = "$System.env.GITHUB_ACTOR"
 }
 
 
@@ -23,12 +24,19 @@ group='com.github.ahuemmer'
 
 repositories {
     mavenLocal()
-    jcenter()
+    mavenCentral()
     maven {
         url = 'https://jitpack.io'
     }
     maven {
         url = 'https://repo.maven.apache.org/maven2'
+    }
+    maven {
+        url = 'https://maven.pkg.github.com/ahuemmer/storesthal'
+        credentials {
+            username = project.ghActor
+            password = project.ghToken
+        }
     }
 }
 
@@ -86,12 +94,39 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+def pomConfig = {
+    scm {
+        url 'https://github.com/ahuemmer/storesthal'
+    }
+    distributionManagement {
+        repository {
+            id 'github'
+            name 'Storesthal Apache Maven Packages'
+            url 'https://maven.pkg.github.com/ahuemmer/storesthal'
+        }
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from(components.java)
             artifact sourcesJar
             artifact javadocJar
+
+            pom.withXml {
+                asNode().children().last() + pomConfig
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/ahuemmer/storesthal"
+            credentials {
+                username = project.ghActor
+                password = project.ghToken
+            }
         }
     }
 }

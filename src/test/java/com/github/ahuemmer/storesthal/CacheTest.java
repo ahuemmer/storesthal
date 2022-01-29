@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test set to make sure that caching works as designed.
  */
+@SuppressWarnings("rawtypes")
 class CacheTest extends AbstractJsonTemplateBasedTest {
 
     /**
@@ -49,15 +50,15 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
      */
     @Test
     public void doesCacheEveryNewObject() throws IOException, StoresthalException {
-        configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "12", "childName", "Testchild 1!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/2", "simpleChildObjectWithParentRelation.json", Map.of("childId", "23", "childName", "Testchild 2!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/3", "simpleChildObjectWithParentRelation.json", Map.of("childId", "34", "childName", "Testchild 3!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/4", "simpleChildObjectWithParentRelation.json", Map.of("childId", "45", "childName", "Testchild 4!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/5", "simpleChildObjectWithParentRelation.json", Map.of("childId", "56", "childName", "Testchild 5!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/6", "simpleChildObjectWithParentRelation.json", Map.of("childId", "67", "childName", "Testchild 6!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/7", "simpleChildObjectWithParentRelation.json", Map.of("childId", "78", "childName", "Testchild 7!", "parent", "/parentObjects/124"));
-        configureServerMock("/complexChildren1/8", "simpleChildObjectWithParentRelation.json", Map.of("childId", "89", "childName", "Testchild 8!", "parent", "/parentObjects/124"));
-        configureServerMock("/parentObjects/124", "complexObject1.json");
+        configureServerMockWithResponseFile("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "12", "childName", "Testchild 1!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/2", "simpleChildObjectWithParentRelation.json", Map.of("childId", "23", "childName", "Testchild 2!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/3", "simpleChildObjectWithParentRelation.json", Map.of("childId", "34", "childName", "Testchild 3!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/4", "simpleChildObjectWithParentRelation.json", Map.of("childId", "45", "childName", "Testchild 4!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/5", "simpleChildObjectWithParentRelation.json", Map.of("childId", "56", "childName", "Testchild 5!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/6", "simpleChildObjectWithParentRelation.json", Map.of("childId", "67", "childName", "Testchild 6!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/7", "simpleChildObjectWithParentRelation.json", Map.of("childId", "78", "childName", "Testchild 7!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/complexChildren1/8", "simpleChildObjectWithParentRelation.json", Map.of("childId", "89", "childName", "Testchild 8!", "parent", "/parentObjects/124"));
+        configureServerMockWithResponseFile("/parentObjects/124", "complexObject1.json");
 
         serverMock.start();
 
@@ -91,7 +92,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesntCacheUncacheableObjects() throws StoresthalException, IOException {
 
-        configureServerMock("/objects/1", "simpleObject2.json", Map.of("objectId", "5483790", "name", "Test 1... 2... 3...", "tags", "null"));
+        configureServerMockWithResponseFile("/objects/1", "simpleObject2.json", Map.of("objectId", "5483790", "name", "Test 1... 2... 3...", "tags", "null"));
 
         UncacheableParentObject lastObject = null;
 
@@ -118,7 +119,7 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesClearCachesCorrectly() throws IOException, StoresthalException {
 
-        configureServerMock("/objects/1", "complexObject1.json", Map.of("childId", "12", "childName", "Testchild 1!", "self", "http://localhost:${port}/objects/1"));
+        configureServerMockWithResponseFile("/objects/1", "complexObject1.json", Map.of("childId", "12", "childName", "Testchild 1!", "self", "http://localhost:${port}/objects/1"));
 
         serverMock.start();
 
@@ -185,12 +186,12 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     public void doesRespectCacheSize() throws IOException, StoresthalException {
 
         for (int i = 1; i < 9; i++) {
-            configureServerMock("/objects/" + i, "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i), "childName", "Testchild " + i + "!", "parent", "/parentObjects/" + i));
-            configureServerMock("/parentObjects/" + i, "simpleObject2.json", Map.of("objectId", String.valueOf(i), "name", "Testparent " + i, "tags", "null"));
+            configureServerMockWithResponseFile("/objects/" + i, "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i), "childName", "Testchild " + i + "!", "parent", "/parentObjects/" + i));
+            configureServerMockWithResponseFile("/parentObjects/" + i, "simpleObject2.json", Map.of("objectId", String.valueOf(i), "name", "Testparent " + i, "tags", "null"));
         }
 
         for (int i = 1; i < 5; i++) {
-            configureServerMock("/objects/" + (i + 8), "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i + 8), "childName", "Testchild " + (i + 8) + "!", "parent", "/parentObjects/" + i));
+            configureServerMockWithResponseFile("/objects/" + (i + 8), "simpleChildObjectWithParentRelation.json", Map.of("childId", String.valueOf(i + 8), "childName", "Testchild " + (i + 8) + "!", "parent", "/parentObjects/" + i));
         }
 
         serverMock.start();
@@ -272,8 +273,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
     @Test
     public void doesMaintainObjectIntegrity() throws IOException, StoresthalException {
 
-        configureServerMock("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124", "self", "http://localhost:${port}/complexChildren1/1"));
-        configureServerMock("/parentObjects/124", "complexObject1.json");
+        configureServerMockWithResponseFile("/complexChildren1/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "321", "childName", "Another test...", "parent", "/parentObjects/124", "self", "http://localhost:${port}/complexChildren1/1"));
+        configureServerMockWithResponseFile("/parentObjects/124", "complexObject1.json");
 
         serverMock.start();
 
@@ -299,8 +300,6 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(1, Storesthal.getCachedObjectCount(CHILD_CACHE_NAME));
         assertSame(test, test2);
         assertSame(test.getParent(), test2.getParent());
-
-        ParentObject testParent = test.getParent();
 
         Storesthal.clearCache(PARENT_CACHE_NAME,false);
 

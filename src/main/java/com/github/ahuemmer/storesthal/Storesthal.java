@@ -3,6 +3,9 @@ package com.github.ahuemmer.storesthal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
+import com.github.ahuemmer.storesthal.helpers.CacheManager;
+import com.github.ahuemmer.storesthal.helpers.ReflectionHelper;
+import com.github.ahuemmer.storesthal.helpers.PrimitiveValueRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -36,6 +39,13 @@ import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 public class Storesthal {
 
     /**
+     * Depending on the state of {@link #initialized}, init the object store with the default configuration.
+     */
+    static {
+        init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
+    }
+
+    /**
      * The total number of HTTP calls made.
      * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
      * {@link #getStatistics()} or {@link #printStatistics()}.
@@ -43,29 +53,9 @@ public class Storesthal {
     private static int httpCalls = 0;
 
     /**
-     * A map containing the number of cache misses by cache (name) for statistics creation.
-     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
-     * {@link #getStatistics()} or {@link #printStatistics()}.
-     */
-    private static final Map<String, Integer> cacheMisses = new HashMap<>();
-
-    /**
-     * A map containing the number of cache hits by cache (name) for statistics creation.
-     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
-     * {@link #getStatistics()} or {@link #printStatistics()}.
-     */
-    private static final Map<String, Integer> cacheHits = new HashMap<>();
-
-    /**
      * The logger.
      */
     private static final Logger logger = LoggerFactory.getLogger(Storesthal.class);
-
-    /**
-     * The name of the intermediate cache. This cache is only used while traversing the objects / relations found during
-     * a single {@link #getObject(String, Class)} call.
-     */
-    private static final String INTERMEDIATE_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.intermediate";
 
     /**
      * During a single {@link #getObject(String, Class)} call, transient object references are stored here. Such
@@ -82,12 +72,6 @@ public class Storesthal {
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object, Method>>> invokeLater = new HashMap<>();
 
     /**
-     * All configured object caches are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
-     * and {@link Cacheable#cacheName()}).
-     */
-    private static final Map<String, LRUCache<URI, Object>> caches = new HashMap<>();
-
-    /**
      * The configuration the object store runs with.
      */
     private static StoresthalConfiguration configuration;
@@ -99,20 +83,6 @@ public class Storesthal {
     public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
 
     /**
-     * Indicates whether the object store has already been initialized / configured.
-     */
-    private static boolean initialized = false;
-
-    /**
-     * Depending on the state of {@link #initialized}, init the object store with the default configuration.
-     */
-    private static void init() {
-        if (!initialized) {
-            init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
-        }
-    }
-
-    /**
      * Init the store with a new configuration. This should only be called initially, before using the store, as
      * all caches are cleared during initialization!
      *
@@ -120,8 +90,10 @@ public class Storesthal {
      */
     public static void init(final StoresthalConfiguration configuration) {
         Storesthal.configuration = configuration;
-        clearAllCaches(true);
-        initialized = true;
+        /**
+         * The cache manager object
+         */
+        CacheManager cacheManager = CacheManager.getInstance(configuration);
     }
 
     /**
@@ -143,6 +115,7 @@ public class Storesthal {
      * @param collection Whether to regard REST response as a collection, therefore using ArrayList as type
      * @return HAL supporting message converter
      */
+    @SuppressWarnings("rawtypes")
     private static HttpMessageConverter getHalMessageConverter(boolean collection) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jackson2HalModule());
@@ -199,7 +172,7 @@ public class Storesthal {
      * @param <T>                The type of the object having the collection
      * @throws StoresthalException if something fails and the collection cannot be retrieved or handled
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, Set<URI> linksVisited, T intermediateResult, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
@@ -260,83 +233,6 @@ public class Storesthal {
     }
 
     /**
-     * Try to retrieve an object from the associated cache (or the common cache, if the {@link Cacheable} annotation does
-     * not state an explicit cache name).
-     *
-     * @param uri         The object's URI
-     * @param objectClass The class of the object
-     * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> T getObjectFromCache(URI uri, Class objectClass) {
-
-        logger.debug("Trying to get object with URI " + uri + " from cache...");
-
-        LRUCache<URI, Object> cache = getCache(objectClass);
-
-        if (configuration.isCachingDisabled() && !(cache.getCacheName().equals(INTERMEDIATE_CACHE_NAME))) {
-            logger.debug("Caching is disabled!");
-            return null;
-        }
-
-        T result = (T) cache.get(uri);
-
-        if (result != null) {
-            cacheHits.putIfAbsent(cache.getCacheName(), 0);
-            cacheHits.put(cache.getCacheName(), cacheHits.get(cache.getCacheName()) + 1);
-            logger.debug("Cache hit for URI " + uri + " in cache \"" + cache.getCacheName() + "\"!");
-        } else {
-            cacheMisses.putIfAbsent(cache.getCacheName(), 0);
-            cacheMisses.put(cache.getCacheName(), cacheMisses.get(cache.getCacheName()) + 1);
-            logger.debug("Cache miss for URI " + uri + " in cache \"" + cache.getCacheName() + "\"!");
-        }
-        return result;
-    }
-
-    /**
-     * Find the cache an object belongs into and put it there.
-     *
-     * @param uri    The uri of the object
-     * @param object The object to be cached
-     */
-    @SuppressWarnings("unchecked")
-    private static void putObjectInCache(URI uri, Object object) {
-
-        LRUCache cache = getCache(object.getClass());
-
-        if (configuration.isCachingDisabled() && !(cache.getCacheName().equals(INTERMEDIATE_CACHE_NAME))) {
-            return;
-        }
-
-        logger.debug("Putting one object of class \"" + object + "\" into cache named \"" + cache.getCacheName() + "\" for URI " + uri.toString());
-
-        cache.put(uri, object);
-
-        logger.debug("\"" + cache.getCacheName() + "\" cache size is now: " + cache.size());
-
-    }
-
-    /**
-     * Get the cache for a specific object class.
-     *
-     * @param cls The object class
-     * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
-     */
-    private static LRUCache<URI, Object> getCache(Class cls) {
-        Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
-
-        String cacheName = (annotation != null) ? annotation.cacheName() : INTERMEDIATE_CACHE_NAME;
-
-        logger.debug("Cache for object class \"" + cls.getCanonicalName() + "\" is named \"" + cacheName + "\".");
-
-        int cacheSize = (annotation != null) ? annotation.cacheSize() : configuration.getDefaultCacheSize();
-
-        caches.putIfAbsent(cacheName, new LRUCache<>(cacheName, cacheSize));
-
-        return caches.get(cacheName);
-    }
-
-    /**
      * Follow a link encountered when parsing an object
      *
      * @param l                  The link to follow
@@ -349,7 +245,7 @@ public class Storesthal {
      * @throws StoresthalException If the link URL is invalid or an array collection is encountered
      *                             (array collections are not supported (yet?))
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
 
         logger.debug("Following link: "+l.toUri());
@@ -429,9 +325,177 @@ public class Storesthal {
         }
     }
 
+    /**
+     * Retrieve an Integer (just an Integer, no special object...) from the given URL.
+     * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
+     *               one of the overloaded functions.
+     * @param url The URL to retrieve the integer from.
+     * @return    The integer retrieved.
+     * @throws StoresthalException If it was not possible to retrieve an Integer
+     */
+    public static Integer getInteger(String url) throws StoresthalException {
+        return getInteger(url, false);
+    }
+
+    /**
+     * Retrieve an Integer (just an Integer, no special object...) from the given URL.
+     * @param url     The URL to retrieve the integer from.
+     * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
+     *                use the overloaded function to specify a different cache name if needed.)
+     * @return The integer retrieved.
+     * @throws StoresthalException If it was not possible to retrieve an Integer
+     */
+    public static Integer getInteger(String url, boolean doCache) throws StoresthalException {
+
+        if (doCache) {
+            return PrimitiveValueRetriever.getPrimitive(Integer.class, url, true, Storesthal.COMMON_CACHE_NAME);
+        }
+
+        return PrimitiveValueRetriever.getPrimitive(Integer.class, url, false, null);
+    }
+
+    /**
+     * Retrieve an Integer (just an Integer, no special object...) from the given URL.
+     * @param url       The URL to retrieve the integer from.
+     * @param cacheName The name of the cache to used when retrieving the integer.
+     * @return The integer retrieved.
+     * @throws StoresthalException If it was not possible to retrieve an Integer
+     */
+    public static Integer getInteger(String url, String cacheName) throws StoresthalException {
+        return PrimitiveValueRetriever.getPrimitive(Integer.class, url, true, cacheName);
+    }
+
+    /**
+     * Retrieve a Double (just a Double, no special object...) from the given URL.
+     * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
+     *               one of the overloaded functions.
+     * @param url The URL to retrieve the Double from.
+     * @return    The Double retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Double
+     */
+    public static Double getDouble(String url) throws StoresthalException {
+        return getDouble(url, false);
+    }
+
+    /**
+     * Retrieve a Double (just a Double, no special object...) from the given URL.
+     * @param url     The URL to retrieve the Double from.
+     * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
+     *                use the overloaded function to specify a different cache name if needed.)
+     * @return The Double retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Double
+     */
+    public static Double getDouble(String url, boolean doCache) throws StoresthalException {
+
+        if (doCache) {
+            return PrimitiveValueRetriever.getPrimitive(Double.class, url, true, Storesthal.COMMON_CACHE_NAME);
+        }
+
+        return PrimitiveValueRetriever.getPrimitive(Double.class, url, false, null);
+    }
+
+    /**
+     * Retrieve an Double (just a Double, no special object...) from the given URL.
+     * @param url       The URL to retrieve the Double from.
+     * @param cacheName The name of the cache to used when retrieving the Double.
+     * @return The Double retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Double
+     */
+    public static Double getDouble(String url, String cacheName) throws StoresthalException {
+        return PrimitiveValueRetriever.getPrimitive(Double.class, url, true, cacheName);
+    }
+
+    /**
+     * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
+     * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
+     *               one of the overloaded functions.
+     * @param url The URL to retrieve the Boolean from.
+     * @return    The Boolean retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Boolean
+     */
+    public static Boolean getBoolean(String url) throws StoresthalException {
+        return getBoolean(url, false);
+    }
+
+    /**
+     * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
+     * @param url     The URL to retrieve the Boolean from.
+     * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
+     *                use the overloaded function to specify a different cache name if needed.)
+     * @return The Boolean retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Boolean
+     */
+    public static Boolean getBoolean(String url, boolean doCache) throws StoresthalException {
+
+        if (doCache) {
+            return PrimitiveValueRetriever.getPrimitive(Boolean.class, url, true, Storesthal.COMMON_CACHE_NAME);
+        }
+
+        return PrimitiveValueRetriever.getPrimitive(Boolean.class, url, false, null);
+    }
+
+    /**
+     * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
+     * @param url       The URL to retrieve the Boolean from.
+     * @param cacheName The name of the cache to used when retrieving the Boolean.
+     * @return The Boolean retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a Boolean
+     */
+    public static Boolean getBoolean(String url, String cacheName) throws StoresthalException {
+        return PrimitiveValueRetriever.getPrimitive(Boolean.class, url, true, cacheName);
+    }
+
+    /**
+     * Retrieve a String (just a String, no other object...) from the given URL.
+     * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
+     *               one of the overloaded functions.
+     * @param url The URL to retrieve the String from.
+     * @return    The String retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a String
+     */
+    public static String getString(String url) throws StoresthalException {
+        return getString(url, false);
+    }
+
+    /**
+     * Retrieve a String (just a String, no other object...) from the given URL.
+     * @param url     The URL to retrieve the String from.
+     * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
+     *                use the overloaded function to specify a different cache name if needed.)
+     * @return The String retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a String
+     */
+    public static String getString(String url, boolean doCache) throws StoresthalException {
+
+        if (doCache) {
+            return PrimitiveValueRetriever.getPrimitive(String.class, url, true, Storesthal.COMMON_CACHE_NAME);
+        }
+
+        return PrimitiveValueRetriever.getPrimitive(String.class, url, false, null);
+    }
+
+    /**
+     * Retrieve a String (just a String, no other object...) from the given URL.
+     * @param url       The URL to retrieve the String from.
+     * @param cacheName The name of the cache to used when retrieving the String.
+     * @return The String retrieved.
+     * @throws StoresthalException If it was not possible to retrieve a String
+     */
+    public static String getString(String url, String cacheName) throws StoresthalException {
+        return PrimitiveValueRetriever.getPrimitive(String.class, url, true, cacheName);
+    }
+
+    /**
+     * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.
+     * @param url         The URL to retrieve the collection from.
+     * @param objectClass The class of the collection items to be returned.
+     * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
+     * @return The collection requested.
+     * @throws StoresthalException if no collection could be retrieved.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
 
-        init();
         logger.info("Getting object collection of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
 
         URI uri;
@@ -442,7 +506,7 @@ public class Storesthal {
             throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
         }
 
-        ArrayList<T> resultFromCache = getObjectFromCache(uri, objectClass);
+        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -450,7 +514,7 @@ public class Storesthal {
 
         httpCalls += 1;
 
-        logger.debug("Adding URI " + uri.toString() + " to transient objects...");
+        logger.debug("Adding URI " + uri + " to transient objects...");
         transientObjects.add(uri);
 
         ResponseEntity response =
@@ -467,20 +531,20 @@ public class Storesthal {
 
         ArrayList<EntityModel<T>> result = (ArrayList<EntityModel<T>>) response.getBody();
 
-        ArrayList realResult = new ArrayList<T>();
+        ArrayList<T> realResult = new ArrayList<>();
 
         Set<URI> linksVisited = new HashSet<>();
-        Map<String, Collection> collections = new HashMap<>();
+        @SuppressWarnings("rawtypes") Map<String, Collection> collections = new HashMap<>();
 
         linksVisited.add(uri);
         int objectCounter = 0;
-        for (EntityModel<T> entry : result) {
+        for (EntityModel<T> entry : Objects.requireNonNull(result)) {
             realResult.add(entry.getContent());
             for (Link l : entry.getLinks()) {
                 if ("self".equals(l.getRel().value())) {
                     logger.debug("Self-Link for object: "+l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        putObjectInCache(l.toUri(), entry.getContent());
+                        CacheManager.putObjectInCache(l.toUri(), entry.getContent(), null);
                     }
                 }
                 else {
@@ -489,21 +553,21 @@ public class Storesthal {
             }
             objectCounter++;
         }
-        putObjectInCache(uri, realResult);
+        CacheManager.putObjectInCache(uri, realResult, null);
 
         for (URI invokeUri : invokeLater.keySet()) {
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
             for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = getObjectFromCache(invokeUri, objectClass);
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
                 invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
             }
         }
 
         transientObjects.clear();
-        clearCache(INTERMEDIATE_CACHE_NAME, true);
+        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
         invokeLater.clear();
 
-        logger.debug("Removing URI " + uri.toString() + " from transient objects...");
+        logger.debug("Removing URI " + uri + " from transient objects...");
         transientObjects.remove(uri);
 
         return realResult;
@@ -521,7 +585,7 @@ public class Storesthal {
      * @return The object queried
      * @throws StoresthalException if the URL is invalid
      */
-    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, Map<String, Collection> collections, int depth) throws StoresthalException {
+    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
 
         URI uri;
 
@@ -531,7 +595,7 @@ public class Storesthal {
             throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
         }
 
-        T resultFromCache = getObjectFromCache(uri, objectClass);
+        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -539,13 +603,13 @@ public class Storesthal {
 
         httpCalls += 1;
 
-        logger.debug("Adding URI " + uri.toString() + " to transient objects...");
+        logger.debug("Adding URI " + uri + " to transient objects...");
         transientObjects.add(uri);
 
         //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
         ResponseEntity<EntityModel<T>> response =
                 getRestTemplateWithHalMessageConverter(false).exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<EntityModel<T>>() {
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
                             @Override
                             @NonNull
                             public Type getType() {
@@ -558,7 +622,7 @@ public class Storesthal {
                                 return type;
                             }
                         });
-        T result = response.getBody().getContent();
+        T result = Objects.requireNonNull(response.getBody()).getContent();
 
 
         linksVisited.add(uri);
@@ -567,14 +631,14 @@ public class Storesthal {
             if ("self".equals(l.getRel().value())) {
                 logger.debug("Self-Link for object: "+l.toUri());
                 if (!(l.getRel().value().isBlank())) {
-                    putObjectInCache(l.toUri(), result);
+                    CacheManager.putObjectInCache(l.toUri(), result, null);
                 }
             }
             else {
                 followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
             }
         }
-        putObjectInCache(uri, result);
+        CacheManager.putObjectInCache(uri, result, null);
 
 
         /*
@@ -588,22 +652,21 @@ public class Storesthal {
             for (URI invokeUri : invokeLater.keySet()) {
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                    Object cachedObject = getObjectFromCache(invokeUri, objectClass);
+                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }
 
             transientObjects.clear();
-            clearCache(INTERMEDIATE_CACHE_NAME, true);
+            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
             invokeLater.clear();
         }
 
-        logger.debug("Removing URI " + uri.toString() + " from transient objects...");
+        logger.debug("Removing URI " + uri + " from transient objects...");
         transientObjects.remove(uri);
 
         return result;
     }
-
 
     /**
      * Retrieve an object from an URL. Calling GET on the URL is expected to return UTF-8-encoded JSON. If the JSON
@@ -631,14 +694,55 @@ public class Storesthal {
     public static <T> T getObject(String url, Class<T> objectClass) throws StoresthalException {
 
         if (Collection.class.isAssignableFrom(objectClass)) {
-            logger.warn("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.\n" +
-                    "Please consider using Storesthal.getCollection in that case.\n" +
-                    "(Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)\n");
+            logger.warn("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.\n"+
+                    "Please consider using Storesthal.getCollection in that case.\n"+
+                    "(Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)");
         }
 
-        init();
         logger.info("Getting object of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
+    }
+
+    /**
+     * For debugging purposes only: Print out some statistics to `stdout`.
+     */
+    public static void printStatistics() {
+        System.out.println("Storesthal statistics:");
+        System.out.println("-------------------------");
+        System.out.println("- HTTP Calls: " + httpCalls);
+        System.out.println("- Cache hits:");
+        CacheManager.getCacheHits().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits().get(key)));
+        System.out.println("- Cache misses:");
+        CacheManager.getCacheMisses().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses().get(key)));
+    }
+
+    /**
+     * Reset all statistics about HTTP calls, cache hits and cache misses.
+     */
+    public static void resetStatistics() {
+        httpCalls = 0;
+        PrimitiveValueRetriever.resetStatistics();
+        CacheManager.resetStatistics();
+    }
+
+    /**
+     * Clear all caches, but do not clear the cache statistics.
+     */
+    public static void clearAllCaches() {
+        CacheManager.clearAllCaches(false);
+    }
+
+    /**
+     * Clear all caches and possibly their related statistics as well.
+     *
+     * @param clearStatisticsAsWell Whether to clear all cache hit and miss statistics as well (resetting
+     *                              all of them to zero).
+     */
+    public static void clearAllCaches(boolean clearStatisticsAsWell) {
+        CacheManager.clearAllCaches(clearStatisticsAsWell);
+        if (clearStatisticsAsWell) {
+            httpCalls = 0;
+        }
     }
 
     /**
@@ -650,35 +754,10 @@ public class Storesthal {
      * @return The cache statistics map
      */
     public static Map<String, Object> getStatistics() {
-        return Map.of("httpCalls", httpCalls, "cacheHits", cacheHits, "cacheMisses", cacheMisses);
-    }
-
-    /**
-     * Reset all statistics about HTTP calls, cache hits and cache misses.
-     */
-    public static void resetStatistics() {
-        httpCalls = 0;
-        cacheHits.clear();
-        cacheMisses.clear();
-    }
-
-    /**
-     * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
-     * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
-     * a matching call to {@link #getObject(String, Class)} occurs).
-     *
-     * @param cacheName             The cache to clear.
-     * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
-     *                              both of them to zero).
-     */
-    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
-        if (caches.containsKey(cacheName)) {
-            caches.get(cacheName).clear();
-        }
-        if (clearStatisticsAsWell) {
-            cacheHits.put(cacheName, 0);
-            cacheMisses.put(cacheName, 0);
-        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("httpCalls", httpCalls + PrimitiveValueRetriever.getHttpCalls());
+        result.putAll(CacheManager.getStatistics());
+        return result;
     }
 
     /**
@@ -689,46 +768,20 @@ public class Storesthal {
      * empty or doesn't exist (yet).
      */
     public static int getCachedObjectCount(String cacheName) {
-        if (caches.get(cacheName) == null) {
-            return 0;
-        }
-        return caches.get(cacheName).size();
+        return CacheManager.getCachedObjectCount(cacheName);
     }
 
     /**
-     * Clear all caches, but do not clear the cache statistics.
-     */
-    public static void clearAllCaches() {
-        clearAllCaches(false);
-    }
-
-    /**
-     * Clear all caches and possibly their related statistics as well.
+     * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
+     * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
+     * a matching call to {@link Storesthal#getObject(String, Class)} occurs).
      *
-     * @param clearStatisticsAsWell Whether to clear all cache hit and miss statistics as well (resetting
-     *                              all of them to zero).
+     * @param cacheName             The cache to clear.
+     * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
+     *                              both of them to zero).
      */
-    public static void clearAllCaches(boolean clearStatisticsAsWell) {
-        for (String key : caches.keySet()) {
-            clearCache(key, clearStatisticsAsWell);
-        }
-        if (clearStatisticsAsWell) {
-            httpCalls = 0;
-        }
-    }
-
-    /**
-     * For debugging purposes only: Print out some statistics to `stdout`.
-     */
-    public static void printStatistics() {
-        System.out.println("Storesthal statistics:");
-        System.out.println("-------------------------");
-        System.out.println("- HTTP Calls: " + httpCalls);
-        System.out.println("- Cache hits:");
-        cacheHits.keySet().forEach(key -> System.out.println("   - " + key + ": " + cacheHits.get(key)));
-        System.out.println("- Cache misses:");
-        cacheMisses.keySet().forEach(key -> System.out.println("   - " + key + ": " + cacheHits.get(key)));
-
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
+        CacheManager.clearCache(cacheName, clearStatisticsAsWell);
     }
 
 }
