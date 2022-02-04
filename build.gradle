@@ -128,16 +128,6 @@ publishing {
             }
         }
     }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/ahuemmer/storesthal"
-            credentials {
-                username = project.ghActor
-                password = project.ghToken
-            }
-        }
-    }
 }
 
 tocme {
