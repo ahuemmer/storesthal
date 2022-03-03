@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.lang.NonNull;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.*;
@@ -605,23 +606,28 @@ public class Storesthal {
 
         logger.debug("Adding URI " + uri + " to transient objects...");
         transientObjects.add(uri);
-
-        //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
         ResponseEntity<EntityModel<T>> response =
-                getRestTemplateWithHalMessageConverter(false).exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
-                            @Override
-                            @NonNull
-                            public Type getType() {
-                                Type type = super.getType();
-                                if (type instanceof ParameterizedType) {
-                                    Type[] responseWrapperActualTypes = {objectClass};
-                                    return parameterize(EntityModel.class,
-                                            responseWrapperActualTypes);
-                                }
-                                return type;
+                null;
+
+        try {
+            //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
+            response = getRestTemplateWithHalMessageConverter(false).exchange(url,
+                    HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
+                        @Override
+                        @NonNull
+                        public Type getType() {
+                            Type type = super.getType();
+                            if (type instanceof ParameterizedType) {
+                                Type[] responseWrapperActualTypes = {objectClass};
+                                return parameterize(EntityModel.class,
+                                        responseWrapperActualTypes);
                             }
-                        });
+                            return type;
+                        }
+                    });
+        } catch (RestClientException e) {
+            throw new StoresthalException("Exception trying to get object from "+url, e);
+        }
         T result = Objects.requireNonNull(response.getBody()).getContent();
 
 
