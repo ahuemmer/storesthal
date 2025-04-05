@@ -1,11 +1,12 @@
 package com.github.ahuemmer.storesthal;
 
-import com.github.jenspiegsa.wiremockextension.ConfigureWireMock;
-import com.github.jenspiegsa.wiremockextension.InjectServer;
-import com.github.jenspiegsa.wiremockextension.WireMockSettings;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.Options;
+import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import org.apache.commons.text.StringSubstitutor;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
+import org.wiremock.spring.InjectWireMock;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +21,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 /**
  * Abstract test template, encapsulating the functionality to set up and utilize wiremock.
  */
-@WireMockSettings()
+@EnableWireMock
 abstract class AbstractJsonTemplateBasedTest {
 
     /**
@@ -28,7 +29,7 @@ abstract class AbstractJsonTemplateBasedTest {
      */
     protected static final String JSON_RESOURCE_FOLDER="json";
 
-    @InjectServer
+    @InjectWireMock
     WireMockServer serverMock;
 
     @ConfigureWireMock
@@ -37,11 +38,18 @@ abstract class AbstractJsonTemplateBasedTest {
     //.notifier(new ConsoleNotifier(true));
 
     protected void configureServerMock(String url, String answerToSend) {
-        serverMock.addStubMapping(stubFor(get(urlEqualTo(url))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
-                        .withBody(answerToSend))));
+
+        StubMapping stubMapping = stubFor(get(urlEqualTo(url))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                .withBody(answerToSend)));
+
+        if (serverMock.getStubMappings().contains(stubMapping)) {
+            serverMock.removeStubMapping(stubMapping);
+        }
+
+        serverMock.addStubMapping(stubMapping);
     }
 
     protected void configureServerMockWithResponseFile(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {

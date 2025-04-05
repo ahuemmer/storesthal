@@ -509,7 +509,6 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("collObject673896873", children.get(3).getChildName());
     }
 
-
     @Test
     public void canRetrieveComplexCollections() throws IOException, StoresthalException {
         configureServerMockWithResponseFile("/collection/coll", "complexCollection.json",
