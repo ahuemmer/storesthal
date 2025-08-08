@@ -109,4 +109,6 @@ public class StoresthalConfiguration {
         this.annotationless = annotationless;
     }
 
+    public static String jsonProperty="_embedded";
+
 }

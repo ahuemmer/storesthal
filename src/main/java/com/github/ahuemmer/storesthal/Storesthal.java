@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.helpers.CacheManager;
+import com.github.ahuemmer.storesthal.helpers.EmbeddedCollectionHelper;
 import com.github.ahuemmer.storesthal.helpers.ReflectionHelper;
 import com.github.ahuemmer.storesthal.helpers.PrimitiveValueRetriever;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import static com.fasterxml.jackson.core.JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION;
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 
@@ -123,12 +125,14 @@ public class Storesthal {
         MappingJackson2HttpMessageConverter halConverter;
         if (collection) {
             halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(ArrayList.class);
-        }
-        else {
+        } else {
             halConverter = new TypeConstrainedMappingJackson2HttpMessageConverter(RepresentationModel.class);
         }
         halConverter.setSupportedMediaTypes(Collections.singletonList(HAL_JSON));
         halConverter.setObjectMapper(objectMapper);
+
+        // Possibly useful for Debugging:
+        // objectMapper.enable(INCLUDE_SOURCE_IN_LOCATION);
         return halConverter;
     }
 
@@ -181,7 +185,7 @@ public class Storesthal {
 
         Class type = m.getParameterTypes()[0];
 
-        String collectionKey= parentObject+":"+objectCounter+":"+l.getRel().value();
+        String collectionKey = parentObject + ":" + objectCounter + ":" + l.getRel().value();
         Collection coll = collections.get(collectionKey);
 
         if (coll == null) {
@@ -197,7 +201,8 @@ public class Storesthal {
                 //TODO: Array...?
                 try {
                     coll = (Collection) type.getConstructor().newInstance();
-                } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+                         InvocationTargetException e) {
                     throw new StoresthalException("Could not instantiate collection of type \"" + type.getCanonicalName() + "\".", e);
                 }
             }
@@ -249,7 +254,7 @@ public class Storesthal {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
 
-        logger.debug("Following link: "+l.toUri());
+        logger.debug("Following link: " + l.toUri());
 
         URI uri;
 
@@ -329,9 +334,10 @@ public class Storesthal {
     /**
      * Retrieve an Integer (just an Integer, no special object...) from the given URL.
      * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
-     *               one of the overloaded functions.
+     * one of the overloaded functions.
+     *
      * @param url The URL to retrieve the integer from.
-     * @return    The integer retrieved.
+     * @return The integer retrieved.
      * @throws StoresthalException If it was not possible to retrieve an Integer
      */
     public static Integer getInteger(String url) throws StoresthalException {
@@ -340,6 +346,7 @@ public class Storesthal {
 
     /**
      * Retrieve an Integer (just an Integer, no special object...) from the given URL.
+     *
      * @param url     The URL to retrieve the integer from.
      * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
      *                use the overloaded function to specify a different cache name if needed.)
@@ -357,6 +364,7 @@ public class Storesthal {
 
     /**
      * Retrieve an Integer (just an Integer, no special object...) from the given URL.
+     *
      * @param url       The URL to retrieve the integer from.
      * @param cacheName The name of the cache to used when retrieving the integer.
      * @return The integer retrieved.
@@ -369,9 +377,10 @@ public class Storesthal {
     /**
      * Retrieve a Double (just a Double, no special object...) from the given URL.
      * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
-     *               one of the overloaded functions.
+     * one of the overloaded functions.
+     *
      * @param url The URL to retrieve the Double from.
-     * @return    The Double retrieved.
+     * @return The Double retrieved.
      * @throws StoresthalException If it was not possible to retrieve a Double
      */
     public static Double getDouble(String url) throws StoresthalException {
@@ -380,6 +389,7 @@ public class Storesthal {
 
     /**
      * Retrieve a Double (just a Double, no special object...) from the given URL.
+     *
      * @param url     The URL to retrieve the Double from.
      * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
      *                use the overloaded function to specify a different cache name if needed.)
@@ -397,6 +407,7 @@ public class Storesthal {
 
     /**
      * Retrieve an Double (just a Double, no special object...) from the given URL.
+     *
      * @param url       The URL to retrieve the Double from.
      * @param cacheName The name of the cache to used when retrieving the Double.
      * @return The Double retrieved.
@@ -409,9 +420,10 @@ public class Storesthal {
     /**
      * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
      * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
-     *               one of the overloaded functions.
+     * one of the overloaded functions.
+     *
      * @param url The URL to retrieve the Boolean from.
-     * @return    The Boolean retrieved.
+     * @return The Boolean retrieved.
      * @throws StoresthalException If it was not possible to retrieve a Boolean
      */
     public static Boolean getBoolean(String url) throws StoresthalException {
@@ -420,6 +432,7 @@ public class Storesthal {
 
     /**
      * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
+     *
      * @param url     The URL to retrieve the Boolean from.
      * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
      *                use the overloaded function to specify a different cache name if needed.)
@@ -437,6 +450,7 @@ public class Storesthal {
 
     /**
      * Retrieve a Boolean (just a Boolean, no special object...) from the given URL.
+     *
      * @param url       The URL to retrieve the Boolean from.
      * @param cacheName The name of the cache to used when retrieving the Boolean.
      * @return The Boolean retrieved.
@@ -449,9 +463,10 @@ public class Storesthal {
     /**
      * Retrieve a String (just a String, no other object...) from the given URL.
      * <i>Note: </i> By default, caching is not enabled for this kind of retrieval. If caching is desired, use
-     *               one of the overloaded functions.
+     * one of the overloaded functions.
+     *
      * @param url The URL to retrieve the String from.
-     * @return    The String retrieved.
+     * @return The String retrieved.
      * @throws StoresthalException If it was not possible to retrieve a String
      */
     public static String getString(String url) throws StoresthalException {
@@ -460,6 +475,7 @@ public class Storesthal {
 
     /**
      * Retrieve a String (just a String, no other object...) from the given URL.
+     *
      * @param url     The URL to retrieve the String from.
      * @param doCache Whether the result should be cached. (Here, {@link #COMMON_CACHE_NAME} is used for the cache name,
      *                use the overloaded function to specify a different cache name if needed.)
@@ -477,6 +493,7 @@ public class Storesthal {
 
     /**
      * Retrieve a String (just a String, no other object...) from the given URL.
+     *
      * @param url       The URL to retrieve the String from.
      * @param cacheName The name of the cache to used when retrieving the String.
      * @return The String retrieved.
@@ -487,15 +504,28 @@ public class Storesthal {
     }
 
     /**
+     * //TODO
+     * @param url
+     * @param objectClass
+     * @return
+     * @param <T>
+     * @throws StoresthalException
+     */
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
+        return getCollection(url, objectClass, false);
+    }
+
+    /**
      * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.
      * @param url         The URL to retrieve the collection from.
      * @param objectClass The class of the collection items to be returned.
      * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
+     *           //TODO
      * @return The collection requested.
      * @throws StoresthalException if no collection could be retrieved.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, boolean embeddedCollection) throws StoresthalException {
 
         logger.info("Getting object collection of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
 
@@ -525,12 +555,24 @@ public class Storesthal {
                             @NonNull
                             public Type getType() {
                                 Type[] responseWrapperActualTypes = {objectClass};
-                                return parameterize(ArrayList.class,
+                                if (embeddedCollection) {
+                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
+                                }
+                                else {
+                                    return parameterize(ArrayList.class,
                                         parameterize(EntityModel.class, responseWrapperActualTypes));
+                                }
                             }
                         });
 
-        ArrayList<EntityModel<T>> result = (ArrayList<EntityModel<T>>) response.getBody();
+        List<EntityModel<T>> result;
+
+        if (embeddedCollection) {
+            result = ((EmbeddedCollectionHelper<T>) response.getBody()).getObjects();
+        }
+        else {
+            result = (ArrayList<EntityModel<T>>) response.getBody();
+        }
 
         ArrayList<T> realResult = new ArrayList<>();
 
