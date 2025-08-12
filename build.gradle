@@ -117,4 +117,8 @@ tocme {
     doc(file('README.md'))
 }
 
+springBoot {
+    mainClass = 'com.github.ahuemmer.storesthal.Storesthal'
+}
+
 tasks.publish.dependsOn checkTocs
