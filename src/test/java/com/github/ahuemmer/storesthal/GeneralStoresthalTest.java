@@ -3,6 +3,7 @@ package com.github.ahuemmer.storesthal;
 import com.github.ahuemmer.storesthal.complextestobjects.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.hateoas.EntityModel;
 
 import java.io.IOException;
 import java.util.*;
@@ -509,6 +510,44 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("collObject673896873", children.get(3).getChildName());
     }
 
+    /**
+     * Make sure, everything works as desired if the "top-level-object" is a collection.
+     */
+    @Test
+    public void canRetrieveEmbeddedCollectionsOLD() throws IOException, StoresthalException {
+        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+        serverMock.start();
+
+        Storesthal.resetStatistics();
+
+        EmbeddedTest embeddedTest = Storesthal.getObject("http://localhost:"+serverMock.port()+"/collection/coll", EmbeddedTest.class);
+
+        List<EntityModel<ChildObject>> embeddedChildren = embeddedTest.getObjectCollection().getObjectCollection();
+
+        assertEquals(4, embeddedChildren.size());
+
+        assertEquals(4,embeddedChildren.size());
+        assertEquals(673896873, embeddedChildren.get(3).getContent().getChildId());
+        assertEquals("collObject2", embeddedChildren.get(1).getContent().getChildName());
+    }
+
+    @Test
+    public void canRetrieveEmbeddedCollectionsNEW() throws IOException, StoresthalException {
+        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+        serverMock.start();
+
+        Storesthal.resetStatistics();
+
+        ArrayList<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:"+serverMock.port()+"/collection/coll", ChildObject.class, true);
+
+        //List<EntityModel<ChildObject>> embeddedChildren = embeddedTest.getObjectCollection().getObjectCollection();
+
+        assertEquals(4, collectionItems.size());
+
+        assertEquals(4,collectionItems.size());
+        assertEquals(673896873, collectionItems.get(3).getChildId());
+        assertEquals("collObject2", collectionItems.get(1).getChildName());
+    }
 
     @Test
     public void canRetrieveComplexCollections() throws IOException, StoresthalException {
