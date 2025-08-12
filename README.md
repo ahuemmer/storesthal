@@ -5,23 +5,24 @@ A simple solution for JSON-HAL object retrieval and caching.
 <!-- toc -->- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
-  - __[Object structure](#object-structure)__
-  - __[Parent object](#parent-object)__
-  - __[First child object](#first-child-object)__
-  - __[Second child object](#second-child-object)__
-  - __[First (and only) subchild object](#first-and-only-subchild-object)__
-  - __[Here comes Storesthal](#here-comes-storesthal)__
-  - __[How does that work?](#how-does-that-work)__
+   - __[Object structure](#object-structure)__
+   - __[Parent object](#parent-object)__
+   - __[First child object](#first-child-object)__
+   - __[Second child object](#second-child-object)__
+   - __[First (and only) subchild object](#first-and-only-subchild-object)__
+   - __[Here comes Storesthal](#here-comes-storesthal)__
+   - __[How does that work?](#how-does-that-work)__
 - __[Usage](#usage)__
-  - __[Basic invocation](#basic-invocation)__
-  - __[Collections](#collections)__
-  - __[Relations](#relations)__
-  - __[Caching](#caching)__
-  - __[Caveats](#caveats)__
-  - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
+   - __[Basic invocation](#basic-invocation)__
+   - __[Collections](#collections)__
+   - __[Embedded collections](#embedded-collections)__
+   - __[Relations](#relations)__
+   - __[Caching](#caching)__
+   - __[Caveats](#caveats)__
+   - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
-  - __[Possible future plans](#possible-future-plans)__
+   - __[Possible future plans](#possible-future-plans)__
 - __[Third-Party software](#third-party-software)__
 - __[Disclaimer](#disclaimer)__
 - __[License](#license)__
@@ -206,6 +207,51 @@ The separate objects within the collection will be treated like single objects r
 
 Please note, that in case of querying top-level collections, every member of the collection should have a valid `self`-relation in order to make caching and relationship mechanisms work properly. 
 (When retrieving a top-level collection, Storesthal is just given one single URL for multiple object, so it can't determine the specific URL for every single object automatically.)
+
+### Embedded collections
+
+It's a good practice to return collections within an `_embedded` object when using HATEOAS. The example from above would then look like this:
+
+```json 
+{
+  "_embedded": {
+    "starTrekCharacters": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://mygreatwebservice.com/api/characters/1"
+          }
+        },
+        "name": "Mr. Spock"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "https://mygreatwebservice.com/api/characters/2"
+          }
+        },
+        "name": "Commander Data"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "https://mygreatwebservice.com/api/characters/3"
+          }
+        },
+        "name": "Seven of Nine"
+      }
+    ]
+  }
+}
+```
+
+Storesthal is able to deal with this kind of representation as well, but it cannot (yet??) determine automatically, if the collection uses this scheme. Therefore,
+you would have to use `ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class, true);` to retrieve the
+collection. Note the additional variable (`true` here), which denotes if an embedded resource is used.
+
+There's one drawback: While the standard allows having multiple objects/collections within one `_embedded` block, this is currently not supported by Storesthal.
+Anyway, if you need this functionality, you can always model the class you hand over as second parameter to the `getCollection` method accordingly to make it work.
+`getCollection` is just a convenience shortcut for you to avoid this extra work. :slightly_smiling_face:.
 
 ### Relations
 As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work, every object class needs to have

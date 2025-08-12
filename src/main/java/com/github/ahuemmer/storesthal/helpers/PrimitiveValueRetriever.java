@@ -16,9 +16,11 @@ public class PrimitiveValueRetriever {
 
     /**
      * Retrieve a primitive value (no special object...) from the given URL.
+     * @param primitiveClass The primitive class to be retrieved.
      * @param url       The URL to retrieve the primitive from.
      * @param doCache   Whether to cache the results or not. See cacheName parameter for details.
      * @param cacheName The name of the cache to used when retrieving the primitive or NULL, if no cache is to be used.
+     * @param <T>       The type of the primitive class to be retrieved.
      * @return The primitive retrieved.
      * @throws com.github.ahuemmer.storesthal.StoresthalException If it was not possible to retrieve a Primitive
      */
