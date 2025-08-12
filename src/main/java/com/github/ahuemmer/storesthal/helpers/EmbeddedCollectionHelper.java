@@ -5,9 +5,11 @@ import org.springframework.hateoas.EntityModel;
 
 import java.util.List;
 
+import static com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration.EMBEDDED_PARENT_NAME;
+
 public class EmbeddedCollectionHelper<T> {
 
-    @JsonProperty("_embedded")
+    @JsonProperty(EMBEDDED_PARENT_NAME)
     private ObjectCollection<T> objectCollection;
 
     public ObjectCollection<T> getObjectCollection() {

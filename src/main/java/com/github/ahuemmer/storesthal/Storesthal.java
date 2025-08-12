@@ -504,12 +504,14 @@ public class Storesthal {
     }
 
     /**
-     * //TODO
-     * @param url
-     * @param objectClass
-     * @return
-     * @param <T>
-     * @throws StoresthalException
+     * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.
+     * Using this method, it is assumed, that the collection is not delivered within an `_embedded` object. If it is, please use the
+     * method {@link  #getCollection(String, Class, boolean)} method with the `embeddedCollection` flag set <code>true</code>.
+     * @param url         The URL to retrieve the collection from.
+     * @param objectClass The class of the collection items to be returned.
+     * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
+     * @return The collection requested.
+     * @throws StoresthalException if no collection could be retrieved.
      */
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
         return getCollection(url, objectClass, false);
@@ -520,7 +522,7 @@ public class Storesthal {
      * @param url         The URL to retrieve the collection from.
      * @param objectClass The class of the collection items to be returned.
      * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
-     *           //TODO
+     * @param embeddedCollection Set <code>true</code> if the collection resides inside an `_embedded` object. (See README.md for details.)
      * @return The collection requested.
      * @throws StoresthalException if no collection could be retrieved.
      */

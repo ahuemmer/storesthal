@@ -65,6 +65,7 @@ public class CacheManager {
      * @param objectClass The class of the object
      * @param cacheName   The name of the cache to get the object from. Use NULL here for automatic cache name detection
      *                    (default).
+     * @param <T>         The class of the object to retrieve.
      * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
      */
     @SuppressWarnings("unchecked")

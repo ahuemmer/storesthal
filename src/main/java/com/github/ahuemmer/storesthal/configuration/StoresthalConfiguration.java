@@ -33,11 +33,15 @@ public class StoresthalConfiguration {
      */
     public static final boolean DEFAULT_ANNOTATIONLESS=false;
 
-
     /**
      *  Indicates whether caching is disabled by default
      */
     public static final boolean DEFAULT_CACHING_DISABLED=false;
+
+    /**
+     * The parent object name for embedded HATEOAS objects
+     */
+    public static final String EMBEDDED_PARENT_NAME="_embedded";
 
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
