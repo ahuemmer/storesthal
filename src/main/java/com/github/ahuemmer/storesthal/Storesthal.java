@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import static com.fasterxml.jackson.core.JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION;
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 
@@ -533,6 +534,7 @@ public class Storesthal {
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
         return getCollection(url, objectClass, null);
     }
+
 
     /**
      * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.

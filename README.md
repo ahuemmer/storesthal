@@ -29,6 +29,7 @@ A simple solution for JSON-HAL object retrieval and caching.
 - __[Third-Party software](#third-party-software)__
 - __[Disclaimer](#disclaimer)__
 - __[License](#license)__
+
 <!-- /toc -->
 
 ## What is it?
