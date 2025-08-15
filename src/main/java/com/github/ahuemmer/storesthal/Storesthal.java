@@ -1,17 +1,17 @@
 package com.github.ahuemmer.storesthal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
+import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import com.github.ahuemmer.storesthal.helpers.CacheManager;
 import com.github.ahuemmer.storesthal.helpers.EmbeddedCollectionHelper;
-import com.github.ahuemmer.storesthal.helpers.ReflectionHelper;
 import com.github.ahuemmer.storesthal.helpers.PrimitiveValueRetriever;
+import com.github.ahuemmer.storesthal.helpers.ReflectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
 import org.springframework.hateoas.server.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
@@ -25,10 +25,27 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static com.fasterxml.jackson.core.JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION;
@@ -42,18 +59,10 @@ import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 public class Storesthal {
 
     /**
-     * Depending on the state of {@link #initialized}, init the object store with the default configuration.
+     * The name of the "common" object cache, which is used, if no explicit object cache name has been configured
+     * for a cache (see {@link Cacheable#cacheName()}).
      */
-    static {
-        init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
-    }
-
-    /**
-     * The total number of HTTP calls made.
-     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
-     * {@link #getStatistics()} or {@link #printStatistics()}.
-     */
-    private static int httpCalls = 0;
+    public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
 
     /**
      * The logger.
@@ -75,15 +84,23 @@ public class Storesthal {
     private static final Map<URI, List<AbstractMap.SimpleEntry<Object, Method>>> invokeLater = new HashMap<>();
 
     /**
+     * The total number of HTTP calls made.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()} or {@link #printStatistics()}.
+     */
+    private static int httpCalls = 0;
+
+    /**
      * The configuration the object store runs with.
      */
     private static StoresthalConfiguration configuration;
 
     /**
-     * The name of the "common" object cache, which is used, if no explicit object cache name has been configured
-     * for a cache (see {@link Cacheable#cacheName()}).
+     * Depending on the state of {@link #initialized}, init the object store with the default configuration.
      */
-    public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
+    static {
+        init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
+    }
 
     /**
      * Init the store with a new configuration. This should only be called initially, before using the store, as
@@ -254,7 +271,7 @@ public class Storesthal {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
 
-        logger.debug("Following link: " + l.toUri());
+        logger.debug("Following link: {}", l.toUri());
 
         URI uri;
 
@@ -506,7 +523,8 @@ public class Storesthal {
     /**
      * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.
      * Using this method, it is assumed, that the collection is not delivered within an `_embedded` object. If it is, please use the
-     * method {@link  #getCollection(String, Class, boolean)} method with the `embeddedCollection` flag set <code>true</code>.
+     * method {@link  #getCollection(String, Class, java.util.Optional)} method.
+     *
      * @param url         The URL to retrieve the collection from.
      * @param objectClass The class of the collection items to be returned.
      * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
@@ -514,22 +532,30 @@ public class Storesthal {
      * @throws StoresthalException if no collection could be retrieved.
      */
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
-        return getCollection(url, objectClass, false);
+        return getCollection(url, objectClass, null);
     }
+
 
     /**
      * Retrieves a <i>collection</i> of objects (JSON-Array) from the given URL.
-     * @param url         The URL to retrieve the collection from.
-     * @param objectClass The class of the collection items to be returned.
-     * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
-     * @param embeddedCollection Set <code>true</code> if the collection resides inside an `_embedded` object. (See README.md for details.)
+     *
+     * @param url                    The URL to retrieve the collection from.
+     * @param objectClass            The class of the collection items to be returned.
+     * @param <T>                    The type of the collection item object (being consistent with the `objectClass`)
+     * @param embeddedCollectionName If you supply a String here, (the Optional is <i>not</i> empty), the `_embedded` object will be
+     *                               searched for a field with this String, containing the collection to return.
+     *                               If the Optional <i>is</i> empty, the first array field encountered within the `_embedded`
+     *                               object will be used.
+     *                               An empty List will be returned in either case, if no matching field was found and a warning
+     *                               will be logged accordingly.
+     *                               (See README.md for details.)
      * @return The collection requested.
      * @throws StoresthalException if no collection could be retrieved.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, boolean embeddedCollection) throws StoresthalException {
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
 
-        logger.info("Getting object collection of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
+        logger.info("Getting object collection of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
 
         URI uri;
 
@@ -547,32 +573,30 @@ public class Storesthal {
 
         httpCalls += 1;
 
-        logger.debug("Adding URI " + uri + " to transient objects...");
+        logger.debug("Adding URI {} to transient objects...", uri);
         transientObjects.add(uri);
 
         ResponseEntity response =
-                getRestTemplateWithHalMessageConverter(true).exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
-                            @Override
-                            @NonNull
-                            public Type getType() {
-                                Type[] responseWrapperActualTypes = {objectClass};
-                                if (embeddedCollection) {
-                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
-                                }
-                                else {
-                                    return parameterize(ArrayList.class,
-                                        parameterize(EntityModel.class, responseWrapperActualTypes));
-                                }
-                            }
-                        });
+            getRestTemplateWithHalMessageConverter(true).exchange(url,
+                HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
+                    @Override
+                    @NonNull
+                    public Type getType() {
+                        Type[] responseWrapperActualTypes = {objectClass};
+                        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
+                            return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
+                        } else {
+                            return parameterize(ArrayList.class,
+                                parameterize(EntityModel.class, responseWrapperActualTypes));
+                        }
+                    }
+                });
 
         List<EntityModel<T>> result;
 
-        if (embeddedCollection) {
-            result = ((EmbeddedCollectionHelper<T>) response.getBody()).getObjects();
-        }
-        else {
+        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
+            result = EmbeddedCollectionHelper.getObjects(response.getBody(), objectClass, embeddedCollectionName);
+        } else {
             result = (ArrayList<EntityModel<T>>) response.getBody();
         }
 
@@ -587,12 +611,11 @@ public class Storesthal {
             realResult.add(entry.getContent());
             for (Link l : entry.getLinks()) {
                 if ("self".equals(l.getRel().value())) {
-                    logger.debug("Self-Link for object: "+l.toUri());
+                    logger.debug("Self-Link for object: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
                         CacheManager.putObjectInCache(l.toUri(), entry.getContent(), null);
                     }
-                }
-                else {
+                } else {
                     followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
                 }
             }
@@ -612,7 +635,7 @@ public class Storesthal {
         CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
         invokeLater.clear();
 
-        logger.debug("Removing URI " + uri + " from transient objects...");
+        logger.debug("Removing URI \"{}\" from transient objects...", uri);
         transientObjects.remove(uri);
 
         return realResult;
@@ -648,29 +671,29 @@ public class Storesthal {
 
         httpCalls += 1;
 
-        logger.debug("Adding URI " + uri + " to transient objects...");
+        logger.debug("Adding URI \"{}\" to transient objects...", uri);
         transientObjects.add(uri);
         ResponseEntity<EntityModel<T>> response =
-                null;
+            null;
 
         try {
             //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
             response = getRestTemplateWithHalMessageConverter(false).exchange(url,
-                    HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
-                        @Override
-                        @NonNull
-                        public Type getType() {
-                            Type type = super.getType();
-                            if (type instanceof ParameterizedType) {
-                                Type[] responseWrapperActualTypes = {objectClass};
-                                return parameterize(EntityModel.class,
-                                        responseWrapperActualTypes);
-                            }
-                            return type;
+                HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
+                    @Override
+                    @NonNull
+                    public Type getType() {
+                        Type type = super.getType();
+                        if (type instanceof ParameterizedType) {
+                            Type[] responseWrapperActualTypes = {objectClass};
+                            return parameterize(EntityModel.class,
+                                responseWrapperActualTypes);
                         }
-                    });
+                        return type;
+                    }
+                });
         } catch (RestClientException e) {
-            throw new StoresthalException("Exception trying to get object from "+url, e);
+            throw new StoresthalException("Exception trying to get object from " + url, e);
         }
         T result = Objects.requireNonNull(response.getBody()).getContent();
 
@@ -679,12 +702,11 @@ public class Storesthal {
         for (Link l : response.getBody().getLinks()) {
 
             if ("self".equals(l.getRel().value())) {
-                logger.debug("Self-Link for object: "+l.toUri());
+                logger.debug("Self-Link for object: {}", l.toUri());
                 if (!(l.getRel().value().isBlank())) {
                     CacheManager.putObjectInCache(l.toUri(), result, null);
                 }
-            }
-            else {
+            } else {
                 followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
             }
         }
@@ -712,7 +734,7 @@ public class Storesthal {
             invokeLater.clear();
         }
 
-        logger.debug("Removing URI " + uri + " from transient objects...");
+        logger.debug("Removing URI \"{}\" from transient objects...", uri);
         transientObjects.remove(uri);
 
         return result;
@@ -744,12 +766,13 @@ public class Storesthal {
     public static <T> T getObject(String url, Class<T> objectClass) throws StoresthalException {
 
         if (Collection.class.isAssignableFrom(objectClass)) {
-            logger.warn("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.\n"+
-                    "Please consider using Storesthal.getCollection in that case.\n"+
-                    "(Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)");
+            logger.warn("""
+                You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.
+                Please consider using Storesthal.getCollection in that case.
+                (Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)""");
         }
 
-        logger.info("Getting object of class \"" + objectClass.getCanonicalName() + "\" from URL \"" + url + "\".");
+        logger.info("Getting object of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
         return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
     }
 
