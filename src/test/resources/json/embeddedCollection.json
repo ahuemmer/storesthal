@@ -1,6 +1,6 @@
 {
   "_embedded": {
-    "objectCollection": [
+    "someCollection": [
       {
         "_links": {
           "self": {

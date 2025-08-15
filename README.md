@@ -1,37 +1,48 @@
 # Storesthal
+
 A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
-<!-- toc -->- __[What is it?](#what-is-it)__
+
+<!-- toc -->
+
+- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
-   - __[Object structure](#object-structure)__
-   - __[Parent object](#parent-object)__
-   - __[First child object](#first-child-object)__
-   - __[Second child object](#second-child-object)__
-   - __[First (and only) subchild object](#first-and-only-subchild-object)__
-   - __[Here comes Storesthal](#here-comes-storesthal)__
-   - __[How does that work?](#how-does-that-work)__
+    - __[Object structure](#object-structure)__
+    - __[Parent object](#parent-object)__
+    - __[First child object](#first-child-object)__
+    - __[Second child object](#second-child-object)__
+    - __[First (and only) subchild object](#first-and-only-subchild-object)__
+    - __[Here comes Storesthal](#here-comes-storesthal)__
+    - __[How does that work?](#how-does-that-work)__
 - __[Usage](#usage)__
-   - __[Basic invocation](#basic-invocation)__
-   - __[Collections](#collections)__
-   - __[Embedded collections](#embedded-collections)__
-   - __[Relations](#relations)__
-   - __[Caching](#caching)__
-   - __[Caveats](#caveats)__
-   - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
+    - __[Basic invocation](#basic-invocation)__
+    - __[Collections](#collections)__
+    - __[Embedded collections](#embedded-collections)__
+    - __[Relations](#relations)__
+    - __[Caching](#caching)__
+    - __[Caveats](#caveats)__
+    - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
-   - __[Possible future plans](#possible-future-plans)__
+    - __[Possible future plans](#possible-future-plans)__
 - __[Third-Party software](#third-party-software)__
 - __[Disclaimer](#disclaimer)__
 - __[License](#license)__
+
 <!-- /toc -->
 
 ## What is it?
-It is a helper software (library) to make retrieving "JSON+HAL" objects (possibly from REST web services) easy. Additionally, it will _optionally_ cache the objects retrieved, so there won't be subsequent HTTP calls for fetching one and the some object.
 
-Another speciality of storestahl is, that is will automatically follow [HAL](http://stateless.co/hal_specification.html "HAL specification")-relations and retrieve not only singular objects, but complete object structures, if they are linked. The caching described above will also take place for these linked objects.
+It is a helper software (library) to make retrieving "JSON+HAL" objects (possibly from REST web services) easy.
+Additionally, it will _optionally_ cache the objects retrieved, so there won't be subsequent HTTP calls for fetching one
+and the some object.
+
+Another speciality of storestahl is, that is will automatically
+follow [HAL](http://stateless.co/hal_specification.html "HAL specification")-relations and retrieve not only singular
+objects, but complete object structures, if they are linked. The caching described above will also take place for these
+linked objects.
 
 ## Features
 
@@ -46,6 +57,7 @@ Another speciality of storestahl is, that is will automatically follow [HAL](htt
 Here is an example of what Storesthal can do for you, regarding an exemplary object structure.
 
 ### Object structure
+
 Consider the following object structure:
 
 ```
@@ -56,20 +68,27 @@ Consider the following object structure:
 Test-Subchild 1
 ```
 
-This structure matches with the following JSON+HAL data retrieved from a web service, e. g. at `https://mygreatwebservice.com/api/`:
+This structure matches with the following JSON+HAL data retrieved from a web service, e. g. at
+`https://mygreatwebservice.com/api/`:
 
 ### Parent object
+
 (Accessible at `https://mygreatwebservice.com/api/parents/3`)
 
 ```json 
 {
   "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/parents/3"},
-    "children": [{
+    "self": {
+      "href": "https://mygreatwebservice.com/api/parents/3"
+    },
+    "children": [
+      {
         "href": "https://mygreatwebservice.com/api/children/5"
-    },{
-        "href": "https://mygreatwebservice.com/api/children/14"    
-    }]
+      },
+      {
+        "href": "https://mygreatwebservice.com/api/children/14"
+      }
+    ]
   },
   "number": 3,
   "comment": "Test",
@@ -84,18 +103,23 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 ```json 
 {
   "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/children/5"},
-    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
-    "children": [{
+    "self": {
+      "href": "https://mygreatwebservice.com/api/children/5"
+    },
+    "parent": {
+      "href": "https://mygreatwebservice.com/api/parents/3"
+    },
+    "children": [
+      {
         "href": "https://mygreatwebservice.com/api/subchildren/99"
-    }]
+      }
+    ]
   },
   "number": 5,
   "comment": "Test",
   "name": "Testchild 1"
 }
 ```
-
 
 ### Second child object
 
@@ -104,8 +128,12 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 ```json 
 {
   "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/children/14"},
-    "parent": {"href": "https://mygreatwebservice.com/api/parents/3" },
+    "self": {
+      "href": "https://mygreatwebservice.com/api/children/14"
+    },
+    "parent": {
+      "href": "https://mygreatwebservice.com/api/parents/3"
+    },
     "children": []
   },
   "number": 5,
@@ -121,8 +149,12 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 ```json 
 {
   "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/subchildren/99"},
-    "parent": {"href": "https://mygreatwebservice.com/api/children/5" },
+    "self": {
+      "href": "https://mygreatwebservice.com/api/subchildren/99"
+    },
+    "parent": {
+      "href": "https://mygreatwebservice.com/api/children/5"
+    },
     "children": []
   },
   "number": 9,
@@ -134,43 +166,60 @@ This structure matches with the following JSON+HAL data retrieved from a web ser
 (All of the objects, of course, having their individual attributes as well.)
 
 ### Here comes Storesthal
-If you use Storesthal to retrieve just the parent URL (`https://mygreatwebservice.com/api/parents/3`), this is what will happen:
+
+If you use Storesthal to retrieve just the parent URL (`https://mygreatwebservice.com/api/parents/3`), this is what will
+happen:
 
 - The parent object is loaded from the parent URL and populated with its attributes
 - Child object relations are _automatically_ followed, retrieved and "attached" to the parent object
-- Back-References (child &rarr; parent) are also handled correctly. This means, there will be only _one_ instance of the particular parent object, linked to every child of it.
-- Only one HTTP call will be made for the parent object (not one for every reference to it), it will from then be used from cache.
-- The structure as depicted above will be returned by Storesthal (the parent object with its children and subschildren linked)
+- Back-References (child &rarr; parent) are also handled correctly. This means, there will be only _one_ instance of the
+  particular parent object, linked to every child of it.
+- Only one HTTP call will be made for the parent object (not one for every reference to it), it will from then be used
+  from cache.
+- The structure as depicted above will be returned by Storesthal (the parent object with its children and subschildren
+  linked)
 
 ### How does that work?
-OK, it's not pure magic :wink:. The Java classes for the objects must be existing, so there must be a class for the parent object and (at least) one for the child object. As the sub-child (in out example) has a structure equal to the one of the child, a specific sub-child object is not necessary at all.
 
-The classes _should_ have matching `@HALRelation` annotations to let Storesthal know, which relation refers to which attribute. If these annotations are missing (working in "annotationless mode"), Storesthal will try its best to find these things out on its own.
+OK, it's not pure magic :wink:. The Java classes for the objects must be existing, so there must be a class for the
+parent object and (at least) one for the child object. As the sub-child (in out example) has a structure equal to the
+one of the child, a specific sub-child object is not necessary at all.
 
-Also, the classes _should_ have senseful `@Cacheable` annotations, so Storesthal will put the objects retrieved "into the right bucket". (Otherwise, a "general cache" for all objects is used or you can work without any caching).
+The classes _should_ have matching `@HALRelation` annotations to let Storesthal know, which relation refers to which
+attribute. If these annotations are missing (working in "annotationless mode"), Storesthal will try its best to find
+these things out on its own.
+
+Also, the classes _should_ have senseful `@Cacheable` annotations, so Storesthal will put the objects retrieved "into
+the right bucket". (Otherwise, a "general cache" for all objects is used or you can work without any caching).
 
 You will find some examples below.
 
 ## Usage
 
-When designing Storesthal, special emphasis was placed on ease of usage and convention over configuration. Especially when using "annotationless mode" (see below) and the default configuration, it will "just work" for a lot of common use cases. Nevertheless, it's possible (and advised) to customize and fine-tune Storesthal's settings.
+When designing Storesthal, special emphasis was placed on ease of usage and convention over configuration. Especially
+when using "annotationless mode" (see below) and the default configuration, it will "just work" for a lot of common use
+cases. Nevertheless, it's possible (and advised) to customize and fine-tune Storesthal's settings.
 
 Explaining the usage of Storesthal, we will mainly stick to the example object structure given [above](#example).
 
 ### Basic invocation
+
 In order to retrieve an object via Storesthal, you basically just need one call:
 
 ```java
 ParentObject Testparent = Storesthal.getObject("https://mygreatwebservice.com/api/parents/3", ParentObject.class);
 ```
 
-Storesthal will then retrieve and examine the object found at the given URL and traverse the object structure as it discovers it and add matching sub-objects to every level of object relations.
-Especially, Storesthal is able to handle back-references and references to (yet) unknown or "incomplete" objects correctly!
+Storesthal will then retrieve and examine the object found at the given URL and traverse the object structure as it
+discovers it and add matching sub-objects to every level of object relations.
+Especially, Storesthal is able to handle back-references and references to (yet) unknown or "incomplete" objects
+correctly!
 Additionally, Storesthal will use an object cache by default, making subsequent calls to the same URL performant.
 
 ### Collections
 
-There's one caveat using Storesthal: When intending to retrieve a _collection_ of objects from the first level URL, `getObject` isn't sufficient, you'll have to use `getCollection`.
+There's one caveat using Storesthal: When intending to retrieve a _collection_ of objects from the first level URL,
+`getObject` isn't sufficient, you'll have to use `getCollection`.
 
 Example:
 
@@ -178,39 +227,52 @@ Let's say you want to retrieve the content from a JSON body like this:
 
 ```json 
 [
-{
-  "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/characters/1"},
+  {
+    "_links": {
+      "self": {
+        "href": "https://mygreatwebservice.com/api/characters/1"
+      }
+    },
+    "name": "Mr. Spock"
   },
-  "name": "Mr. Spock"
-},
-{
-  "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/characters/2"},
+  {
+    "_links": {
+      "self": {
+        "href": "https://mygreatwebservice.com/api/characters/2"
+      }
+    },
+    "name": "Commander Data"
   },
-  "name": "Commander Data"
-},
-{
-  "_links": {
-    "self": {"href": "https://mygreatwebservice.com/api/characters/3"},
-  },
-  "name": "Seven of Nine"
-}
+  {
+    "_links": {
+      "self": {
+        "href": "https://mygreatwebservice.com/api/characters/3"
+      }
+    },
+    "name": "Seven of Nine"
+  }
 ]
 ```
 
-You would write something like `ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class)` and get an ArrayList containing the three entries of the JSON array in return.
+You would write something like
+`ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class)` and
+get an ArrayList containing the three entries of the JSON array in return.
 
 This is due to technical limitations of Java and perhaps also my own knowledge or creativity. :wink:
-Please note that this doesn't apply to any collections on any other level of the object hierarchy. They will be retrieved correctly in any way.
-The separate objects within the collection will be treated like single objects retrieved by `getObject`, what refers to caching, relation handling etc.
+Please note that this doesn't apply to any collections on any other level of the object hierarchy. They will be
+retrieved correctly in any way.
+The separate objects within the collection will be treated like single objects retrieved by `getObject`, what refers to
+caching, relation handling etc.
 
-Please note, that in case of querying top-level collections, every member of the collection should have a valid `self`-relation in order to make caching and relationship mechanisms work properly. 
-(When retrieving a top-level collection, Storesthal is just given one single URL for multiple object, so it can't determine the specific URL for every single object automatically.)
+Please note, that in case of querying top-level collections, every member of the collection should have a valid `self`
+-relation in order to make caching and relationship mechanisms work properly.
+(When retrieving a top-level collection, Storesthal is just given one single URL for multiple object, so it can't
+determine the specific URL for every single object automatically.)
 
 ### Embedded collections
 
-It's a good practice to return collections within an `_embedded` object when using HATEOAS. The example from above would then look like this:
+It's a good practice to return collections within an `_embedded` object when using HATEOAS. The example from above would
+then look like this:
 
 ```json 
 {
@@ -245,118 +307,181 @@ It's a good practice to return collections within an `_embedded` object when usi
 }
 ```
 
-Storesthal is able to deal with this kind of representation as well, but it cannot (yet??) determine automatically, if the collection uses this scheme. Therefore,
-you would have to use `ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class, true);` to retrieve the
-collection. Note the additional variable (`true` here), which denotes if an embedded resource is used.
+Storesthal is able to deal with this kind of representation as well, but it cannot (yet??) determine automatically, if
+the collection uses this scheme. Therefore,
+you would have to use `ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", 
+Character.class, Optional.of("starTrekCharacters"));` to retrieve the collection. Note the additional `Optional`
+variable here. You can supply `Optional.empty()` here in case you don't know (and mind) the name of the field within the
+`_embedded` structure. In this case, the first array-field that is encountered will be used.
 
-There's one drawback: While the standard allows having multiple objects/collections within one `_embedded` block, this is currently not supported by Storesthal.
-Anyway, if you need this functionality, you can always model the class you hand over as second parameter to the `getCollection` method accordingly to make it work.
+If no matching field was found (in either case), a warning will be logged and an empty list will be returned. A
+`StoresthalException` will be thrown if a field with the given name in the (non-empty) `Optional` was found but is not
+an array.
+
+There's one drawback: While the standard allows having multiple objects/collections within one `_embedded` block, this
+is currently not supported by Storesthal.
+Anyway, if you need this functionality, you can always model the class you hand over as second parameter to the
+`getCollection` method accordingly to make it work.
 `getCollection` is just a convenience shortcut for you to avoid this extra work. :slightly_smiling_face:.
 
 ### Relations
-As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work, every object class needs to have
-_either_ a matching setter method (e. g., if the relation is called `customer` in JSON, there must be a `setCustomer`) _or_ an arbitrary method (or attribute)
-annotated with `@HALRelation(name=...)`. So, if your setter is called `setCustomer`, but the JSON relation is named `cstmr`, you would need to use
-`@HALRelation(name="cstmr")` and could annotate any method with it, as long as it takes only one argument of the correct type.
+
+As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work,
+every object class needs to have
+_either_ a matching setter method (e. g., if the relation is called `customer` in JSON, there must be a `setCustomer`)
+_or_ an arbitrary method (or attribute)
+annotated with `@HALRelation(name=...)`. So, if your setter is called `setCustomer`, but the JSON relation is named
+`cstmr`, you would need to use
+`@HALRelation(name="cstmr")` and could annotate any method with it, as long as it takes only one argument of the correct
+type.
 
 The same scheme applies to any type of relation: 1 to 1, 1 to many, backreferences, ...
 
-For convenience, it is also possible to annotate a class field with `@HALRelation`. If doing so, Storesthal will again expect a setter method with the correspondent name to be
-present in your class. So, if the annotated field is named `studends`, there must be a method called `setStudents`, accepting any java `Collection` type as first and only parameter.
-If that collection type is an abstract one, Storesthal will try to use an appropriate implementation, otherwise it will try and instantiate a new collection of the given type.
+For convenience, it is also possible to annotate a class field with `@HALRelation`. If doing so, Storesthal will again
+expect a setter method with the correspondent name to be
+present in your class. So, if the annotated field is named `studends`, there must be a method called `setStudents`,
+accepting any java `Collection` type as first and only parameter.
+If that collection type is an abstract one, Storesthal will try to use an appropriate implementation, otherwise it will
+try and instantiate a new collection of the given type.
 For details, see method `handleCollection` in `Storesthal.java`.
 
 Please note, that - at least for the moment - Storesthal is not able to handle arrays instead of `Collection`s.
 
-If an object has a `self`-relation, Storesthal will also take this into account concerning caching. Please see the note [above](#collections) concerning `self`-relations when retrieving collections on first level.
+If an object has a `self`-relation, Storesthal will also take this into account concerning caching. Please see the
+note [above](#collections) concerning `self`-relations when retrieving collections on first level.
 
 ### Caching
 
-One speciality about Storesthal is, that it brings along a simple, yet powerful, caching facility that comes out of the box.
-This does especially make sense, as caching is often very helpful (/ performance increasing / resource saving) when it comes to JSON+HAL object retrieval.
-Imagine you have 10.000 items each of which is linked to one of 20 categories. When loading the 10.000 items, it's not necessary to query one and the same category more than one single time and then
-"link" it to every item associated. This will not only speed up your application and save network and hardware resources, it will also lead to a more convenient and comprehensible in-memory object structure.
+One speciality about Storesthal is, that it brings along a simple, yet powerful, caching facility that comes out of the
+box.
+This does especially make sense, as caching is often very helpful (/ performance increasing / resource saving) when it
+comes to JSON+HAL object retrieval.
+Imagine you have 10.000 items each of which is linked to one of 20 categories. When loading the 10.000 items, it's not
+necessary to query one and the same category more than one single time and then
+"link" it to every item associated. This will not only speed up your application and save network and hardware
+resources, it will also lead to a more convenient and comprehensible in-memory object structure.
 
-By default, nevertheless caching is not applied to any object, as Storesthal can not know beforehand, if there are fast-changing objects in your object structure, that might change very
-quickly and therefore shouldn't be cached. The only caching that takes place by default (and cannot be disabled) is the "intermediate caching" described below.
+By default, nevertheless caching is not applied to any object, as Storesthal can not know beforehand, if there are
+fast-changing objects in your object structure, that might change very
+quickly and therefore shouldn't be cached. The only caching that takes place by default (and cannot be disabled) is
+the "intermediate caching" described below.
 
-To add "rudimentary" caching to an object class, you would simply annotate it with `@Cacheable`. Instances of classes with this annotation will then be cached automatically.
-Anyway, it is suggested to use the `cacheName` and `cacheSize` attributes of the annotation as well: If you omit the `cacheName`, the object will be stored in the "common" cache,
-where any object of any kind will be stored, if no other cache name is given. Using a cache name, you have a better control about cache size and clearing of the cache. So, in the simple
-example above, it should be best to annotate your item class with `@Cacheable(cacheName="ItemCache")` and your category class with `@Cacheable(cacheName="CategoryCache")`.
-The `cacheSize` attribute allows you to specify, how many object instances the cache will hold. We're using a LRU (last recently used) cache here, so if the cache is full, the object
-last recently _accessed_ will be evicted from it. This is not necessarily the object last recently added to the cache! If you use a cache name, you will also be able to clear the
-whole Cache at once using the `Storesthal.clearCache` function and supplying that cache name. All the other caches won't be touched.
+To add "rudimentary" caching to an object class, you would simply annotate it with `@Cacheable`. Instances of classes
+with this annotation will then be cached automatically.
+Anyway, it is suggested to use the `cacheName` and `cacheSize` attributes of the annotation as well: If you omit the
+`cacheName`, the object will be stored in the "common" cache,
+where any object of any kind will be stored, if no other cache name is given. Using a cache name, you have a better
+control about cache size and clearing of the cache. So, in the simple
+example above, it should be best to annotate your item class with `@Cacheable(cacheName="ItemCache")` and your category
+class with `@Cacheable(cacheName="CategoryCache")`.
+The `cacheSize` attribute allows you to specify, how many object instances the cache will hold. We're using a LRU (last
+recently used) cache here, so if the cache is full, the object
+last recently _accessed_ will be evicted from it. This is not necessarily the object last recently added to the cache!If
+you use a cache name, you will also be able to clear the
+whole Cache at once using the `Storesthal.clearCache` function and supplying that cache name. All the other caches won't
+be touched.
 
-Caching happens based on the URL of the object retrieved. This means, if caching is enabled, only the first request for http://my.web.service/api/cagetory/42 will really cause
-an HTTP call to that URL. Subsequent requests for the same URL will just retrieve the cached object from the memory as long it is not evicted from the cache or the cache is cleared.
+Caching happens based on the URL of the object retrieved. This means, if caching is enabled, only the first request
+for http://my.web.service/api/cagetory/42 will really cause
+an HTTP call to that URL. Subsequent requests for the same URL will just retrieve the cached object from the memory as
+long it is not evicted from the cache or the cache is cleared.
 
 #### The intermediate cache
-There is one special cache, that can't be disabled: It's the _intermediate cache_. When traversing an object structure, it might occur that Storesthal finds one and the same related
-URI (and therefore object) multiple times. In these cases, all references but the first one are fetched from the intermediate cache - everything else would result in an inconsistent
+
+There is one special cache, that can't be disabled: It's the _intermediate cache_. When traversing an object structure,
+it might occur that Storesthal finds one and the same related
+URI (and therefore object) multiple times. In these cases, all references but the first one are fetched from the
+intermediate cache - everything else would result in an inconsistent
 object structure as two references to the same URI would result in two different objects.
 
-Please note, that the intermediate cache is only used within one single `getObject` call. It will be cleared before the next one starts. So, it will probably be in use for a few seconds
+Please note, that the intermediate cache is only used within one single `getObject` call. It will be cleared before the
+next one starts. So, it will probably be in use for a few seconds
 (or probably less) only.
 
 ### Caveats
 
-- Please make sure, your HTTP answer has the correct `Content-Type` set in its header: `application/hal+json` (and possibly a `charset=...` appended) . Otherwise, relations might not be found even though they are delivered correctly via `_links`! (See (Non-HAL-answer retrieval)[#non-hal-answer-retrieval] below for alternatives.)
-- The standard demands a valid URL for each relation link. So, `"_links": {"child": {"href": null}}` is not allowed to indicate that there is no child object! In this case, there must not be any `"child"` link, otherwise an error will occur.
+- Please make sure, your HTTP answer has the correct `Content-Type` set in its header: `application/hal+json` (and
+  possibly a `charset=...` appended) . Otherwise, relations might not be found even though they are delivered correctly
+  via `_links`! (See (Non-HAL-answer retrieval)[#non-hal-answer-retrieval] below for alternatives.)
+- The standard demands a valid URL for each relation link. So, `"_links": {"child": {"href": null}}` is not allowed to
+  indicate that there is no child object! In this case, there must not be any `"child"` link, otherwise an error will
+  occur.
 
 ### Non-HAL-answer retrieval
 
-Sometimes, you might need to retrieve non-HAL-answer from a remote web service. Storesthal supports this as well, even in combination with the [caching mechanisms described](#caching).
+Sometimes, you might need to retrieve non-HAL-answer from a remote web service. Storesthal supports this as well, even
+in combination with the [caching mechanisms described](#caching).
 I'll refer these non-HAL answers as "primitives" here, though `String` is not a primitive in Java language sense.
 There are four ways of retrieving primitives using Storesthal:
 
-|Method|Description|Example web service answer|Result|
-|---|---|---|---|
-|`Storesthal.getInteger()`|Retrieves integer values|`-56438`|`-56448` as an `Integer`|
-|`Storesthal.getDouble()`|Retrieves double values|`-53995.232`|`-53995.232` as `Double`|
-|`Storesthal.getBoolean()`|Retrieves boolean values|`true`|`Boolean` with `true` value|
-|`Storesthal.getString()`|Retrieves string values|`Hello, this is a string`|`String` containing `Hello, this is a string` value|
+| Method                    | Description              | Example web service answer | Result                                              |
+|---------------------------|--------------------------|----------------------------|-----------------------------------------------------|
+| `Storesthal.getInteger()` | Retrieves integer values | `-56438`                   | `-56448` as an `Integer`                            |
+| `Storesthal.getDouble()`  | Retrieves double values  | `-53995.232`               | `-53995.232` as `Double`                            |
+| `Storesthal.getBoolean()` | Retrieves boolean values | `true`                     | `Boolean` with `true` value                         |
+| `Storesthal.getString()`  | Retrieves string values  | `Hello, this is a string`  | `String` containing `Hello, this is a string` value |
 
-Please note, that the final conversion of the web service answer is done by Spring's [`RestTemplate.getForObject()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html#getForObject-java.net.URI-java.lang.Class-) method,
+Please note, that the final conversion of the web service answer is done by Spring's [
+`RestTemplate.getForObject()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html#getForObject-java.net.URI-java.lang.Class-)
+method,
 so you might find further information there.
 
 Each of the methods above has two overloaded methods for convenience, allowing you finer-grained caching control:
 
- - `get[Integer|Doouble|Boolean|String](String url)`: The method call with just the web service URL as parameter will return the desired primitive _without any caching_.
- - `get[Integer|Doouble|Boolean|String](String url, boolean doCache)`: If `doCache` is `true`, the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by `Storesthal.COMMON_CACHE_NAME`.
- - `get[Integer|Doouble|Boolean|String](String url, String cacheName)`: If `cacheName` is not `null`, the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by `cacheName`, otherwise the cache denoted by `Storesthal.COMMON_CACHE_NAME` will be used.
+- `get[Integer|Doouble|Boolean|String](String url)`: The method call with just the web service URL as parameter will
+  return the desired primitive _without any caching_.
+- `get[Integer|Doouble|Boolean|String](String url, boolean doCache)`: If `doCache` is `true`,
+  the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by
+  `Storesthal.COMMON_CACHE_NAME`.
+- `get[Integer|Doouble|Boolean|String](String url, String cacheName)`: If `cacheName` is not `null`,
+  the [caching mechanisms](#caching) will be applied and the answer will be cached in the cache denoted by `cacheName`,
+  otherwise the cache denoted by `Storesthal.COMMON_CACHE_NAME` will be used.
 
 ## What's that name about... :thinking:?
 
-I'm not a very creative person when it comes to such things... :wink: It's just a word composed of "Store", "REST" and "HAL". :simple_smile:
+I'm not a very creative person when it comes to such things... :wink: It's just a word composed of "Store", "REST" and "
+HAL". :simple_smile:
 
 ## TODOs and future of the project
 
-For the moment, Storesthal is quite sufficient for my personal needs, so major changes or improvements are not planned with high priority. Anyway, I'll try and keep the project alive and well-maintained. Please feel free to use GitHubs possibilities to submit issues, feature requests or pull requests! :simple_smile:
+For the moment, Storesthal is quite sufficient for my personal needs, so major changes or improvements are not planned
+with high priority. Anyway, I'll try and keep the project alive and well-maintained. Please feel free to use GitHubs
+possibilities to submit issues, feature requests or pull requests! :simple_smile:
 
-If the project will have some kind of a bigger impact (I'm aware it will never be a real big thing ^^), it is more likely for me to continue working on it, as otherwise this would just be "for my private amusement".
+If the project will have some kind of a bigger impact (I'm aware it will never be a real big thing ^^), it is more
+likely for me to continue working on it, as otherwise this would just be "for my private amusement".
 
 ### Possible future plans
 
- - I love Spring Boot and would like to integrate Storesthal better with it, perhaps even as kind of a plug-in. But I have not had the time to investigate on how to do this up to now.
- - See the "Issues" tab :simple_smile:
+- I love Spring Boot and would like to integrate Storesthal better with it, perhaps even as kind of a plug-in. But I
+  have not had the time to investigate on how to do this up to now.
+- See the "Issues" tab :simple_smile:
 
 ## Third-Party software
 
-Storesthal makes heavy use of third-party software and libraries during the build process as well as during runtime. A detailed list of the third-party dependencies can be found
+Storesthal makes heavy use of third-party software and libraries during the build process as well as during runtime. A
+detailed list of the third-party dependencies can be found
 in [`build.gradle`](./build.gradle).
 
-Different license terms may apply to this software packages and must be considered before usage. There is no relation between the author(s) of Storesthal and the people or companies
-supplying third-party software. These packages are - gratefully! - used within Storesthal, but not maintained, merchandised, licensed or anything else by Storesthals author(s).
+Different license terms may apply to this software packages and must be considered before usage. There is no relation
+between the author(s) of Storesthal and the people or companies
+supplying third-party software. These packages are - gratefully! - used within Storesthal, but not maintained,
+merchandised, licensed or anything else by Storesthals author(s).
 
 ## Disclaimer
-This program is free software. It comes without any warranty, not even for merchantability or fitness for a particular purpose.
 
-Another disclaimer may apply to [third-party software included in Storesthal](#third-party_software), please see the respective license models.
+This program is free software. It comes without any warranty, not even for merchantability or fitness for a particular
+purpose.
+
+Another disclaimer may apply to [third-party software included in Storesthal](#third-party_software), please see the
+respective license models.
 
 Please see [the License section](#license) for more details.
 
 ## License
-Storesthal is licensed und the terms of the GNU Lesser General Public License (LPGL). Please see [LICENSE.md](./LICENSE.md) for details.
 
-Please consider the information in the ["Third-Party software"](#third-party-software) and ["Disclaimer"](#disclaimer) sections also.
+Storesthal is licensed und the terms of the GNU Lesser General Public License (LPGL). Please
+see [LICENSE.md](./LICENSE.md) for details.
+
+Please consider the information in the ["Third-Party software"](#third-party-software) and ["Disclaimer"](#disclaimer)
+sections also.
