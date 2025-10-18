@@ -15,7 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 /**
@@ -27,22 +30,44 @@ abstract class AbstractJsonTemplateBasedTest {
     /**
      * The folder (within the test resources) where the json files are stored.
      */
-    protected static final String JSON_RESOURCE_FOLDER="json";
+    protected static final String JSON_RESOURCE_FOLDER = "json";
 
     @InjectWireMock
     WireMockServer serverMock;
 
     @ConfigureWireMock
     Options options = wireMockConfig()
-            .dynamicPort();
+        .dynamicPort();
     //.notifier(new ConsoleNotifier(true));
 
+    protected static String createJsonHrefArray(String[] entries) {
+        StringBuilder result = new StringBuilder("[");
+        for (int i = 0; i < entries.length; i++) {
+            result.append("    {\"href\":\"").append(entries[i]).append("\"}");
+            if (i != entries.length - 1) {
+                result.append(",");
+            }
+        }
+        result.append("]");
+        return result.toString();
+    }
+
+    protected static String getJsonFileContent(String fileName, Map<String, String> substitutes) throws IOException {
+        File file = new File(Objects.requireNonNull(GeneralStoresthalTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER + "/" + fileName)).getFile());
+        String fileContent = Files.readString(file.toPath());
+        return StringSubstitutor.replace(fileContent, substitutes);
+    }
+
     protected void configureServerMock(String url, String answerToSend) {
+        configureServerMock(url, answerToSend, "application/hal+json;charset=UTF-8");
+    }
+
+    protected void configureServerMock(String url, String answerToSend, String contentType) {
 
         StubMapping stubMapping = stubFor(get(urlEqualTo(url))
             .willReturn(aResponse()
                 .withStatus(200)
-                .withHeader("Content-Type", "application/hal+json;charset=UTF-8")
+                .withHeader("Content-Type", contentType)
                 .withBody(answerToSend)));
 
         if (serverMock.getStubMappings().contains(stubMapping)) {
@@ -54,11 +79,11 @@ abstract class AbstractJsonTemplateBasedTest {
 
     protected void configureServerMockWithResponseFile(String url, String responseFileName, Map<String, String> additionalSubstitutions) throws IOException {
 
-        Map<String, String> substitutions =  new HashMap<>();
+        Map<String, String> substitutions = new HashMap<>();
         substitutions.put("port", String.valueOf(serverMock.port()));
-        substitutions.put("self", "http://localhost:"+serverMock.port()+url);
+        substitutions.put("self", "http://localhost:" + serverMock.port() + url);
 
-        if (additionalSubstitutions!=null) {
+        if (additionalSubstitutions != null) {
             substitutions.putAll(additionalSubstitutions);
         }
 
@@ -66,25 +91,7 @@ abstract class AbstractJsonTemplateBasedTest {
     }
 
     protected void configureServerMockWithResponseFile(String url, String responseFileName) throws IOException {
-        configureServerMockWithResponseFile(url, responseFileName,null);
-    }
-
-    protected static String createJsonHrefArray(String[] entries) {
-        StringBuilder result = new StringBuilder("[");
-        for(int i=0;i<entries.length;i++) {
-            result.append("    {\"href\":\"").append(entries[i]).append("\"}");
-            if (i!=entries.length-1) {
-                result.append(",");
-            }
-        }
-        result.append("]");
-        return result.toString();
-    }
-
-    protected static String getJsonFileContent(String fileName, Map<String,String> substitutes) throws IOException {
-        File file = new File(Objects.requireNonNull(GeneralStoresthalTest.class.getClassLoader().getResource(JSON_RESOURCE_FOLDER + "/" + fileName)).getFile());
-        String fileContent = Files.readString(file.toPath());
-        return StringSubstitutor.replace(fileContent,substitutes);
+        configureServerMockWithResponseFile(url, responseFileName, null);
     }
 
 }
