@@ -14,6 +14,7 @@ import com.github.ahuemmer.storesthal.complextestobjects.ComplexObjectWithMultip
 import com.github.ahuemmer.storesthal.complextestobjects.ComplexObjectWithSingleChild;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.hateoas.EntityModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
