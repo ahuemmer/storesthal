@@ -2,25 +2,35 @@ package com.github.ahuemmer.storesthal.helpers;
 
 import com.github.ahuemmer.storesthal.Storesthal;
 import com.github.ahuemmer.storesthal.StoresthalException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.List;
 
 public class PrimitiveValueRetriever {
 
-    private PrimitiveValueRetriever() {}
-
     private static int httpCalls = 0;
+
+    private PrimitiveValueRetriever() {
+    }
 
     /**
      * Retrieve a primitive value (no special object...) from the given URL.
+     *
      * @param primitiveClass The primitive class to be retrieved.
-     * @param url       The URL to retrieve the primitive from.
-     * @param doCache   Whether to cache the results or not. See cacheName parameter for details.
-     * @param cacheName The name of the cache to used when retrieving the primitive or NULL, if no cache is to be used.
-     * @param <T>       The type of the primitive class to be retrieved.
+     * @param url            The URL to retrieve the primitive from.
+     * @param doCache        Whether to cache the results or not. See cacheName parameter for details.
+     * @param cacheName      The name of the cache to used when retrieving the primitive or NULL, if no cache is to be used.
+     * @param <T>            The type of the primitive class to be retrieved.
      * @return The primitive retrieved.
      * @throws com.github.ahuemmer.storesthal.StoresthalException If it was not possible to retrieve a Primitive
      */
@@ -48,12 +58,24 @@ public class PrimitiveValueRetriever {
         }
 
         RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.ALL));
+        List<HttpMessageConverter<?>> messageConverters = restTemplate.getMessageConverters();
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+        messageConverters.add(converter);
+        restTemplate.setMessageConverters(messageConverters);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        // TODO: Das hier funktioniert noch nicht richtig, es wird kein Integer zurückgegeben, sondern eine Fehlermeldung.
+        //       (Siehe Test in FiBu)
 
         try {
             httpCalls += 1;
-            result = restTemplate.getForObject(uri, primitiveClass);
+            result = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, primitiveClass).getBody();
         } catch (RestClientException e) {
-            throw new StoresthalException("Unable to extract scalar of type \""+primitiveClass.getName()+"\" from url \""+url+"\"!", e);
+            throw new StoresthalException("Unable to extract scalar of type \"" + primitiveClass.getName() + "\" from url \"" + url + "\"!", e);
         }
 
         if (doCache) {
