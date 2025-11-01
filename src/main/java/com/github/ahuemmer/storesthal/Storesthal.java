@@ -25,7 +25,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -531,11 +530,7 @@ public class Storesthal {
      * @throws StoresthalException if no collection could be retrieved.
      */
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
-        try {
-            return getCollection(url, objectClass, null);
-        } catch (IOException ex) {
-            throw new StoresthalException("Could not extract collection", ex);
-        }
+        return getCollection(url, objectClass, null);
     }
 
 
@@ -556,7 +551,7 @@ public class Storesthal {
      * @throws StoresthalException if no collection could be retrieved.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException, IOException {
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
 
         logger.info("Getting object collection of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
 

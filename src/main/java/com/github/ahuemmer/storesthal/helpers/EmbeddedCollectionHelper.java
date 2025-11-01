@@ -62,7 +62,7 @@ public class EmbeddedCollectionHelper<T> {
      * {@code fieldName} was not empty, or no array-type field has been found under {@code _embedded} else).
      * @throws StoresthalException
      */
-    public static <T> List<EntityModel<T>> getObjects(ResponseEntity response, Class<T> objectClass, Optional<String> fieldName) throws StoresthalException, IOException {
+    public static <T> List<EntityModel<T>> getObjects(ResponseEntity response, Class<T> objectClass, Optional<String> fieldName) throws StoresthalException {
 
         EmbeddedCollectionHelper<T> helper = (EmbeddedCollectionHelper<T>) response.getBody();
 
@@ -107,7 +107,12 @@ public class EmbeddedCollectionHelper<T> {
 
         var reader = objectMapper.readerFor(listType);
 
-        return reader.readValue(helper.getObjectCollection().get(fieldNameFound));
+        try {
+            return reader.readValue(helper.getObjectCollection().get(fieldNameFound));
+        } catch (IOException ex) {
+            throw new StoresthalException("Could not read from collection JSON.", ex);
+        }
+
     }
 
     /**
