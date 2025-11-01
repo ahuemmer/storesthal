@@ -13,8 +13,9 @@ import com.github.ahuemmer.storesthal.complextestobjects.ComplexObjectWithMultip
 import com.github.ahuemmer.storesthal.complextestobjects.ComplexObjectWithMultipleChildren7;
 import com.github.ahuemmer.storesthal.complextestobjects.ComplexObjectWithSingleChild;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.hateoas.EntityModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,184 +45,193 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         Storesthal.clearAllCaches();
     }
 
-    /**
-     * Make sure, a "complex" object (having some attributes of different data types) can be correctly retrieved.
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObject() throws StoresthalException, IOException {
+    @Nested
+    @DisplayName("complex object handling")
+    public class Complex_object_handling {
 
-        configureServerMockWithResponseFile("/complexObjects/1", "complexObject1.json");
-        serverMock.start();
+        /**
+         * Make sure, a "complex" object (having some attributes of different data types) can be correctly retrieved.
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object")
+        public void retrieves_a_complex_object() throws StoresthalException, IOException {
 
-        ComplexObject test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjects/1", ComplexObject.class);
+            configureServerMockWithResponseFile("/complexObjects/1", "complexObject1.json");
+            serverMock.start();
 
-        assertNotNull(test);
-        assertEquals(1, test.getCategoryId());
-        assertEquals(10157977, test.getColor());
-        assertEquals("", test.getComment());
-        assertEquals("Test!", test.getName());
-        assertEquals(2, test.getNumber());
-        assertEquals("expense", test.getType());
-    }
+            ComplexObject test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjects/1", ComplexObject.class);
 
-    /**
-     * Make sure, a "complex" object having one relation to one single child object can be correctly retrieved.
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithSingleChild() throws StoresthalException, IOException {
-        configureServerMockWithResponseFile("/complexObjectsWithSingleChildren/1", "complexObjectWithSingleChild1.json");
-        configureServerMockWithResponseFile("/complexChildren/1", "simpleObject1.json", Map.of("name", "Testchild!", "tags", "[ \"tag_a\", \"tag_b\"]"));
+            assertNotNull(test);
+            assertEquals(1, test.getCategoryId());
+            assertEquals(10157977, test.getColor());
+            assertEquals("", test.getComment());
+            assertEquals("Test!", test.getName());
+            assertEquals(2, test.getNumber());
+            assertEquals("expense", test.getType());
+        }
 
-        serverMock.start();
+        /**
+         * Make sure, a "complex" object having one relation to one single child object can be correctly retrieved.
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with a single child")
+        public void retrieves_a_complex_object_with_a_single_child() throws StoresthalException, IOException {
+            configureServerMockWithResponseFile("/complexObjectsWithSingleChildren/1", "complexObjectWithSingleChild1.json");
+            configureServerMockWithResponseFile("/complexChildren/1", "simpleObject1.json", Map.of("name", "Testchild!", "tags", "[ \"tag_a\", \"tag_b\"]"));
 
-        ComplexObjectWithSingleChild test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
+            serverMock.start();
 
-        assertNotNull(test);
-        assertEquals(4711, test.getCategoryId());
-        assertEquals(101579, test.getColor());
-        assertEquals("oi...", test.getComment());
-        assertEquals("Test2!", test.getName());
-        assertEquals(3, test.getNumber());
-        assertEquals("income", test.getType());
+            ComplexObjectWithSingleChild test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithSingleChildren/1", ComplexObjectWithSingleChild.class);
 
-        ChildObject child = test.getChild();
-        assertNotNull(child);
-        assertEquals("Testchild!", child.getChildName());
-        assertEquals(2, child.getTags().size());
-        assertEquals("tag_a", child.getTags().get(0));
-        assertEquals("tag_b", child.getTags().get(1));
-    }
+            assertNotNull(test);
+            assertEquals(4711, test.getCategoryId());
+            assertEquals(101579, test.getColor());
+            assertEquals("oi...", test.getComment());
+            assertEquals("Test2!", test.getName());
+            assertEquals(3, test.getNumber());
+            assertEquals("income", test.getType());
 
-    /**
-     * Make sure, a "complex" object having multiple children (relation implemented as an abstract {@link List} here)
-     * can be correctly retrieved.
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithMultipleChildren1() throws StoresthalException, IOException {
+            ChildObject child = test.getChild();
+            assertNotNull(child);
+            assertEquals("Testchild!", child.getChildName());
+            assertEquals(2, child.getTags().size());
+            assertEquals("tag_a", child.getTags().get(0));
+            assertEquals("tag_b", child.getTags().get(1));
+        }
 
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "itsme...", "categoryId", "1508", "name", "Test3!", "number", "9", "type", "neither", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!", "tags", "[\"tag\"]"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!", "tags", "[ \"green\", \"big\", \"fluffy\"]"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!", "tags", "null"));
+        /**
+         * Make sure, a "complex" object having multiple children (relation implemented as an abstract {@link List} here)
+         * can be correctly retrieved.
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with multiple children (1 of 2)")
+        public void retrieves_a_complex_object_with_multiple_children__1_of_2() throws StoresthalException, IOException {
 
-        serverMock.start();
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "itsme...", "categoryId", "1508", "name", "Test3!", "number", "9", "type", "neither", "children", createJsonHrefArray(new String[]{
+                    "http://localhost:${port}/complexChildren2/1",
+                    "http://localhost:${port}/complexChildren2/2",
+                    "http://localhost:${port}/complexChildren2/3"}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!", "tags", "[\"tag\"]"));
+            configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!", "tags", "[ \"green\", \"big\", \"fluffy\"]"));
+            configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!", "tags", "null"));
 
-        ComplexObjectWithMultipleChildren1 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
+            serverMock.start();
 
-        assertNotNull(test);
-        assertEquals(1508, test.getCategoryId());
-        assertEquals(22101579, test.getColor());
-        assertEquals("itsme...", test.getComment());
-        assertEquals("Test3!", test.getName());
-        assertEquals(9, test.getNumber());
-        assertEquals("neither", test.getType());
+            ComplexObjectWithMultipleChildren1 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren1.class);
 
-        List<ChildObject> children = test.getChildren();
-        assertNotNull(children);
-        assertEquals(3, children.size());
-        assertEquals("Testchild 1!", children.get(0).getChildName());
-        assertEquals("Testchild 2!", children.get(1).getChildName());
-        assertEquals("Testchild 3!", children.get(2).getChildName());
+            assertNotNull(test);
+            assertEquals(1508, test.getCategoryId());
+            assertEquals(22101579, test.getColor());
+            assertEquals("itsme...", test.getComment());
+            assertEquals("Test3!", test.getName());
+            assertEquals(9, test.getNumber());
+            assertEquals("neither", test.getType());
 
-        assertEquals(12345, children.get(0).getChildId());
-        assertEquals(1, children.get(0).getTags().size());
-        assertEquals("tag", children.get(0).getTags().get(0));
+            List<ChildObject> children = test.getChildren();
+            assertNotNull(children);
+            assertEquals(3, children.size());
+            assertEquals("Testchild 1!", children.get(0).getChildName());
+            assertEquals("Testchild 2!", children.get(1).getChildName());
+            assertEquals("Testchild 3!", children.get(2).getChildName());
 
-        assertEquals(815, children.get(1).getChildId());
-        assertEquals(3, children.get(1).getTags().size());
-        assertEquals("green", children.get(1).getTags().get(0));
-        assertEquals("big", children.get(1).getTags().get(1));
-        assertEquals("fluffy", children.get(1).getTags().get(2));
+            assertEquals(12345, children.get(0).getChildId());
+            assertEquals(1, children.get(0).getTags().size());
+            assertEquals("tag", children.get(0).getTags().get(0));
 
-        assertEquals(4711, children.get(2).getChildId());
-        assertNull(children.get(2).getTags());
-    }
+            assertEquals(815, children.get(1).getChildId());
+            assertEquals(3, children.get(1).getTags().size());
+            assertEquals("green", children.get(1).getTags().get(0));
+            assertEquals("big", children.get(1).getTags().get(1));
+            assertEquals("fluffy", children.get(1).getTags().get(2));
 
-    /**
-     * Make sure, a "complex" object having multiple children (relation implemented as a {@link java.util.LinkedList} here)
-     * can be correctly retrieved.
-     * (Pretty much the same as before (in {@link #canRetrieveComplexObjectWithMultipleChildren1()}), but now we use
-     * {@link ComplexObjectWithMultipleChildren2} which has a concrete implementation of a collection
-     * ({@link java.util.LinkedList}) instead of an interface.)
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithMultipleChildren2() throws StoresthalException, IOException {
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "hello!", "categoryId", "4711", "name", "Blubb", "number", "45648", "type", "type", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!", "tags", "null"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!", "tags", "null"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!", "tags", "null"));
+            assertEquals(4711, children.get(2).getChildId());
+            assertNull(children.get(2).getTags());
+        }
 
-        serverMock.start();
+        /**
+         * Make sure, a "complex" object having multiple children (relation implemented as a {@link java.util.LinkedList} here)
+         * can be correctly retrieved.
+         * (Pretty much the same as before (in {@link #retrieves_a_complex_object_with_multiple_children__1_of_2()} ()}), but now we use
+         * {@link ComplexObjectWithMultipleChildren2} which has a concrete implementation of a collection
+         * ({@link java.util.LinkedList}) instead of an interface.)
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with multiple children (2 of 2)")
+        public void retrieves_a_complex_object_with_multiple_children__2_of_2() throws StoresthalException, IOException {
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "hello!", "categoryId", "4711", "name", "Blubb", "number", "45648", "type", "type", "children", createJsonHrefArray(new String[]{
+                    "http://localhost:${port}/complexChildren2/1",
+                    "http://localhost:${port}/complexChildren2/2",
+                    "http://localhost:${port}/complexChildren2/3"}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!", "tags", "null"));
+            configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!", "tags", "null"));
+            configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!", "tags", "null"));
 
-        ComplexObjectWithMultipleChildren2 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
+            serverMock.start();
 
-        assertNotNull(test);
-        assertEquals(4711, test.getCategoryId());
-        assertEquals(22101579, test.getColor());
-        assertEquals("hello!", test.getComment());
-        assertEquals("Blubb", test.getName());
-        assertEquals(45648, test.getNumber());
-        assertEquals("type", test.getType());
+            ComplexObjectWithMultipleChildren2 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren2.class);
 
-        List<ChildObject> children = test.getChildren();
-        assertNotNull(children);
-        assertEquals(3, children.size());
-        assertEquals("Testchild 1!", children.get(0).getChildName());
-        assertEquals("Testchild 2!", children.get(1).getChildName());
-        assertEquals("Testchild 3!", children.get(2).getChildName());
+            assertNotNull(test);
+            assertEquals(4711, test.getCategoryId());
+            assertEquals(22101579, test.getColor());
+            assertEquals("hello!", test.getComment());
+            assertEquals("Blubb", test.getName());
+            assertEquals(45648, test.getNumber());
+            assertEquals("type", test.getType());
 
-        assertEquals(12345, children.get(0).getChildId());
-        assertEquals(815, children.get(1).getChildId());
-        assertEquals(4711, children.get(2).getChildId());
+            List<ChildObject> children = test.getChildren();
+            assertNotNull(children);
+            assertEquals(3, children.size());
+            assertEquals("Testchild 1!", children.get(0).getChildName());
+            assertEquals("Testchild 2!", children.get(1).getChildName());
+            assertEquals("Testchild 3!", children.get(2).getChildName());
 
-    }
+            assertEquals(12345, children.get(0).getChildId());
+            assertEquals(815, children.get(1).getChildId());
+            assertEquals(4711, children.get(2).getChildId());
 
-    /**
-     * Make sure, a "complex" object having multiple children (relation implemented as an Array here)
-     * canNOT be retrieved (at the moment...).
-     * (Pretty much the same as the two before (in {@link #canRetrieveComplexObjectWithMultipleChildren1()} and
-     * {@link #canRetrieveComplexObjectWithMultipleChildren2()}), but now we use
-     * {@link ComplexObjectWithMultipleChildren3} which has an array as collection instead of a (Linked)List.
-     *
-     * @throws IOException if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithMultipleChildrenInArray() throws IOException {
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "", "categoryId", "9999", "name", "Xyz123!", "number", "1", "type", "mööööp", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!"));
+        }
 
-        serverMock.start();
+        /**
+         * Make sure, a "complex" object having multiple children (relation implemented as an Array here)
+         * canNOT be retrieved (at the moment...).
+         * (Pretty much the same as the two before (in {@link #retrieves_a_complex_object_with_multiple_children__1_of_2()} ()} and
+         * {@link #retrieves_a_complex_object_with_multiple_children__2_of_2()} ()}), but now we use
+         * {@link ComplexObjectWithMultipleChildren3} which has an array as collection instead of a (Linked)List.
+         *
+         * @throws IOException if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with multiple children in an array")
+        public void retrieves_a_complex_object_with_multiple_children_in_an_array() throws IOException {
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "22101579", "comment", "", "categoryId", "9999", "name", "Xyz123!", "number", "1", "type", "mööööp", "children", createJsonHrefArray(new String[]{
+                    "http://localhost:${port}/complexChildren2/1",
+                    "http://localhost:${port}/complexChildren2/2",
+                    "http://localhost:${port}/complexChildren2/3"}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "simpleObject2.json", Map.of("objectId", "12345", "name", "Testchild 1!"));
+            configureServerMockWithResponseFile("/complexChildren2/2", "simpleObject2.json", Map.of("objectId", "815", "name", "Testchild 2!"));
+            configureServerMockWithResponseFile("/complexChildren2/3", "simpleObject2.json", Map.of("objectId", "4711", "name", "Testchild 3!"));
 
-        assertThrows(StoresthalException.class, () -> Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class));
+            serverMock.start();
 
-        //ARRAYS ARE NOT SUPPORTED (YET??)
-        //Whenever this is the case, the following assertions should succeed:
+            assertThrows(StoresthalException.class, () -> Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren3.class));
+
+            //ARRAYS ARE NOT SUPPORTED (YET??)
+            //Whenever this is the case, the following assertions should succeed:
 
         /*assertNotNull(test);
         assertEquals(1508, test.getCategoryId());
@@ -242,680 +252,718 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(815, children[1].getChildId());
         assertEquals(4711, children[2].getChildId());*/
 
-    }
-
-    /**
-     * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
-     * to the parent object can be correctly retrieved and only one single instance of the parent object is created.
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithMultipleChildrenAndParentRelation() throws StoresthalException, IOException {
-
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "887766", "comment", "", "categoryId", "12345", "name", "Äußerst umlautig!", "number", "-1", "type", "This is a type. Is it? Really??? Yes...", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "simpleChildObjectWithParentRelation.json", Map.of("childId", "158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "simpleChildObjectWithParentRelation.json", Map.of("childId", "1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        ComplexObjectWithMultipleChildren4 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
-
-        assertNotNull(test);
-        assertEquals(12345, test.getCategoryId());
-        assertEquals(887766, test.getColor());
-        assertEquals("", test.getComment());
-        assertEquals("Äußerst umlautig!", test.getName());
-        assertEquals(-1, test.getNumber());
-        assertEquals("This is a type. Is it? Really??? Yes...", test.getType());
-
-        List<ChildObjectWithParentRelation> children = test.getChildren();
-        assertNotNull(children);
-        assertEquals(3, children.size());
-        assertEquals("Testchild with parent 1.", children.get(0).getChildName());
-        assertEquals("Testchild with parent 2.", children.get(1).getChildName());
-        assertEquals("Testchild with parent 3.", children.get(2).getChildName());
-
-        assertEquals(654321, children.get(0).getChildId());
-        assertEquals(158, children.get(1).getChildId());
-        assertEquals(1147, children.get(2).getChildId());
-
-        Storesthal.printStatistics();
-
-        assertEquals(4, (Integer) Storesthal.getStatistics().get("httpCalls"));
-
-        for (ChildObjectWithParentRelation child : children) {
-            //Use == here --> really the same object!
-            assertSame(test, child.getParent());
         }
-    }
 
-    /**
-     * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
-     * to a collection of parent objects can be correctly retrieved and only one single instance of the parent object is
-     * created.
-     * (This is pretty much like {@link #canRetrieveComplexObjectWithMultipleChildrenAndParentRelation()} above, but
-     * here the possible parents are stored in a collection inside the child objects.)
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canRetrieveComplexObjectWithMultipleChildrenAndParentRelationCollection() throws StoresthalException, IOException {
-
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "456456", "comment", "abcABC", "categoryId", "123459876", "name", "Das ist ein Name.", "number", "12", "type", "", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
-
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        ComplexObjectWithMultipleChildren5 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
-
-        assertNotNull(test);
-        assertEquals(123459876, test.getCategoryId());
-        assertEquals(456456, test.getColor());
-        assertEquals("abcABC", test.getComment());
-        assertEquals("Das ist ein Name.", test.getName());
-        assertEquals(12, test.getNumber());
-        assertEquals("", test.getType());
-
-        List<ChildObjectWithParentRelationCollection> children = test.getChildren();
-        assertNotNull(test.getChildren());
-        assertEquals(3, test.getChildren().size());
-
-
-        assertEquals("Testchild with parent 1.", children.get(0).getChildName());
-        assertEquals("Testchild with parent 2.", children.get(1).getChildName());
-        assertEquals("Testchild with parent 3.", children.get(2).getChildName());
-
-        assertEquals(654321, children.get(0).getChildId());
-        assertEquals(158, children.get(1).getChildId());
-        assertEquals(1147, children.get(2).getChildId());
-
-        Storesthal.printStatistics();
-
-        assertEquals(4, (Integer) Storesthal.getStatistics().get("httpCalls"));
-
-        for (ChildObjectWithParentRelationCollection child : children) {
-            assertEquals(1, child.getParents().size());
-            //Use == here --> really the same object!
-            assertSame(test, child.getParents().get(0));
-        }
-    }
-
-    /**
-     * Make sure, a very complex object structure with many levels of relation can be correctly retrieved.
-     * Please note: The test structure created is not completely "logic" in a sense of correct
-     * "parent-child-grandchild"-relations. This is intentional as it allows testing such structures as well.
-     *
-     * @throws StoresthalException if something fails.
-     * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
-     */
-    @Test
-    public void canHandleVeryComplexObjectStructure() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "0", "comment", ".", "categoryId", "2", "name", "Complexity...", "number", "14", "type", "987epyt", "children", createJsonHrefArray(new String[]{
-            "http://localhost:${port}/complexChildren2/1",
-            "http://localhost:${port}/complexChildren2/2",
-            "http://localhost:${port}/complexChildren2/3"}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId", "5", "name", "is...", "number", "5547", "type", "$myGreatType", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/1"
-            }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId", "1", "name", "just...", "number", "8", "type", "xyxyxy", "children", createJsonHrefArray(new String[]{
-            }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "468", "comment", "Number 3...", "categoryId", "1111", "name", "a...", "number", "-24", "type", "3", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/2",
-                "http://localhost:${port}/complexChildren3/3",
-                "http://localhost:${port}/complexChildren3/4",
-                "http://localhost:${port}/complexChildren3/5"
-            }
-        ), "parent", ""));
-
-        configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId", "10000", "name", "state...", "number", "null", "type", "   ", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId", "789456123", "name", "of...", "number", "-7894", "type", "*", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId", "0", "name", "mind!", "number", "574389", "type", "${myType}", "children", createJsonHrefArray(new String[]{}), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId", "55", "name", "Lorem", "number", "1186", "type", "Object Mark IV", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId", "3521", "name", "ipsum", "number", "-7561", "type", "Knödel", "children", createJsonHrefArray(new String[]{}), "parent", ""));
-
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        ComplexObjectWithMultipleChildren6 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
-
-        assertEquals(0, test.getColor());
-        assertEquals(".", test.getComment());
-        assertEquals(2, test.getCategoryId());
-        assertEquals(3, test.getChildren().size());
-        assertEquals(14, test.getNumber());
-        assertEquals("Complexity...", test.getName());
-        assertEquals("987epyt", test.getType());
-
-        //Child nr. 1
-
-        assertEquals(1345, test.getChildren().get(0).getColor());
-        assertEquals("is...", test.getChildren().get(0).getName());
-        assertEquals("Number 1...", test.getChildren().get(0).getComment());
-        assertEquals(5, test.getChildren().get(0).getCategoryId());
-        assertEquals(1, test.getChildren().get(0).getChildren().size());
-        assertEquals(5547, test.getChildren().get(0).getNumber());
-        assertEquals("$myGreatType", test.getChildren().get(0).getType());
-
-        //  Subchild nr. 1.1
-
-        ComplexObjectWithMultipleChildren6 subChild1 = test.getChildren().get(0).getChildren().get(0);
-        assertEquals(747474, subChild1.getColor());
-        assertEquals("I'm the first subchild", subChild1.getComment());
-        assertNotNull(subChild1.getParent());
-        assertSame(subChild1.getParent(), test.getChildren().get(0));
-        assertEquals(10000, subChild1.getCategoryId());
-        assertEquals("state...", subChild1.getName());
-        assertEquals("   ", subChild1.getType());
-        assertNull(subChild1.getChildren());
-        assertNull(subChild1.getNumber());
-
-        //  End subchild nr. 1.1
-
-        //END Child nr. 1
-
-        //Child nr. 2
-
-        assertEquals(584390, test.getChildren().get(1).getColor());
-        assertEquals("just...", test.getChildren().get(1).getName());
-        assertEquals("Number 2...", test.getChildren().get(1).getComment());
-        assertEquals(1, test.getChildren().get(1).getCategoryId());
-        assertNull(test.getChildren().get(1).getChildren());
-        assertEquals(8, test.getChildren().get(1).getNumber());
-        assertEquals("xyxyxy", test.getChildren().get(1).getType());
-
-        //(Child nr. 2 has no subchildren...)
-
-        //END Child nr. 2
-
-
-        //Child nr. 3
-        assertEquals(468, test.getChildren().get(2).getColor());
-        assertEquals("a...", test.getChildren().get(2).getName());
-        assertEquals("Number 3...", test.getChildren().get(2).getComment());
-        assertEquals(1111, test.getChildren().get(2).getCategoryId());
-        assertNull(test.getChildren().get(1).getChildren());
-        assertEquals(-24, test.getChildren().get(2).getNumber());
-        assertEquals("3", test.getChildren().get(2).getType());
-        assertEquals(4, test.getChildren().get(2).getChildren().size());
-
-        //  Subchild nr 3.1
-
-        ComplexObjectWithMultipleChildren6 subChild = test.getChildren().get(2).getChildren().get(0);
-        assertEquals(-7894, subChild.getNumber());
-        assertEquals(3, subChild.getColor());
-        assertEquals("I'm the second subchild", subChild.getComment());
-        assertEquals(789456123, subChild.getCategoryId());
-        assertEquals("of...", subChild.getName());
-        assertEquals("*", subChild.getType());
-        assertSame(subChild1, subChild.getParent());
-        assertNull(subChild.getChildren());
-
-
-        //  END Subchild nr. 3.1
-
-        //  Subchild nr 3.2
-
-        subChild = test.getChildren().get(2).getChildren().get(1);
-        assertEquals(574389, subChild.getNumber());
-        assertEquals(818147, subChild.getColor());
-        assertEquals("I'm the third subchild", subChild.getComment());
-        assertNull(subChild.getParent());
-        assertEquals(0, subChild.getCategoryId());
-        assertEquals("mind!", subChild.getName());
-        assertEquals("${myType}", subChild.getType());
-        assertNull(subChild.getChildren());
-
-        //  END Subchild nr. 3.2
-
-
-        //  Subchild nr 3.3
-
-        subChild = test.getChildren().get(2).getChildren().get(2);
-        assertEquals(1186, subChild.getNumber());
-        assertEquals(29141, subChild.getColor());
-        assertEquals("I'm the fourth subchild", subChild.getComment());
-        assertEquals(55, subChild.getCategoryId());
-        assertEquals("Lorem", subChild.getName());
-        assertEquals("Object Mark IV", subChild.getType());
-        assertSame(subChild.getParent(), test.getChildren().get(2).getChildren().get(1));
-        assertNull(subChild.getChildren());
-
-        //  END Subchild nr. 3.3
-
-        //  Subchild nr 3.4
-
-        subChild = test.getChildren().get(2).getChildren().get(3);
-        assertEquals(-7561, subChild.getNumber());
-        assertEquals(222222, subChild.getColor());
-        assertEquals("I'm the fifth subchild", subChild.getComment());
-        assertEquals(3521, subChild.getCategoryId());
-        assertEquals("ipsum", subChild.getName());
-        assertEquals("Knödel", subChild.getType());
-        assertNull(subChild.getChildren());
-
-        //  END Subchild nr. 3.4
-
-        //END Child nr. 3
-    }
-
-    @Test
-    /**
-     * Make sure, everything works as desired if the "top-level-object" is a collection.
-     */
-    public void canRetrieveCollections() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "collection.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        ArrayList<ChildObject> children = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class);
-
-        assertEquals(4, children.size());
-        assertEquals(759034, children.get(2).getChildId());
-        assertEquals("collObject673896873", children.get(3).getChildName());
-    }
-
-    @Test
-    public void canRetrieveEmbeddedCollectionsWithGivenFieldName() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("someCollection"));
-
-        assertEquals(4, collectionItems.size());
-        assertEquals(673896873, collectionItems.get(3).getChildId());
-        assertEquals("collObject2", collectionItems.get(1).getChildName());
-    }
-
-    @Test
-    public void canRetrieveEmbeddedCollectionsWithoutGivenFieldName() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.empty());
-
-        assertEquals(4, collectionItems.size());
-        assertEquals(673896873, collectionItems.get(3).getChildId());
-        assertEquals("collObject2", collectionItems.get(1).getChildName());
-    }
-
-    @Test
-    public void returnsEmptyListWhenRetrievingEmbeddedCollectionsIfTheFieldNameWasNotFound() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("test"));
-
-        assertTrue(collectionItems.isEmpty());
-    }
-
-
-    @Test
-    public void returnsEmptyListWhenRetrievingEmbeddedCollectionsIfThereIsNoMatchingField() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection_faulty.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.empty());
-
-        assertTrue(collectionItems.isEmpty());
-    }
-
-    @Test
-    public void throwsExceptionRetrievingAnEmbeddedCollectionIfGivenFieldNameIsNotAnArray() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "embeddedCollection_faulty.json");
-        serverMock.start();
-
-        Storesthal.resetStatistics();
-
-        assertThrows(StoresthalException.class, () ->
-            Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("someCollection"))
-        );
-    }
-
-    @Test
-    public void canRetrieveComplexCollections() throws IOException, StoresthalException {
-        configureServerMockWithResponseFile("/collection/coll", "complexCollection.json",
-            Map.of("children1432",
-                createJsonHrefArray(new String[]{
+        /**
+         * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
+         * to the parent object can be correctly retrieved and only one single instance of the parent object is created.
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with multiple children and \"parent\" relation")
+        public void retrieves_a_complex_object_with_multiple_children_and_parent_relation() throws StoresthalException, IOException {
+
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "887766", "comment", "", "categoryId", "12345", "name", "Äußerst umlautig!", "number", "-1", "type", "This is a type. Is it? Really??? Yes...", "children", createJsonHrefArray(new String[]{
                     "http://localhost:${port}/complexChildren2/1",
                     "http://localhost:${port}/complexChildren2/2",
                     "http://localhost:${port}/complexChildren2/3"}
-                ),
-                "children52",
-                createJsonHrefArray(new String[]{
-                    "http://localhost:${port}/complexChildren2/4",
-                    "http://localhost:${port}/complexChildren2/5"}
-                ),
-                "children7486465",
-                createJsonHrefArray(new String[]{
-                    "http://localhost:${port}/complexChildren2/6",
-                    "http://localhost:${port}/complexChildren2/1"}
-                )
-                , "parent", "", "types", "[]"));
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "simpleChildObjectWithParentRelation.json", Map.of("childId", "654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+            configureServerMockWithResponseFile("/complexChildren2/2", "simpleChildObjectWithParentRelation.json", Map.of("childId", "158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+            configureServerMockWithResponseFile("/complexChildren2/3", "simpleChildObjectWithParentRelation.json", Map.of("childId", "1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
 
-        configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/1"
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            ComplexObjectWithMultipleChildren4 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren4.class);
+
+            assertNotNull(test);
+            assertEquals(12345, test.getCategoryId());
+            assertEquals(887766, test.getColor());
+            assertEquals("", test.getComment());
+            assertEquals("Äußerst umlautig!", test.getName());
+            assertEquals(-1, test.getNumber());
+            assertEquals("This is a type. Is it? Really??? Yes...", test.getType());
+
+            List<ChildObjectWithParentRelation> children = test.getChildren();
+            assertNotNull(children);
+            assertEquals(3, children.size());
+            assertEquals("Testchild with parent 1.", children.get(0).getChildName());
+            assertEquals("Testchild with parent 2.", children.get(1).getChildName());
+            assertEquals("Testchild with parent 3.", children.get(2).getChildName());
+
+            assertEquals(654321, children.get(0).getChildId());
+            assertEquals(158, children.get(1).getChildId());
+            assertEquals(1147, children.get(2).getChildId());
+
+            Storesthal.printStatistics();
+
+            assertEquals(4, (Integer) Storesthal.getStatistics().get("httpCalls"));
+
+            for (ChildObjectWithParentRelation child : children) {
+                //Use == here --> really the same object!
+                assertSame(test, child.getParent());
             }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId", "1", "name", "just...", "number", "8", "types", "[\"xyxyxy\"]", "children", createJsonHrefArray(new String[]{
+        }
+
+        /**
+         * Make sure, an object structure of a parent object having multiple children each of which having a back-reference
+         * to a collection of parent objects can be correctly retrieved and only one single instance of the parent object is
+         * created.
+         * (This is pretty much like {@link #retrieves_a_complex_object_with_multiple_children_and_parent_relation()} ()} above, but
+         * here the possible parents are stored in a collection inside the child objects.)
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("retrieves a complex object with multiple children and \"parent\" collection")
+        public void retrieves_a_complex_object_with_multiple_children_and_parent_relation_collection() throws StoresthalException, IOException {
+
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "456456", "comment", "abcABC", "categoryId", "123459876", "name", "Das ist ein Name.", "number", "12", "type", "", "children", createJsonHrefArray(new String[]{
+                    "http://localhost:${port}/complexChildren2/1",
+                    "http://localhost:${port}/complexChildren2/2",
+                    "http://localhost:${port}/complexChildren2/3"}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "654321", "childName", "Testchild with parent 1.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+            configureServerMockWithResponseFile("/complexChildren2/2", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "158", "childName", "Testchild with parent 2.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+            configureServerMockWithResponseFile("/complexChildren2/3", "simpleChildObjectWithParentRelationCollection.json", Map.of("childId", "1147", "childName", "Testchild with parent 3.", "parent", "/complexObjectsWithMultipleChildren1/1"));
+
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            ComplexObjectWithMultipleChildren5 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren5.class);
+
+            assertNotNull(test);
+            assertEquals(123459876, test.getCategoryId());
+            assertEquals(456456, test.getColor());
+            assertEquals("abcABC", test.getComment());
+            assertEquals("Das ist ein Name.", test.getName());
+            assertEquals(12, test.getNumber());
+            assertEquals("", test.getType());
+
+            List<ChildObjectWithParentRelationCollection> children = test.getChildren();
+            assertNotNull(test.getChildren());
+            assertEquals(3, test.getChildren().size());
+
+
+            assertEquals("Testchild with parent 1.", children.get(0).getChildName());
+            assertEquals("Testchild with parent 2.", children.get(1).getChildName());
+            assertEquals("Testchild with parent 3.", children.get(2).getChildName());
+
+            assertEquals(654321, children.get(0).getChildId());
+            assertEquals(158, children.get(1).getChildId());
+            assertEquals(1147, children.get(2).getChildId());
+
+            Storesthal.printStatistics();
+
+            assertEquals(4, (Integer) Storesthal.getStatistics().get("httpCalls"));
+
+            for (ChildObjectWithParentRelationCollection child : children) {
+                assertEquals(1, child.getParents().size());
+                //Use == here --> really the same object!
+                assertSame(test, child.getParents().get(0));
             }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "468", "comment", "Number 3...", "categoryId", "1111", "name", "a...", "number", "-24", "types", "[\"3\", \"blah\", \"pups\"]", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/2",
-                "http://localhost:${port}/complexChildren3/3",
-                "http://localhost:${port}/complexChildren3/4",
-                "http://localhost:${port}/complexChildren3/5"
-            }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "5431", "comment", "Number 4...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/6"
-            }
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId", "10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[]{}
-        ), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren2/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "5324", "comment", "Number [6]...", "categoryId", "5234789", "name", "5834543", "number", "-17", "types", "[]", "children", createJsonHrefArray(new String[]{
-                "http://localhost:${port}/complexChildren3/3"
-            }
-        ), "parent", ""));
+        }
+
+        /**
+         * Make sure, a very complex object structure with many levels of relation can be correctly retrieved.
+         * Please note: The test structure created is not completely "logic" in a sense of correct
+         * "parent-child-grandchild"-relations. This is intentional as it allows testing such structures as well.
+         *
+         * @throws StoresthalException if something fails.
+         * @throws IOException         if the JSON template for the mocked service answer can't be accessed.
+         */
+        @Test
+        @DisplayName("handles very complex object structures")
+        public void handles_very_complex_object_structures() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/complexObjectsWithMultipleChildren1/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "0", "comment", ".", "categoryId", "2", "name", "Complexity...", "number", "14", "type", "987epyt", "children", createJsonHrefArray(new String[]{
+                    "http://localhost:${port}/complexChildren2/1",
+                    "http://localhost:${port}/complexChildren2/2",
+                    "http://localhost:${port}/complexChildren2/3"}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId", "5", "name", "is...", "number", "5547", "type", "$myGreatType", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/1"
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId", "1", "name", "just...", "number", "8", "type", "xyxyxy", "children", createJsonHrefArray(new String[]{
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "468", "comment", "Number 3...", "categoryId", "1111", "name", "a...", "number", "-24", "type", "3", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/2",
+                            "http://localhost:${port}/complexChildren3/3",
+                            "http://localhost:${port}/complexChildren3/4",
+                            "http://localhost:${port}/complexChildren3/5"
+                    }
+            ), "parent", ""));
+
+            configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren1.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId", "10000", "name", "state...", "number", "null", "type", "   ", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren1.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId", "789456123", "name", "of...", "number", "-7894", "type", "*", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren1.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId", "0", "name", "mind!", "number", "574389", "type", "${myType}", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren1.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId", "55", "name", "Lorem", "number", "1186", "type", "Object Mark IV", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren1.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId", "3521", "name", "ipsum", "number", "-7561", "type", "Knödel", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            ComplexObjectWithMultipleChildren6 test = Storesthal.getObject("http://localhost:" + serverMock.port() + "/complexObjectsWithMultipleChildren1/1", ComplexObjectWithMultipleChildren6.class);
+
+            assertEquals(0, test.getColor());
+            assertEquals(".", test.getComment());
+            assertEquals(2, test.getCategoryId());
+            assertEquals(3, test.getChildren().size());
+            assertEquals(14, test.getNumber());
+            assertEquals("Complexity...", test.getName());
+            assertEquals("987epyt", test.getType());
+
+            //Child nr. 1
+
+            assertEquals(1345, test.getChildren().get(0).getColor());
+            assertEquals("is...", test.getChildren().get(0).getName());
+            assertEquals("Number 1...", test.getChildren().get(0).getComment());
+            assertEquals(5, test.getChildren().get(0).getCategoryId());
+            assertEquals(1, test.getChildren().get(0).getChildren().size());
+            assertEquals(5547, test.getChildren().get(0).getNumber());
+            assertEquals("$myGreatType", test.getChildren().get(0).getType());
+
+            //  Subchild nr. 1.1
+
+            ComplexObjectWithMultipleChildren6 subChild1 = test.getChildren().get(0).getChildren().get(0);
+            assertEquals(747474, subChild1.getColor());
+            assertEquals("I'm the first subchild", subChild1.getComment());
+            assertNotNull(subChild1.getParent());
+            assertSame(subChild1.getParent(), test.getChildren().get(0));
+            assertEquals(10000, subChild1.getCategoryId());
+            assertEquals("state...", subChild1.getName());
+            assertEquals("   ", subChild1.getType());
+            assertNull(subChild1.getChildren());
+            assertNull(subChild1.getNumber());
+
+            //  End subchild nr. 1.1
+
+            //END Child nr. 1
+
+            //Child nr. 2
+
+            assertEquals(584390, test.getChildren().get(1).getColor());
+            assertEquals("just...", test.getChildren().get(1).getName());
+            assertEquals("Number 2...", test.getChildren().get(1).getComment());
+            assertEquals(1, test.getChildren().get(1).getCategoryId());
+            assertNull(test.getChildren().get(1).getChildren());
+            assertEquals(8, test.getChildren().get(1).getNumber());
+            assertEquals("xyxyxy", test.getChildren().get(1).getType());
+
+            //(Child nr. 2 has no subchildren...)
+
+            //END Child nr. 2
+
+            //Child nr. 3
+            assertEquals(468, test.getChildren().get(2).getColor());
+            assertEquals("a...", test.getChildren().get(2).getName());
+            assertEquals("Number 3...", test.getChildren().get(2).getComment());
+            assertEquals(1111, test.getChildren().get(2).getCategoryId());
+            assertNull(test.getChildren().get(1).getChildren());
+            assertEquals(-24, test.getChildren().get(2).getNumber());
+            assertEquals("3", test.getChildren().get(2).getType());
+            assertEquals(4, test.getChildren().get(2).getChildren().size());
+
+            //  Subchild nr 3.1
+
+            ComplexObjectWithMultipleChildren6 subChild = test.getChildren().get(2).getChildren().get(0);
+            assertEquals(-7894, subChild.getNumber());
+            assertEquals(3, subChild.getColor());
+            assertEquals("I'm the second subchild", subChild.getComment());
+            assertEquals(789456123, subChild.getCategoryId());
+            assertEquals("of...", subChild.getName());
+            assertEquals("*", subChild.getType());
+            assertSame(subChild1, subChild.getParent());
+            assertNull(subChild.getChildren());
 
 
-        configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId", "10000", "name", "state...", "number", "null", "types", "[\"   \"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId", "789456123", "name", "of...", "number", "-7894", "types", "[\"*\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId", "0", "name", "mind!", "number", "574389", "types", "[\"${myType}\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId", "55", "name", "Lorem", "number", "1186", "types", "[\"Object Mark IV\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId", "3521", "name", "ipsum", "number", "-7561", "types", "[\"Knödel\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren3/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "456123", "comment", "I'm the sixth subchild", "categoryId", "2323", "name", "dolor", "number", "5743534", "types", "[\"Knödel\", \"heyho\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/4\"}"));
+            //  END Subchild nr. 3.1
 
-        serverMock.start();
+            //  Subchild nr 3.2
 
-        System.out.println("http://localhost:" + serverMock.port() + "/collection/coll");
+            subChild = test.getChildren().get(2).getChildren().get(1);
+            assertEquals(574389, subChild.getNumber());
+            assertEquals(818147, subChild.getColor());
+            assertEquals("I'm the third subchild", subChild.getComment());
+            assertNull(subChild.getParent());
+            assertEquals(0, subChild.getCategoryId());
+            assertEquals("mind!", subChild.getName());
+            assertEquals("${myType}", subChild.getType());
+            assertNull(subChild.getChildren());
 
-        Storesthal.resetStatistics();
-
-        ArrayList<ComplexObjectWithMultipleChildren7> objects = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ComplexObjectWithMultipleChildren7.class);
-
-        assertEquals(3, objects.size());
-
-        // Object nr. 1
-        ComplexObjectWithMultipleChildren7 test = objects.get(0);
-        assertEquals(234, test.getCategoryId());
-        assertEquals("Object No. 1", test.getComment());
-        assertEquals(43432, test.getColor());
-        assertEquals(3, test.getChildren().size());
-        assertEquals(543890, test.getNumber());
-        assertEquals("complexCollObject1432", test.getName());
-        assertEquals(0, test.getTypes().size());
-
-        //Object nr. 1, Child nr. 1
-
-        assertEquals(1345, test.getChildren().get(0).getColor());
-        assertEquals("is...", test.getChildren().get(0).getName());
-        assertEquals("Number 1...", test.getChildren().get(0).getComment());
-        assertEquals(5, test.getChildren().get(0).getCategoryId());
-        assertEquals(1, test.getChildren().get(0).getChildren().size());
-        assertEquals(5547, test.getChildren().get(0).getNumber());
-        assertEquals(1, test.getChildren().get(0).getTypes().size());
-        assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
-
-        //  Subchild nr. 1.1
-
-        ComplexObjectWithMultipleChildren7 subChild1 = test.getChildren().get(0).getChildren().get(0);
-        assertEquals(747474, subChild1.getColor());
-        assertEquals("I'm the first subchild", subChild1.getComment());
-        assertNotNull(subChild1.getParent());
-        assertSame(subChild1.getParent(), test.getChildren().get(0));
-        assertEquals(10000, subChild1.getCategoryId());
-        assertEquals("state...", subChild1.getName());
-        assertEquals(1, subChild1.getTypes().size());
-        assertEquals("   ", subChild1.getTypes().get(0));
-        assertNull(subChild1.getChildren());
-        assertNull(subChild1.getNumber());
-
-        //  End subchild nr. 1.1
-
-        //END Child nr. 1
-
-        //Child nr. 2
-
-        assertEquals(584390, test.getChildren().get(1).getColor());
-        assertEquals("just...", test.getChildren().get(1).getName());
-        assertEquals("Number 2...", test.getChildren().get(1).getComment());
-        assertEquals(1, test.getChildren().get(1).getCategoryId());
-        assertNull(test.getChildren().get(1).getChildren());
-        assertEquals(8, test.getChildren().get(1).getNumber());
-        assertEquals(1, test.getChildren().get(1).getTypes().size());
-        assertEquals("xyxyxy", test.getChildren().get(1).getTypes().get(0));
-
-        //(Child nr. 2 has no subchildren...)
-
-        //END Child nr. 2
+            //  END Subchild nr. 3.2
 
 
-        //Child nr. 3
-        assertEquals(468, test.getChildren().get(2).getColor());
-        assertEquals("a...", test.getChildren().get(2).getName());
-        assertEquals("Number 3...", test.getChildren().get(2).getComment());
-        assertEquals(1111, test.getChildren().get(2).getCategoryId());
-        assertNull(test.getChildren().get(1).getChildren());
-        assertEquals(-24, test.getChildren().get(2).getNumber());
-        assertEquals(3, test.getChildren().get(2).getTypes().size());
-        assertEquals("3", test.getChildren().get(2).getTypes().get(0));
-        assertEquals("blah", test.getChildren().get(2).getTypes().get(1));
-        assertEquals("pups", test.getChildren().get(2).getTypes().get(2));
-        assertEquals(4, test.getChildren().get(2).getChildren().size());
+            //  Subchild nr 3.3
 
-        //  Subchild nr 3.1
+            subChild = test.getChildren().get(2).getChildren().get(2);
+            assertEquals(1186, subChild.getNumber());
+            assertEquals(29141, subChild.getColor());
+            assertEquals("I'm the fourth subchild", subChild.getComment());
+            assertEquals(55, subChild.getCategoryId());
+            assertEquals("Lorem", subChild.getName());
+            assertEquals("Object Mark IV", subChild.getType());
+            assertSame(subChild.getParent(), test.getChildren().get(2).getChildren().get(1));
+            assertNull(subChild.getChildren());
 
-        ComplexObjectWithMultipleChildren7 subChild = test.getChildren().get(2).getChildren().get(0);
-        assertEquals(-7894, subChild.getNumber());
-        assertEquals(3, subChild.getColor());
-        assertEquals("I'm the second subchild", subChild.getComment());
-        assertEquals(789456123, subChild.getCategoryId());
-        assertEquals("of...", subChild.getName());
-        assertEquals(1, subChild.getTypes().size());
-        assertEquals("*", subChild.getTypes().get(0));
-        assertSame(subChild1, subChild.getParent());
-        assertNull(subChild.getChildren());
+            //  END Subchild nr. 3.3
 
+            //  Subchild nr 3.4
 
-        //  END Subchild nr. 3.1
+            subChild = test.getChildren().get(2).getChildren().get(3);
+            assertEquals(-7561, subChild.getNumber());
+            assertEquals(222222, subChild.getColor());
+            assertEquals("I'm the fifth subchild", subChild.getComment());
+            assertEquals(3521, subChild.getCategoryId());
+            assertEquals("ipsum", subChild.getName());
+            assertEquals("Knödel", subChild.getType());
+            assertNull(subChild.getChildren());
 
-        //  Subchild nr 3.2
+            //  END Subchild nr. 3.4
 
-        subChild = test.getChildren().get(2).getChildren().get(1);
-        assertEquals(574389, subChild.getNumber());
-        assertEquals(818147, subChild.getColor());
-        assertEquals("I'm the third subchild", subChild.getComment());
-        assertNull(subChild.getParent());
-        assertEquals(0, subChild.getCategoryId());
-        assertEquals("mind!", subChild.getName());
-        assertEquals(1, subChild.getTypes().size());
-        assertEquals("${myType}", subChild.getTypes().get(0));
-        assertNull(subChild.getChildren());
+            //END Child nr. 3
+        }
+    }
 
-        //  END Subchild nr. 3.2
+    @Nested
+    @DisplayName("collection handling")
+    public class Collection_handling {
 
 
-        //  Subchild nr 3.3
+        /**
+         * Make sure, everything works as desired if the "top-level-object" is a collection.
+         */
+        @Test
+        @DisplayName("retrieves collections")
+        public void retrieves_collections() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "collection.json");
+            serverMock.start();
 
-        subChild = test.getChildren().get(2).getChildren().get(2);
-        assertEquals(1186, subChild.getNumber());
-        assertEquals(29141, subChild.getColor());
-        assertEquals("I'm the fourth subchild", subChild.getComment());
-        assertEquals(55, subChild.getCategoryId());
-        assertEquals("Lorem", subChild.getName());
-        assertEquals(1, subChild.getTypes().size());
-        assertEquals("Object Mark IV", subChild.getTypes().get(0));
-        assertSame(subChild.getParent(), test.getChildren().get(2).getChildren().get(1));
-        assertNull(subChild.getChildren());
+            Storesthal.resetStatistics();
 
-        //  END Subchild nr. 3.3
+            ArrayList<ChildObject> children = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class);
 
-        //  Subchild nr 3.4
+            assertEquals(4, children.size());
+            assertEquals(759034, children.get(2).getChildId());
+            assertEquals("collObject673896873", children.get(3).getChildName());
+        }
 
-        subChild = test.getChildren().get(2).getChildren().get(3);
-        assertEquals(-7561, subChild.getNumber());
-        assertEquals(222222, subChild.getColor());
-        assertEquals("I'm the fifth subchild", subChild.getComment());
-        assertEquals(3521, subChild.getCategoryId());
-        assertEquals("ipsum", subChild.getName());
-        assertEquals(1, subChild.getTypes().size());
-        assertEquals("Knödel", subChild.getTypes().get(0));
-        assertNull(subChild.getChildren());
+        @Test
+        @DisplayName("retrieves a complex collection")
+        public void retrieves_a_complex_collection() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "complexCollection.json",
+                    Map.of("children1432",
+                            createJsonHrefArray(new String[]{
+                                    "http://localhost:${port}/complexChildren2/1",
+                                    "http://localhost:${port}/complexChildren2/2",
+                                    "http://localhost:${port}/complexChildren2/3"}
+                            ),
+                            "children52",
+                            createJsonHrefArray(new String[]{
+                                    "http://localhost:${port}/complexChildren2/4",
+                                    "http://localhost:${port}/complexChildren2/5"}
+                            ),
+                            "children7486465",
+                            createJsonHrefArray(new String[]{
+                                    "http://localhost:${port}/complexChildren2/6",
+                                    "http://localhost:${port}/complexChildren2/1"}
+                            )
+                            , "parent", "", "types", "[]"));
 
-        //  END Subchild nr. 3.4
-
-        //END Object nr. 1, Child nr. 3
-
-        //Object nr. 2
-
-        test = objects.get(1);
-        assertEquals(438290, test.getCategoryId());
-        assertEquals("Object No. 2", test.getComment());
-        assertEquals(532, test.getColor());
-        assertEquals(2, test.getChildren().size());
-        assertEquals(456, test.getNumber());
-        assertEquals("complexCollObject52", test.getName());
-        assertNull(test.getTypes());
-
-        // Object nr. 2, child nr. 1
-        assertEquals(5431, test.getChildren().get(0).getColor());
-        assertEquals("is...", test.getChildren().get(0).getName());
-        assertEquals("Number 4...", test.getChildren().get(0).getComment());
-        assertEquals(5, test.getChildren().get(0).getCategoryId());
-        assertEquals(1, test.getChildren().get(0).getChildren().size());
-        assertEquals(5547, test.getChildren().get(0).getNumber());
-        assertEquals(1, test.getChildren().get(0).getTypes().size());
-        assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
-        assertEquals(1, test.getChildren().get(0).getChildren().size());
-
-        // Object nr. 2, Child nr. 1, subchild Nr. 1 (the only one)
-        subChild = test.getChildren().get(0).getChildren().get(0);
-        assertEquals(5743534, subChild.getNumber());
-        assertEquals(456123, subChild.getColor());
-        assertEquals("I'm the sixth subchild", subChild.getComment());
-        assertEquals(2323, subChild.getCategoryId());
-        assertEquals("dolor", subChild.getName());
-        assertEquals(2, subChild.getTypes().size());
-        assertEquals("Knödel", subChild.getTypes().get(0));
-        assertEquals("heyho", subChild.getTypes().get(1));
-        assertNull(subChild.getChildren());
-
-
-        // Object nr. 2, Child nr. 2
-        assertEquals(43289, test.getChildren().get(1).getColor());
-        assertEquals("blah", test.getChildren().get(1).getName());
-        assertEquals("Number 5...", test.getChildren().get(1).getComment());
-        assertEquals(10101, test.getChildren().get(1).getCategoryId());
-        assertEquals(45465, test.getChildren().get(1).getNumber());
-        assertEquals(1, test.getChildren().get(1).getTypes().size());
-        assertEquals("some type", test.getChildren().get(1).getTypes().get(0));
-
-        // Object nr. 2, child nr. 2 has no children
-        assertNull(test.getChildren().get(1).getChildren());
-
-        // Object nr. 3
-        test = objects.get(2);
-        assertEquals(543890, test.getCategoryId());
-        assertNull(test.getComment());
-        assertNull(test.getColor());
-        assertEquals(2, test.getChildren().size());
-        assertEquals(542, test.getNumber());
-        assertEquals("complexCollObject7486465", test.getName());
-        assertEquals(4, test.getTypes().size());
-        assertEquals("some ", test.getTypes().get(0));
-        assertEquals("list ", test.getTypes().get(1));
-        assertEquals("of   ", test.getTypes().get(2));
-        assertEquals("types", test.getTypes().get(3));
-
-        //Object nr. 3, Child nr. 1
-
-        assertEquals(5324, test.getChildren().get(0).getColor());
-        assertEquals("5834543", test.getChildren().get(0).getName());
-        assertEquals("Number [6]...", test.getChildren().get(0).getComment());
-        assertEquals(5234789, test.getChildren().get(0).getCategoryId());
-        assertEquals(-17, test.getChildren().get(0).getNumber());
-        assertEquals(0, test.getChildren().get(0).getTypes().size());
-        assertEquals(1, test.getChildren().get(0).getChildren().size());
-
-        // Object nr. 3, child nr. 1 has one children the same as object nr. 1, Child nr. 3
-        subChild = test.getChildren().get(0).getChildren().get(0);
-        assertSame(subChild, objects.get(0).getChildren().get(2).getChildren().get(1));
-        assertEquals(574389, subChild.getNumber());
-        assertEquals(818147, subChild.getColor());
-        assertEquals("I'm the third subchild", subChild.getComment());
-        assertNull(subChild.getParent());
-        assertEquals(0, subChild.getCategoryId());
-        assertEquals("mind!", subChild.getName());
-        assertEquals(1, subChild.getTypes().size());
-        assertEquals("${myType}", subChild.getTypes().get(0));
-        assertNull(subChild.getChildren());
+            configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/1"
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId", "1", "name", "just...", "number", "8", "types", "[\"xyxyxy\"]", "children", createJsonHrefArray(new String[]{
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "468", "comment", "Number 3...", "categoryId", "1111", "name", "a...", "number", "-24", "types", "[\"3\", \"blah\", \"pups\"]", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/2",
+                            "http://localhost:${port}/complexChildren3/3",
+                            "http://localhost:${port}/complexChildren3/4",
+                            "http://localhost:${port}/complexChildren3/5"
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "5431", "comment", "Number 4...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/6"
+                    }
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId", "10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[]{}
+            ), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren2/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "5324", "comment", "Number [6]...", "categoryId", "5234789", "name", "5834543", "number", "-17", "types", "[]", "children", createJsonHrefArray(new String[]{
+                            "http://localhost:${port}/complexChildren3/3"
+                    }
+            ), "parent", ""));
 
 
-        //Object nr. 3, child nr. 2 equals object nr. 1, child nr. 1!
-        //Object nr. 3, Child nr. 2
-        test = objects.get(2).getChildren().get(1);
-        assertSame(test, objects.get(0).getChildren().get(0));
-        assertEquals(1345, test.getColor());
-        assertEquals("is...", test.getName());
-        assertEquals("Number 1...", test.getComment());
-        assertEquals(5, test.getCategoryId());
-        assertEquals(1, test.getChildren().size());
-        assertEquals(5547, test.getNumber());
-        assertEquals(1, test.getTypes().size());
-        assertEquals("$myGreatType", test.getTypes().get(0));
+            configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId", "10000", "name", "state...", "number", "null", "types", "[\"   \"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId", "789456123", "name", "of...", "number", "-7894", "types", "[\"*\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId", "0", "name", "mind!", "number", "574389", "types", "[\"${myType}\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId", "55", "name", "Lorem", "number", "1186", "types", "[\"Object Mark IV\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
+            configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId", "3521", "name", "ipsum", "number", "-7561", "types", "[\"Knödel\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+            configureServerMockWithResponseFile("/complexChildren3/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "456123", "comment", "I'm the sixth subchild", "categoryId", "2323", "name", "dolor", "number", "5743534", "types", "[\"Knödel\", \"heyho\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/4\"}"));
 
-        //  Subchild nr. 3.1
+            serverMock.start();
 
-        subChild1 = test.getChildren().get(0);
-        assertSame(subChild1, objects.get(0).getChildren().get(0).getChildren().get(0));
-        assertEquals(747474, subChild1.getColor());
-        assertEquals("I'm the first subchild", subChild1.getComment());
-        assertNotNull(subChild1.getParent());
-        assertSame(subChild1.getParent(), test);
-        assertEquals(10000, subChild1.getCategoryId());
-        assertEquals("state...", subChild1.getName());
-        assertEquals(1, subChild1.getTypes().size());
-        assertEquals("   ", subChild1.getTypes().get(0));
-        assertNull(subChild1.getChildren());
-        assertNull(subChild1.getNumber());
+            System.out.println("http://localhost:" + serverMock.port() + "/collection/coll");
 
-        //  End subchild nr. 3.1
+            Storesthal.resetStatistics();
+
+            ArrayList<ComplexObjectWithMultipleChildren7> objects = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ComplexObjectWithMultipleChildren7.class);
+
+            assertEquals(3, objects.size());
+
+            // Object nr. 1
+            ComplexObjectWithMultipleChildren7 test = objects.get(0);
+            assertEquals(234, test.getCategoryId());
+            assertEquals("Object No. 1", test.getComment());
+            assertEquals(43432, test.getColor());
+            assertEquals(3, test.getChildren().size());
+            assertEquals(543890, test.getNumber());
+            assertEquals("complexCollObject1432", test.getName());
+            assertEquals(0, test.getTypes().size());
+
+            //Object nr. 1, Child nr. 1
+
+            assertEquals(1345, test.getChildren().get(0).getColor());
+            assertEquals("is...", test.getChildren().get(0).getName());
+            assertEquals("Number 1...", test.getChildren().get(0).getComment());
+            assertEquals(5, test.getChildren().get(0).getCategoryId());
+            assertEquals(1, test.getChildren().get(0).getChildren().size());
+            assertEquals(5547, test.getChildren().get(0).getNumber());
+            assertEquals(1, test.getChildren().get(0).getTypes().size());
+            assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
+
+            //  Subchild nr. 1.1
+
+            ComplexObjectWithMultipleChildren7 subChild1 = test.getChildren().get(0).getChildren().get(0);
+            assertEquals(747474, subChild1.getColor());
+            assertEquals("I'm the first subchild", subChild1.getComment());
+            assertNotNull(subChild1.getParent());
+            assertSame(subChild1.getParent(), test.getChildren().get(0));
+            assertEquals(10000, subChild1.getCategoryId());
+            assertEquals("state...", subChild1.getName());
+            assertEquals(1, subChild1.getTypes().size());
+            assertEquals("   ", subChild1.getTypes().get(0));
+            assertNull(subChild1.getChildren());
+            assertNull(subChild1.getNumber());
+
+            //  End subchild nr. 1.1
+
+            //END Child nr. 1
+
+            //Child nr. 2
+
+            assertEquals(584390, test.getChildren().get(1).getColor());
+            assertEquals("just...", test.getChildren().get(1).getName());
+            assertEquals("Number 2...", test.getChildren().get(1).getComment());
+            assertEquals(1, test.getChildren().get(1).getCategoryId());
+            assertNull(test.getChildren().get(1).getChildren());
+            assertEquals(8, test.getChildren().get(1).getNumber());
+            assertEquals(1, test.getChildren().get(1).getTypes().size());
+            assertEquals("xyxyxy", test.getChildren().get(1).getTypes().get(0));
+
+            //(Child nr. 2 has no subchildren...)
+
+            //END Child nr. 2
 
 
-        assertEquals(13, Storesthal.getStatistics().get("httpCalls"));
+            //Child nr. 3
+            assertEquals(468, test.getChildren().get(2).getColor());
+            assertEquals("a...", test.getChildren().get(2).getName());
+            assertEquals("Number 3...", test.getChildren().get(2).getComment());
+            assertEquals(1111, test.getChildren().get(2).getCategoryId());
+            assertNull(test.getChildren().get(1).getChildren());
+            assertEquals(-24, test.getChildren().get(2).getNumber());
+            assertEquals(3, test.getChildren().get(2).getTypes().size());
+            assertEquals("3", test.getChildren().get(2).getTypes().get(0));
+            assertEquals("blah", test.getChildren().get(2).getTypes().get(1));
+            assertEquals("pups", test.getChildren().get(2).getTypes().get(2));
+            assertEquals(4, test.getChildren().get(2).getChildren().size());
 
-        Storesthal.resetStatistics();
+            //  Subchild nr 3.1
 
+            ComplexObjectWithMultipleChildren7 subChild = test.getChildren().get(2).getChildren().get(0);
+            assertEquals(-7894, subChild.getNumber());
+            assertEquals(3, subChild.getColor());
+            assertEquals("I'm the second subchild", subChild.getComment());
+            assertEquals(789456123, subChild.getCategoryId());
+            assertEquals("of...", subChild.getName());
+            assertEquals(1, subChild.getTypes().size());
+            assertEquals("*", subChild.getTypes().get(0));
+            assertSame(subChild1, subChild.getParent());
+            assertNull(subChild.getChildren());
+
+
+            //  END Subchild nr. 3.1
+
+            //  Subchild nr 3.2
+
+            subChild = test.getChildren().get(2).getChildren().get(1);
+            assertEquals(574389, subChild.getNumber());
+            assertEquals(818147, subChild.getColor());
+            assertEquals("I'm the third subchild", subChild.getComment());
+            assertNull(subChild.getParent());
+            assertEquals(0, subChild.getCategoryId());
+            assertEquals("mind!", subChild.getName());
+            assertEquals(1, subChild.getTypes().size());
+            assertEquals("${myType}", subChild.getTypes().get(0));
+            assertNull(subChild.getChildren());
+
+            //  END Subchild nr. 3.2
+
+
+            //  Subchild nr 3.3
+
+            subChild = test.getChildren().get(2).getChildren().get(2);
+            assertEquals(1186, subChild.getNumber());
+            assertEquals(29141, subChild.getColor());
+            assertEquals("I'm the fourth subchild", subChild.getComment());
+            assertEquals(55, subChild.getCategoryId());
+            assertEquals("Lorem", subChild.getName());
+            assertEquals(1, subChild.getTypes().size());
+            assertEquals("Object Mark IV", subChild.getTypes().get(0));
+            assertSame(subChild.getParent(), test.getChildren().get(2).getChildren().get(1));
+            assertNull(subChild.getChildren());
+
+            //  END Subchild nr. 3.3
+
+            //  Subchild nr 3.4
+
+            subChild = test.getChildren().get(2).getChildren().get(3);
+            assertEquals(-7561, subChild.getNumber());
+            assertEquals(222222, subChild.getColor());
+            assertEquals("I'm the fifth subchild", subChild.getComment());
+            assertEquals(3521, subChild.getCategoryId());
+            assertEquals("ipsum", subChild.getName());
+            assertEquals(1, subChild.getTypes().size());
+            assertEquals("Knödel", subChild.getTypes().get(0));
+            assertNull(subChild.getChildren());
+
+            //  END Subchild nr. 3.4
+
+            //END Object nr. 1, Child nr. 3
+
+            //Object nr. 2
+
+            test = objects.get(1);
+            assertEquals(438290, test.getCategoryId());
+            assertEquals("Object No. 2", test.getComment());
+            assertEquals(532, test.getColor());
+            assertEquals(2, test.getChildren().size());
+            assertEquals(456, test.getNumber());
+            assertEquals("complexCollObject52", test.getName());
+            assertNull(test.getTypes());
+
+            // Object nr. 2, child nr. 1
+            assertEquals(5431, test.getChildren().get(0).getColor());
+            assertEquals("is...", test.getChildren().get(0).getName());
+            assertEquals("Number 4...", test.getChildren().get(0).getComment());
+            assertEquals(5, test.getChildren().get(0).getCategoryId());
+            assertEquals(1, test.getChildren().get(0).getChildren().size());
+            assertEquals(5547, test.getChildren().get(0).getNumber());
+            assertEquals(1, test.getChildren().get(0).getTypes().size());
+            assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
+            assertEquals(1, test.getChildren().get(0).getChildren().size());
+
+            // Object nr. 2, Child nr. 1, subchild Nr. 1 (the only one)
+            subChild = test.getChildren().get(0).getChildren().get(0);
+            assertEquals(5743534, subChild.getNumber());
+            assertEquals(456123, subChild.getColor());
+            assertEquals("I'm the sixth subchild", subChild.getComment());
+            assertEquals(2323, subChild.getCategoryId());
+            assertEquals("dolor", subChild.getName());
+            assertEquals(2, subChild.getTypes().size());
+            assertEquals("Knödel", subChild.getTypes().get(0));
+            assertEquals("heyho", subChild.getTypes().get(1));
+            assertNull(subChild.getChildren());
+
+
+            // Object nr. 2, Child nr. 2
+            assertEquals(43289, test.getChildren().get(1).getColor());
+            assertEquals("blah", test.getChildren().get(1).getName());
+            assertEquals("Number 5...", test.getChildren().get(1).getComment());
+            assertEquals(10101, test.getChildren().get(1).getCategoryId());
+            assertEquals(45465, test.getChildren().get(1).getNumber());
+            assertEquals(1, test.getChildren().get(1).getTypes().size());
+            assertEquals("some type", test.getChildren().get(1).getTypes().get(0));
+
+            // Object nr. 2, child nr. 2 has no children
+            assertNull(test.getChildren().get(1).getChildren());
+
+            // Object nr. 3
+            test = objects.get(2);
+            assertEquals(543890, test.getCategoryId());
+            assertNull(test.getComment());
+            assertNull(test.getColor());
+            assertEquals(2, test.getChildren().size());
+            assertEquals(542, test.getNumber());
+            assertEquals("complexCollObject7486465", test.getName());
+            assertEquals(4, test.getTypes().size());
+            assertEquals("some ", test.getTypes().get(0));
+            assertEquals("list ", test.getTypes().get(1));
+            assertEquals("of   ", test.getTypes().get(2));
+            assertEquals("types", test.getTypes().get(3));
+
+            //Object nr. 3, Child nr. 1
+
+            assertEquals(5324, test.getChildren().get(0).getColor());
+            assertEquals("5834543", test.getChildren().get(0).getName());
+            assertEquals("Number [6]...", test.getChildren().get(0).getComment());
+            assertEquals(5234789, test.getChildren().get(0).getCategoryId());
+            assertEquals(-17, test.getChildren().get(0).getNumber());
+            assertEquals(0, test.getChildren().get(0).getTypes().size());
+            assertEquals(1, test.getChildren().get(0).getChildren().size());
+
+            // Object nr. 3, child nr. 1 has one children the same as object nr. 1, Child nr. 3
+            subChild = test.getChildren().get(0).getChildren().get(0);
+            assertSame(subChild, objects.get(0).getChildren().get(2).getChildren().get(1));
+            assertEquals(574389, subChild.getNumber());
+            assertEquals(818147, subChild.getColor());
+            assertEquals("I'm the third subchild", subChild.getComment());
+            assertNull(subChild.getParent());
+            assertEquals(0, subChild.getCategoryId());
+            assertEquals("mind!", subChild.getName());
+            assertEquals(1, subChild.getTypes().size());
+            assertEquals("${myType}", subChild.getTypes().get(0));
+            assertNull(subChild.getChildren());
+
+
+            //Object nr. 3, child nr. 2 equals object nr. 1, child nr. 1!
+            //Object nr. 3, Child nr. 2
+            test = objects.get(2).getChildren().get(1);
+            assertSame(test, objects.get(0).getChildren().get(0));
+            assertEquals(1345, test.getColor());
+            assertEquals("is...", test.getName());
+            assertEquals("Number 1...", test.getComment());
+            assertEquals(5, test.getCategoryId());
+            assertEquals(1, test.getChildren().size());
+            assertEquals(5547, test.getNumber());
+            assertEquals(1, test.getTypes().size());
+            assertEquals("$myGreatType", test.getTypes().get(0));
+
+            //  Subchild nr. 3.1
+
+            subChild1 = test.getChildren().get(0);
+            assertSame(subChild1, objects.get(0).getChildren().get(0).getChildren().get(0));
+            assertEquals(747474, subChild1.getColor());
+            assertEquals("I'm the first subchild", subChild1.getComment());
+            assertNotNull(subChild1.getParent());
+            assertSame(subChild1.getParent(), test);
+            assertEquals(10000, subChild1.getCategoryId());
+            assertEquals("state...", subChild1.getName());
+            assertEquals(1, subChild1.getTypes().size());
+            assertEquals("   ", subChild1.getTypes().get(0));
+            assertNull(subChild1.getChildren());
+            assertNull(subChild1.getNumber());
+
+            //  End subchild nr. 3.1
+
+
+            assertEquals(13, Storesthal.getStatistics().get("httpCalls"));
+
+            Storesthal.resetStatistics();
+
+        }
+    }
+
+    @Nested
+    @DisplayName("embedded collection handling")
+    public class Embedded_Collection_handling {
+
+        @Test
+        @DisplayName("retrieves embedded collections with a given field name")
+        public void retrieves_embedded_collections_with_a_given_field_name() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("someCollection"));
+
+            assertEquals(4, collectionItems.size());
+            assertEquals(673896873, collectionItems.get(3).getChildId());
+            assertEquals("collObject2", collectionItems.get(1).getChildName());
+        }
+
+        @Test
+        @DisplayName("retrieves embedded collections without given field name")
+        public void retrieves_embedded_collections_without_given_field_name() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.empty());
+
+            assertEquals(4, collectionItems.size());
+            assertEquals(673896873, collectionItems.get(3).getChildId());
+            assertEquals("collObject2", collectionItems.get(1).getChildName());
+        }
+
+        @Test
+        @DisplayName("returns an empty list when retrieving an embedded collection, if the given field name was not found")
+        public void returns_an_empty_list_when_retrieving_an_embedded_collection_if_the_given_field_name_was_not_found() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("test"));
+
+            assertTrue(collectionItems.isEmpty());
+        }
+
+
+        @Test
+        @DisplayName("returns an empty list when retrieving an embedded collection, if there is not matching field")
+        public void returns_an_empty_list_when_retrieving_an_embedded_collection_if_there_is_no_matching_field() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection_faulty.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            List<ChildObject> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.empty());
+
+            assertTrue(collectionItems.isEmpty());
+        }
+
+        @Test
+        @DisplayName("throws an exception retrieving an embedded collection, if the given field name is not an array in JSON")
+        public void throws_an_exception_retrieving_an_embedded_collection_if_the_given_field_name_is_not_an_array_in_JSON() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection_faulty.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            assertThrows(StoresthalException.class, () ->
+                    Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObject.class, Optional.of("someCollection"))
+            );
+        }
+
+        @Test
+        @DisplayName("obeys embedded collection links")
+        public void obeys_embedded_collection_links() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollectionWithRelation.json");
+            configureServerMockWithResponseFile("/otherobjects/1", "complexObject1.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            List<ChildObjectWithParentRelation> collectionItems = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", ChildObjectWithParentRelation.class, Optional.of("someCollection"));
+
+            assertEquals(4, collectionItems.size());
+            assertEquals(673896873, collectionItems.get(3).getChildId());
+            assertEquals("collObject2", collectionItems.get(1).getChildName());
+            assertNotNull(collectionItems.get(2).getParent());
+        }
     }
 }

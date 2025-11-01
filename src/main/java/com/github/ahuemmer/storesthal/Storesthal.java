@@ -25,6 +25,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -45,10 +46,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import static com.fasterxml.jackson.core.JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION;
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON;
 
@@ -208,7 +207,7 @@ public class Storesthal {
         if (coll == null) {
             if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
                 if (List.class.isAssignableFrom(type)) {
-                    coll = new Vector(); //Vector because of thread safety
+                    coll = new LinkedList(); //Vector because of thread safety
                 } else if (Set.class.isAssignableFrom(type)) {
                     coll = new HashSet();
                 } else if (Queue.class.isAssignableFrom(type)) {
@@ -532,7 +531,11 @@ public class Storesthal {
      * @throws StoresthalException if no collection could be retrieved.
      */
     public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass) throws StoresthalException {
-        return getCollection(url, objectClass, null);
+        try {
+            return getCollection(url, objectClass, null);
+        } catch (IOException ex) {
+            throw new StoresthalException("Could not extract collection", ex);
+        }
     }
 
 
@@ -553,7 +556,7 @@ public class Storesthal {
      * @throws StoresthalException if no collection could be retrieved.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
+    public static <T> ArrayList<T> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException, IOException {
 
         logger.info("Getting object collection of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
 
@@ -577,25 +580,43 @@ public class Storesthal {
         transientObjects.add(uri);
 
         ResponseEntity response =
-            getRestTemplateWithHalMessageConverter(true).exchange(url,
-                HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
-                    @Override
-                    @NonNull
-                    public Type getType() {
-                        Type[] responseWrapperActualTypes = {objectClass};
-                        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-                            return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
-                        } else {
-                            return parameterize(ArrayList.class,
-                                parameterize(EntityModel.class, responseWrapperActualTypes));
-                        }
-                    }
-                });
+                getRestTemplateWithHalMessageConverter(true).exchange(url,
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
+                            @Override
+                            @NonNull
+                            public Type getType() {
+                                Type[] responseWrapperActualTypes = {objectClass};
+                                if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
+                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
+                            /*return parameterize(EmbeddedCollectionHelper.class,
+                                parameterize(ArrayList.class,
+                                    parameterize(EntityModel.class, responseWrapperActualTypes)));*/
+                                } else {
+                                    return parameterize(ArrayList.class,
+                                            parameterize(EntityModel.class, responseWrapperActualTypes));
+                                }
+                            }
+                        });
 
         List<EntityModel<T>> result;
 
         if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-            result = EmbeddedCollectionHelper.getObjects(response.getBody(), objectClass, embeddedCollectionName);
+            result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
+            /*EmbeddedCollectionHelper<T> helper = (EmbeddedCollectionHelper<T>) response.getBody();
+            var x = helper.getObjectCollection().get(embeddedCollectionName.get());
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new Jackson2HalModule());
+
+            JavaType type = objectMapper.getTypeFactory().constructParametricType(EntityModel.class, objectClass);
+            JavaType outerType = objectMapper.getTypeFactory().constructParametricType(ArrayList.class, type);
+
+            var reader = objectMapper.readerFor(outerType); //.readValue(x)
+
+            // TODO: Ein paar Tests schlagen noch fehl, sollte aber einfach zu beheben sein - den hiesigen (ansonsten
+            //       funktionierenden) Code am besten in den EmbeddedCollectionHelper integrieren.
+            //       Weiterhin natürlich: "Aufräumen" des Codes hier und im EmbeddedCollectionHelper.
+            result = reader.readValue(x);*/
         } else {
             result = (ArrayList<EntityModel<T>>) response.getBody();
         }
@@ -674,24 +695,24 @@ public class Storesthal {
         logger.debug("Adding URI \"{}\" to transient objects...", uri);
         transientObjects.add(uri);
         ResponseEntity<EntityModel<T>> response =
-            null;
+                null;
 
         try {
             //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
             response = getRestTemplateWithHalMessageConverter(false).exchange(url,
-                HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
-                    @Override
-                    @NonNull
-                    public Type getType() {
-                        Type type = super.getType();
-                        if (type instanceof ParameterizedType) {
-                            Type[] responseWrapperActualTypes = {objectClass};
-                            return parameterize(EntityModel.class,
-                                responseWrapperActualTypes);
+                    HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
+                        @Override
+                        @NonNull
+                        public Type getType() {
+                            Type type = super.getType();
+                            if (type instanceof ParameterizedType) {
+                                Type[] responseWrapperActualTypes = {objectClass};
+                                return parameterize(EntityModel.class,
+                                        responseWrapperActualTypes);
+                            }
+                            return type;
                         }
-                        return type;
-                    }
-                });
+                    });
         } catch (RestClientException e) {
             throw new StoresthalException("Exception trying to get object from " + url, e);
         }
@@ -767,9 +788,9 @@ public class Storesthal {
 
         if (Collection.class.isAssignableFrom(objectClass)) {
             logger.warn("""
-                You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.
-                Please consider using Storesthal.getCollection in that case.
-                (Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)""");
+                    You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail.
+                    Please consider using Storesthal.getCollection in that case.
+                    (Handling collections *within* the objects retrieved, therefore on any other but the first level, will work anyway.)""");
         }
 
         logger.info("Getting object of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);

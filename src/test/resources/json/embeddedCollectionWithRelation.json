@@ -1,0 +1,45 @@
+{
+  "_embedded": {
+    "someCollection": [
+      {
+        "_links": {
+          "self": {
+            "href": "/collObjects/1"
+          }
+        },
+        "childId": 1,
+        "name": "collObject1"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/collObjects/2"
+          }
+        },
+        "childId": 2,
+        "name": "collObject2"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/collObjects/759034"
+          },
+          "parent": {
+            "href": "http://localhost:${port}/otherobjects/1"
+          }
+        },
+        "childId": 759034,
+        "name": "collObject759034"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/collObjects/673896873"
+          }
+        },
+        "childId": 673896873,
+        "name": "collObject673896873"
+      }
+    ]
+  }
+}
