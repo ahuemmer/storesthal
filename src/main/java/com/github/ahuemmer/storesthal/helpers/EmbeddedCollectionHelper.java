@@ -8,7 +8,10 @@ import com.github.ahuemmer.storesthal.StoresthalException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
+import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +40,7 @@ public class EmbeddedCollectionHelper<T> {
      */
     @JsonProperty(EMBEDDED_PARENT_NAME)
     private JsonNode objectCollection;
+    //private Collection<T> objectCollection;
 
     /**
      * Extract the actual collection from the JSON response.
@@ -58,22 +62,18 @@ public class EmbeddedCollectionHelper<T> {
      * {@code fieldName} was not empty, or no array-type field has been found under {@code _embedded} else).
      * @throws StoresthalException
      */
-    public static <T> List<EntityModel<T>> getObjects(Object response, Class<T> objectClass, Optional<String> fieldName) throws StoresthalException {
+    public static <T> List<EntityModel<T>> getObjects(ResponseEntity response, Class<T> objectClass, Optional<String> fieldName) throws StoresthalException, IOException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        JsonNode objectCollection = ((EmbeddedCollectionHelper) response).getObjectCollection();
-
-        List<EntityModel<T>> result = new ArrayList<EntityModel<T>>();
+        EmbeddedCollectionHelper<T> helper = (EmbeddedCollectionHelper<T>) response.getBody();
 
         String fieldNameFound = null;
 
-        Iterator<String> fieldNameIterator = objectCollection.fieldNames();
+        Iterator<String> fieldNameIterator = helper.getObjectCollection().fieldNames();
 
         if (fieldName.isEmpty()) {
             if (fieldNameIterator.hasNext()) {
                 String currentFieldName = fieldNameIterator.next();
-                if (objectCollection.get(currentFieldName).isArray()) {
+                if (helper.getObjectCollection().get(currentFieldName).isArray()) {
                     fieldNameFound = currentFieldName;
                 }
             }
@@ -82,7 +82,7 @@ public class EmbeddedCollectionHelper<T> {
                 String currentFieldName = fieldNameIterator.next();
                 if (fieldName.get().equals(currentFieldName)) {
                     fieldNameFound = currentFieldName;
-                    if (!objectCollection.get(fieldNameFound).isArray()) {
+                    if (!helper.getObjectCollection().get(fieldNameFound).isArray()) {
                         throw new StoresthalException("Embedded collection is not an array in field " + fieldName);
                     }
                     break;
@@ -96,17 +96,18 @@ public class EmbeddedCollectionHelper<T> {
             } else {
                 logger.warn("No array field found in embedded collection. Returning empty result.");
             }
-            return result;
+            return new ArrayList<>();
         }
 
-        JavaType javaType = objectMapper.getTypeFactory().constructParametricType(EntityModel.class, objectClass);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new Jackson2HalModule());
 
-        for (JsonNode node : objectCollection.get(fieldNameFound)) {
-            result.add(objectMapper.convertValue(node, javaType));
-        }
+        JavaType type = objectMapper.getTypeFactory().constructParametricType(EntityModel.class, objectClass);
+        JavaType listType = objectMapper.getTypeFactory().constructParametricType(ArrayList.class, type);
 
-        return result;
+        var reader = objectMapper.readerFor(listType);
 
+        return reader.readValue(helper.getObjectCollection().get(fieldNameFound));
     }
 
     /**

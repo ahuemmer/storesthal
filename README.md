@@ -4,8 +4,7 @@ A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
 
-<!-- toc -->
-- __[What is it?](#what-is-it)__
+<!-- toc -->- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
    - __[Object structure](#object-structure)__
