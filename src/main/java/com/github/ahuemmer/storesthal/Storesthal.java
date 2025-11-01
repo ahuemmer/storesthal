@@ -602,21 +602,6 @@ public class Storesthal {
 
         if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
             result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
-            /*EmbeddedCollectionHelper<T> helper = (EmbeddedCollectionHelper<T>) response.getBody();
-            var x = helper.getObjectCollection().get(embeddedCollectionName.get());
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(new Jackson2HalModule());
-
-            JavaType type = objectMapper.getTypeFactory().constructParametricType(EntityModel.class, objectClass);
-            JavaType outerType = objectMapper.getTypeFactory().constructParametricType(ArrayList.class, type);
-
-            var reader = objectMapper.readerFor(outerType); //.readValue(x)
-
-            // TODO: Ein paar Tests schlagen noch fehl, sollte aber einfach zu beheben sein - den hiesigen (ansonsten
-            //       funktionierenden) Code am besten in den EmbeddedCollectionHelper integrieren.
-            //       Weiterhin natürlich: "Aufräumen" des Codes hier und im EmbeddedCollectionHelper.
-            result = reader.readValue(x);*/
         } else {
             result = (ArrayList<EntityModel<T>>) response.getBody();
         }
