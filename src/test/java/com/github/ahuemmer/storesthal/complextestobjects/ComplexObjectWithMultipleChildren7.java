@@ -3,6 +3,7 @@ package com.github.ahuemmer.storesthal.complextestobjects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.ahuemmer.storesthal.HALRelation;
 
+import java.util.AbstractList;
 import java.util.AbstractSequentialList;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,8 +30,8 @@ public class ComplexObjectWithMultipleChildren7 {
     @HALRelation
     private ComplexObjectWithMultipleChildren7 parent;
 
-    // Using AbstractSequentialList here just to prove, that Storesthal can also deal with abstract collection classes
-    private AbstractSequentialList<ComplexObjectWithMultipleChildren7> children;
+    // Using AbstractList here just to prove, that Storesthal can also deal with abstract collection classes
+    private AbstractList<ComplexObjectWithMultipleChildren7> children;
 
     public Integer getCategoryId() {
         return categoryId;
@@ -80,7 +81,7 @@ public class ComplexObjectWithMultipleChildren7 {
         this.comment = comment;
     }
 
-    public AbstractSequentialList<ComplexObjectWithMultipleChildren7> getChildren() {
+    public AbstractList<ComplexObjectWithMultipleChildren7> getChildren() {
         return children;
     }
 

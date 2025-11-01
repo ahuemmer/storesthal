@@ -207,7 +207,7 @@ public class Storesthal {
         if (coll == null) {
             if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
                 if (List.class.isAssignableFrom(type)) {
-                    coll = new LinkedList(); //Vector because of thread safety
+                    coll = new LinkedList();
                 } else if (Set.class.isAssignableFrom(type)) {
                     coll = new HashSet();
                 } else if (Queue.class.isAssignableFrom(type)) {
