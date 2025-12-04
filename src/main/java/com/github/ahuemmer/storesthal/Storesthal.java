@@ -186,14 +186,13 @@ public class Storesthal {
      * @param l                  The link containing the collection
      * @param m                  The setter method for the collection on the object being populated
      * @param collections        A map of known collections
-     * @param linksVisited       A set of all links visited up to now
      * @param intermediateResult The intermediate result object up to now
      * @param depth              The depth in the object tree at the moment (for recursion handling)
      * @param <T>                The type of the object having the collection
      * @throws StoresthalException if something fails and the collection cannot be retrieved or handled
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, Set<URI> linksVisited, T intermediateResult, int depth) throws StoresthalException {
+    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, T intermediateResult, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
         Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
@@ -242,7 +241,7 @@ public class Storesthal {
 
             markForLaterInvocation(uri, coll, addMethod);
         } else {
-            Object subObject = getObject(l.getHref(), realType, linksVisited, new HashMap<>(), depth + 1);
+            Object subObject = getObject(l.getHref(), realType, new HashMap<>(), depth + 1);
             Objects.requireNonNull(coll).add(subObject);
         }
 
@@ -257,7 +256,6 @@ public class Storesthal {
      * Follow a link encountered when parsing an object
      *
      * @param l                  The link to follow
-     * @param linksVisited       A set of links that have been visited already
      * @param objectClass        The expected target object class
      * @param collections        A map of collections already known
      * @param intermediateResult The intermediate result object up to now
@@ -267,7 +265,7 @@ public class Storesthal {
      *                             (array collections are not supported (yet?))
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static <U> void followLink(String parentObject, Link l, Set<URI> linksVisited, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
+    private static <U> void followLink(String parentObject, Link l, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResult, int depth) throws StoresthalException {
 
         logger.debug("Following link: {}", l.toUri());
 
@@ -289,7 +287,7 @@ public class Storesthal {
 
             if (transientObjects.contains(uri)) {
                 if (Collection.class.isAssignableFrom(type)) {
-                    handleCollection(parentObject, l, m, collections, objectCounter, linksVisited, intermediateResult, depth + 1);
+                    handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
                 } else {
                     markForLaterInvocation(uri, intermediateResult, m);
                 }
@@ -297,19 +295,17 @@ public class Storesthal {
             }
 
             if (Collection.class.isAssignableFrom(type)) {
-                handleCollection(parentObject, l, m, collections, objectCounter, linksVisited, intermediateResult, depth + 1);
+                handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
                 return;
             } else if (type.getComponentType() != null) {
                 throw new StoresthalException("Array relations are not supported (yet?).");
             }
 
-            subObject = (U) Storesthal.<U>getObject(l.getHref(), type, linksVisited, new HashMap<>(), depth + 1);
+            subObject = (U) Storesthal.<U>getObject(l.getHref(), type, new HashMap<>(), depth + 1);
 
             invokeSetter(m, intermediateResult, subObject);
 
         }
-
-        linksVisited.add(uri);
     }
 
     /**
@@ -603,10 +599,8 @@ public class Storesthal {
 
         ArrayList<T> realResult = new ArrayList<>();
 
-        Set<URI> linksVisited = new HashSet<>();
         @SuppressWarnings("rawtypes") Map<String, Collection> collections = new HashMap<>();
 
-        linksVisited.add(uri);
         int objectCounter = 0;
         for (EntityModel<T> entry : Objects.requireNonNull(result)) {
             realResult.add(entry.getContent());
@@ -617,7 +611,7 @@ public class Storesthal {
                         CacheManager.putObjectInCache(l.toUri(), entry.getContent(), null);
                     }
                 } else {
-                    followLink(url, l, linksVisited, objectClass, collections, objectCounter, entry.getContent(), 0);
+                    followLink(url, l, objectClass, collections, objectCounter, entry.getContent(), 0);
                 }
             }
             objectCounter++;
@@ -645,16 +639,15 @@ public class Storesthal {
     /**
      * Internal representation of {@link #getObject(String, Class)}, used for recursion.
      *
-     * @param url          The URL representing the object.
-     * @param objectClass  The destination class of the object.
-     * @param linksVisited A set of the links (URLs) visited so far.
-     * @param collections  A map of the collections already known.
-     * @param depth        The current recursion depth.
-     * @param <T>          The expected type of the returned object.
+     * @param url         The URL representing the object.
+     * @param objectClass The destination class of the object.
+     * @param collections A map of the collections already known.
+     * @param depth       The current recursion depth.
+     * @param <T>         The expected type of the returned object.
      * @return The object queried
      * @throws StoresthalException if the URL is invalid
      */
-    private static <T> T getObject(String url, Class<T> objectClass, Set<URI> linksVisited, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
+    private static <T> T getObject(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
 
         URI uri;
 
@@ -699,7 +692,6 @@ public class Storesthal {
         T result = Objects.requireNonNull(response.getBody()).getContent();
 
 
-        linksVisited.add(uri);
         for (Link l : response.getBody().getLinks()) {
 
             if ("self".equals(l.getRel().value())) {
@@ -708,7 +700,7 @@ public class Storesthal {
                     CacheManager.putObjectInCache(l.toUri(), result, null);
                 }
             } else {
-                followLink(url, l, linksVisited, objectClass, collections, 0, result, depth);
+                followLink(url, l, objectClass, collections, 0, result, depth);
             }
         }
         CacheManager.putObjectInCache(uri, result, null);
@@ -774,7 +766,7 @@ public class Storesthal {
         }
 
         logger.info("Getting object of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
-        return getObject(url, objectClass, new HashSet<>(), new HashMap<>(), 0);
+        return getObject(url, objectClass, new HashMap<>(), 0);
     }
 
     /**
