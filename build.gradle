@@ -4,6 +4,7 @@ plugins {
     id 'com.github.blueboxware.tocme' version '1.8'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.sonarqube' version '7.2.0.6526'
 }
 
 /*
@@ -19,6 +20,13 @@ if (file('secrets.gradle').exists()) {
     ext.ghActor = "$System.env.GITHUB_ACTOR"
 }
 
+sonar {
+    properties {
+        property "sonar.projectKey", "storesthal_storesthal_2f0e2536-14e8-4df7-a6f9-cad0ce8f11d2"
+        property "sonar.projectName", "Storesthal"
+        property "sonar.qualitygate.wait", true
+    }
+}
 
 group = 'com.github.ahuemmer'
 

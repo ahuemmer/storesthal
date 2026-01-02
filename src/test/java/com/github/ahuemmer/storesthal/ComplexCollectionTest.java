@@ -36,18 +36,18 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
     public void canRetrieveComplexCollections() throws IOException, StoresthalException {
         configureServerMockWithResponseFile("/collection/coll", "complexCollection.json",
                 Map.of("children1432",
-                        createJsonHrefArray(new String[] {
+                        createJsonHrefArray(new String[]{
                                 "http://localhost:${port}/complexChildren2/1",
                                 "http://localhost:${port}/complexChildren2/2",
                                 "http://localhost:${port}/complexChildren2/3"}
                         ),
                         "children52",
-                        createJsonHrefArray(new String[] {
+                        createJsonHrefArray(new String[]{
                                 "http://localhost:${port}/complexChildren2/4",
                                 "http://localhost:${port}/complexChildren2/5"}
                         ),
                         "children7486465",
-                        createJsonHrefArray(new String[] {
+                        createJsonHrefArray(new String[]{
                                 "http://localhost:${port}/complexChildren2/6",
                                 "http://localhost:${port}/complexChildren2/1"}
                         )
@@ -55,54 +55,54 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
 
         configureServerMockWithResponseFile("/complexCollObjects/1432", "complexObjectWithMultipleChildren2.json",
                 Map.of("children",
-                        createJsonHrefArray(new String[] {
+                        createJsonHrefArray(new String[]{
                                 "http://localhost:${port}/complexChildren2/1",
                                 "http://localhost:${port}/complexChildren2/2",
                                 "http://localhost:${port}/complexChildren2/3"}
                         ), "parent", "", "color", "43432", "categoryId", "234", "name", "complexCollObject1432", "number", "543890", "types", "[]", "comment", "Object No. 1"));
 
-        configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId","5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[] {
+        configureServerMockWithResponseFile("/complexChildren2/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "1345", "comment", "Number 1...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
                         "http://localhost:${port}/complexChildren3/1"
                 }
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/1432\"}"));
-        configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId","1", "name", "just...","number","8", "types", "[\"xyxyxy\"]", "children", createJsonHrefArray(new String[] {
+        configureServerMockWithResponseFile("/complexChildren2/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "584390", "comment", "Number 2...", "categoryId", "1", "name", "just...", "number", "8", "types", "[\"xyxyxy\"]", "children", createJsonHrefArray(new String[]{
                 }
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/1432\"}"));
-        configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "468", "comment", "Number 3...", "categoryId","1111", "name", "a...","number","-24","types","[\"3\", \"blah\", \"pups\"]","children", createJsonHrefArray(new String[] {
+        configureServerMockWithResponseFile("/complexChildren2/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "468", "comment", "Number 3...", "categoryId", "1111", "name", "a...", "number", "-24", "types", "[\"3\", \"blah\", \"pups\"]", "children", createJsonHrefArray(new String[]{
                         "http://localhost:${port}/complexChildren3/2",
                         "http://localhost:${port}/complexChildren3/3",
                         "http://localhost:${port}/complexChildren3/4",
                         "http://localhost:${port}/complexChildren3/5"
                 }
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/1432\"}"));
-        configureServerMockWithResponseFile("/complexChildren2/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "5431", "comment", "Number 4...", "categoryId","5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[] {
+        configureServerMockWithResponseFile("/complexChildren2/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "5431", "comment", "Number 4...", "categoryId", "5", "name", "is...", "number", "5547", "types", "[\"$myGreatType\"]", "children", createJsonHrefArray(new String[]{
                         "http://localhost:${port}/complexChildren3/6"
                 }
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/52\"}"));
-        configureServerMockWithResponseFile("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId","10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[] {}
+        configureServerMockWithResponseFile("/complexChildren2/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "43289", "comment", "Number 5...", "categoryId", "10101", "name", "blah", "number", "45465", "types", "[\"some type\"]", "children", createJsonHrefArray(new String[]{}
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/52\"}"));
-        configureServerMockWithResponseFile("/complexChildren2/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "5324", "comment", "Number [6]...", "categoryId","5234789", "name", "5834543", "number", "-17", "types", "[]", "children", createJsonHrefArray(new String[] {
+        configureServerMockWithResponseFile("/complexChildren2/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "5324", "comment", "Number [6]...", "categoryId", "5234789", "name", "5834543", "number", "-17", "types", "[]", "children", createJsonHrefArray(new String[]{
                         "http://localhost:${port}/complexChildren3/3"
                 }
         ), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexCollObjects/7486465\"}"));
 
 
-        configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId","10000", "name", "state...","number","null","types", "[\"   \"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId","789456123", "name", "of...","number","-7894", "types", "[\"*\"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId","0", "name", "mind!","number","574389", "types", "[\"${myType}\"]", "children", createJsonHrefArray(new String[] {}), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId","55", "name", "Lorem","number","1186","types", "[\"Object Mark IV\"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
-        configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId","3521", "name", "ipsum","number","-7561","types", "[\"Knödel\"]", "children", createJsonHrefArray(new String[] {}), "parent", ""));
-        configureServerMockWithResponseFile("/complexChildren3/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "456123", "comment", "I'm the sixth subchild", "categoryId","2323", "name", "dolor","number","5743534","types", "[\"Knödel\", \"heyho\"]", "children", createJsonHrefArray(new String[] {}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/4\"}"));
+        configureServerMockWithResponseFile("/complexChildren3/1", "complexObjectWithMultipleChildren2.json", Map.of("color", "747474", "comment", "I'm the first subchild", "categoryId", "10000", "name", "state...", "number", "null", "types", "[\"   \"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/1\"}"));
+        configureServerMockWithResponseFile("/complexChildren3/2", "complexObjectWithMultipleChildren2.json", Map.of("color", "3", "comment", "I'm the second subchild", "categoryId", "789456123", "name", "of...", "number", "-7894", "types", "[\"*\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/1\"}"));
+        configureServerMockWithResponseFile("/complexChildren3/3", "complexObjectWithMultipleChildren2.json", Map.of("color", "818147", "comment", "I'm the third subchild", "categoryId", "0", "name", "mind!", "number", "574389", "types", "[\"${myType}\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+        configureServerMockWithResponseFile("/complexChildren3/4", "complexObjectWithMultipleChildren2.json", Map.of("color", "29141", "comment", "I'm the fourth subchild", "categoryId", "55", "name", "Lorem", "number", "1186", "types", "[\"Object Mark IV\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren3/3\"}"));
+        configureServerMockWithResponseFile("/complexChildren3/5", "complexObjectWithMultipleChildren2.json", Map.of("color", "222222", "comment", "I'm the fifth subchild", "categoryId", "3521", "name", "ipsum", "number", "-7561", "types", "[\"Knödel\"]", "children", createJsonHrefArray(new String[]{}), "parent", ""));
+        configureServerMockWithResponseFile("/complexChildren3/6", "complexObjectWithMultipleChildren2.json", Map.of("color", "456123", "comment", "I'm the sixth subchild", "categoryId", "2323", "name", "dolor", "number", "5743534", "types", "[\"Knödel\", \"heyho\"]", "children", createJsonHrefArray(new String[]{}), "parent", ",\"parent\": {\"href\":\"http://localhost:${port}/complexChildren2/4\"}"));
 
         serverMock.start();
 
-        System.out.println("Serving at: http://localhost:"+serverMock.port()+"/collection/coll");
+        System.out.println("Serving at: http://localhost:" + serverMock.port() + "/collection/coll");
 
         Storesthal.resetStatistics();
 
-        ArrayList<ComplexObjectWithMultipleChildren7> objects = Storesthal.getCollection("http://localhost:"+serverMock.port()+"/collection/coll", ComplexObjectWithMultipleChildren7.class);
+        ArrayList<ComplexObjectWithMultipleChildren7> objects = Storesthal.getCollectionWithoutLinks("http://localhost:" + serverMock.port() + "/collection/coll", ComplexObjectWithMultipleChildren7.class);
 
-        assertEquals(3,objects.size());
+        assertEquals(3, objects.size());
 
         // Object nr. 1
         // ============
@@ -139,11 +139,11 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         // number: 5547
         // types": [$myGreatType]
 
-        assertEquals(1345,test.getChildren().get(0).getColor());
+        assertEquals(1345, test.getChildren().get(0).getColor());
         assertEquals("is...", test.getChildren().get(0).getName());
-        assertEquals("Number 1...",test.getChildren().get(0).getComment());
-        assertEquals(5,test.getChildren().get(0).getCategoryId());
-        assertEquals(1,test.getChildren().get(0).getChildren().size());
+        assertEquals("Number 1...", test.getChildren().get(0).getComment());
+        assertEquals(5, test.getChildren().get(0).getCategoryId());
+        assertEquals(1, test.getChildren().get(0).getChildren().size());
         assertEquals(5547, test.getChildren().get(0).getNumber());
         assertEquals(1, test.getChildren().get(0).getTypes().size());
         assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
@@ -186,10 +186,10 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         // number: 8
         // types: [xyxyxy]
 
-        assertEquals(584390,test.getChildren().get(1).getColor());
+        assertEquals(584390, test.getChildren().get(1).getColor());
         assertEquals("just...", test.getChildren().get(1).getName());
-        assertEquals("Number 2...",test.getChildren().get(1).getComment());
-        assertEquals(1,test.getChildren().get(1).getCategoryId());
+        assertEquals("Number 2...", test.getChildren().get(1).getComment());
+        assertEquals(1, test.getChildren().get(1).getCategoryId());
         assertNull(test.getChildren().get(1).getChildren());
         assertEquals(8, test.getChildren().get(1).getNumber());
         assertEquals(1, test.getChildren().get(1).getTypes().size());
@@ -214,10 +214,10 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         //  number": -24
         //  types: [3,blah,pups]
 
-        assertEquals(468,test.getChildren().get(2).getColor());
+        assertEquals(468, test.getChildren().get(2).getColor());
         assertEquals("a...", test.getChildren().get(2).getName());
-        assertEquals("Number 3...",test.getChildren().get(2).getComment());
-        assertEquals(1111,test.getChildren().get(2).getCategoryId());
+        assertEquals("Number 3...", test.getChildren().get(2).getComment());
+        assertEquals(1111, test.getChildren().get(2).getCategoryId());
         assertEquals(-24, test.getChildren().get(2).getNumber());
         assertEquals(3, test.getChildren().get(2).getTypes().size());
         assertEquals("3", test.getChildren().get(2).getTypes().get(0));
@@ -291,7 +291,7 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         assertEquals("Lorem", subChild.getName());
         assertEquals(1, subChild.getTypes().size());
         assertEquals("Object Mark IV", subChild.getTypes().get(0));
-        assertSame(subChild.getParent(),test.getChildren().get(2).getChildren().get(1));
+        assertSame(subChild.getParent(), test.getChildren().get(2).getChildren().get(1));
         assertNull(subChild.getChildren());
 
         // Object nr. 1, child nr. 3, subchild nr. 4:
@@ -355,11 +355,11 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         // number: 5547
         // types: [$myGreatType]
 
-        assertEquals(5431,test.getChildren().get(0).getColor());
+        assertEquals(5431, test.getChildren().get(0).getColor());
         assertEquals("is...", test.getChildren().get(0).getName());
-        assertEquals("Number 4...",test.getChildren().get(0).getComment());
-        assertEquals(5,test.getChildren().get(0).getCategoryId());
-        assertEquals(1,test.getChildren().get(0).getChildren().size());
+        assertEquals("Number 4...", test.getChildren().get(0).getComment());
+        assertEquals(5, test.getChildren().get(0).getCategoryId());
+        assertEquals(1, test.getChildren().get(0).getChildren().size());
         assertEquals(5547, test.getChildren().get(0).getNumber());
         assertEquals(1, test.getChildren().get(0).getTypes().size());
         assertEquals("$myGreatType", test.getChildren().get(0).getTypes().get(0));
@@ -402,10 +402,10 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         // number: 45465
         // types: [some type]
 
-        assertEquals(43289,test.getChildren().get(1).getColor());
+        assertEquals(43289, test.getChildren().get(1).getColor());
         assertEquals("blah", test.getChildren().get(1).getName());
-        assertEquals("Number 5...",test.getChildren().get(1).getComment());
-        assertEquals(10101,test.getChildren().get(1).getCategoryId());
+        assertEquals("Number 5...", test.getChildren().get(1).getComment());
+        assertEquals(10101, test.getChildren().get(1).getCategoryId());
         assertEquals(45465, test.getChildren().get(1).getNumber());
         assertEquals(1, test.getChildren().get(1).getTypes().size());
         assertEquals("some type", test.getChildren().get(1).getTypes().get(0));
@@ -455,10 +455,10 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
         // number: -17
         // types: []
 
-        assertEquals(5324,test.getChildren().get(0).getColor());
+        assertEquals(5324, test.getChildren().get(0).getColor());
         assertEquals("5834543", test.getChildren().get(0).getName());
-        assertEquals("Number [6]...",test.getChildren().get(0).getComment());
-        assertEquals(5234789,test.getChildren().get(0).getCategoryId());
+        assertEquals("Number [6]...", test.getChildren().get(0).getComment());
+        assertEquals(5234789, test.getChildren().get(0).getCategoryId());
         assertEquals(-17, test.getChildren().get(0).getNumber());
         assertEquals(0, test.getChildren().get(0).getTypes().size());
         assertEquals(1, test.getChildren().get(0).getChildren().size());
@@ -506,11 +506,11 @@ public class ComplexCollectionTest extends AbstractJsonTemplateBasedTest {
 
         test = objects.get(2).getChildren().get(1);
         assertSame(test, objects.get(0).getChildren().get(0));
-        assertEquals(1345,test.getColor());
+        assertEquals(1345, test.getColor());
         assertEquals("is...", test.getName());
-        assertEquals("Number 1...",test.getComment());
-        assertEquals(5,test.getCategoryId());
-        assertEquals(1,test.getChildren().size());
+        assertEquals("Number 1...", test.getComment());
+        assertEquals(5, test.getCategoryId());
+        assertEquals(1, test.getChildren().size());
         assertEquals(5547, test.getNumber());
         assertEquals(1, test.getTypes().size());
         assertEquals("$myGreatType", test.getTypes().get(0));
