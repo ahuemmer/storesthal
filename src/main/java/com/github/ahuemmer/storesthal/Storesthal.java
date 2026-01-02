@@ -46,6 +46,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.springframework.hateoas.MediaTypes.HAL_JSON;
@@ -61,6 +63,8 @@ public class Storesthal {
      * for a cache (see {@link Cacheable#cacheName()}).
      */
     public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
+    public static final String ENTITY_MODEL_CLASS_REGEX = ".+<org\\.springframework\\.hateoas\\.EntityModel<(.+)>.*>.*";
+    public static final Pattern ENTITY_MODEL_CLASS_PATTERN = Pattern.compile(ENTITY_MODEL_CLASS_REGEX);
 
     /**
      * The logger.
@@ -184,26 +188,30 @@ public class Storesthal {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
 
-        Class realType;
+        Class realType = null;
 
         if ((parameterizedType.getActualTypeArguments()[0]).getTypeName().startsWith("org.springframework.hateoas.EntityModel<")) {
             try {
+                if (Collection.class.isAssignableFrom(m.getParameterTypes()[0])) {
 
-                // TODO: Improve!
+                    logger.debug("Searching for real object type of class {}", m.getParameterTypes()[0].getCanonicalName());
 
-                if (m.getGenericParameterTypes()[0].getTypeName().contains("java.util.List<org.springframework.hateoas.EntityModel<")) {
-                    realType = Class.forName(m.getGenericParameterTypes()[0].getTypeName().replace("java.util.List<org.springframework.hateoas.EntityModel<", "").replace(">>", ""));
-                } else if (m.getGenericParameterTypes()[0].getTypeName().contains("java.util.AbstractSequentialList<org.springframework.hateoas.EntityModel<")) {
-                    realType = Class.forName(m.getGenericParameterTypes()[0].getTypeName().replace("java.util.AbstractSequentialList<org.springframework.hateoas.EntityModel<", "").replace(">>", ""));
-                } else if (m.getGenericParameterTypes()[0].getTypeName().contains("java.util.LinkedList<org.springframework.hateoas.EntityModel<")) {
-                    realType = Class.forName(m.getGenericParameterTypes()[0].getTypeName().replace("java.util.LinkedList<org.springframework.hateoas.EntityModel<", "").replace(">>", ""));
+                    final Matcher matcher = ENTITY_MODEL_CLASS_PATTERN.matcher(m.getGenericParameterTypes()[0].getTypeName());
+
+                    if (matcher.matches()) {
+                        String realTypeName = matcher.group(1);
+                        logger.debug("Found real object type name: {}", realTypeName);
+                        realType = Class.forName(realTypeName);
+                    }
                 } else {
                     throw new RuntimeException("Type " + m.getGenericParameterTypes()[0].getTypeName() + " not supported (yet)!");
                 }
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
-        } else {
+        }
+
+        if (realType == null) {
             realType = (Class) parameterizedType.getActualTypeArguments()[0];
         }
 
