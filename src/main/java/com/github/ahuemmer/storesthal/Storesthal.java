@@ -63,7 +63,16 @@ public class Storesthal {
      * for a cache (see {@link Cacheable#cacheName()}).
      */
     public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
+
+    /**
+     * When searching for the "real" type of an object to populate, which was given as an
+     * {@link org.springframework.hateoas.EntityModel}, this regex is applied.
+     */
     public static final String ENTITY_MODEL_CLASS_REGEX = ".+<org\\.springframework\\.hateoas\\.EntityModel<(.+)>.*>.*";
+
+    /**
+     * The {@link java.util.regex.Pattern} of the Regex {@link #ENTITY_MODEL_CLASS_REGEX}.
+     */
     public static final Pattern ENTITY_MODEL_CLASS_PATTERN = Pattern.compile(ENTITY_MODEL_CLASS_REGEX);
 
     /**
@@ -156,7 +165,7 @@ public class Storesthal {
     }
 
     /**
-     * Return a HTTP entity accepting HAL+JSON answers only
+     * Return an HTTP entity accepting HAL+JSON answers only
      *
      * @return HTTP entity accepting HAL+JSON answers only
      */
@@ -184,6 +193,19 @@ public class Storesthal {
         return restTemplate;
     }
 
+    /**
+     * Handles the retrieval of a collection encountered during object structure traversal.
+     *
+     * @param parentObject       The parent object of the collection
+     * @param l                  The link leading to the object collection
+     * @param m                  The setter method for assigning the collection to its parent object
+     * @param collections        A map of "already-known" collections in order to avoid multiple retrievals
+     * @param objectCounter      Part of the key of the collections map
+     * @param intermediateResult The result so far
+     * @param depth              The depth in the object tree, used to determine when final operations can be applied
+     * @param <T>                The type of the collection's objects
+     * @throws StoresthalException Mainly if some of the reflective / cast operations fail.
+     */
     private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, EntityModel<T> intermediateResult, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
@@ -271,7 +293,8 @@ public class Storesthal {
     }
 
     /**
-     * Handle a collection encountered during object traversal
+     * Handle a collection encountered during object traversal, not maintaining the object links. (Therefore not
+     * returning {@link org.springframework.hateoas.EntityModel} instances, but "plain" instances of the objects.)
      *
      * @param l                  The link containing the collection
      * @param m                  The setter method for the collection on the object being populated
@@ -342,7 +365,21 @@ public class Storesthal {
         }
     }
 
-    private static <U> void followLinkInternal(Class<U> objectClass, String parentObject, Link l, Map<String, Collection> collections, int objectCounter, EntityModel<U> intermediateResult, U intermediateResultWithoutLinks, int depth) throws StoresthalException {
+    /**
+     * Generic method to follow a link, not dependent on linkless mode ("...withoutLinks" methods) being true or false.
+     *
+     * @param objectClass                    The class of the object to be retrieved from the link
+     * @param parentObject                   The parent/"owner" object of the link
+     * @param l                              The link itself
+     * @param collections                    All collections encountered so far in order to avoid multiple retrievals
+     * @param objectCounter                  Part of the key of the collections map
+     * @param intermediateResult             The result so far, if linkless mode is not active
+     * @param intermediateResultWithoutLinks The result so far, if linkless mode is active ("...withoutLinks" methods)
+     * @param depth                          The depth in the object tree, used to determine when final operations can be applied
+     * @param <U>                            The type of the collection's objects
+     * @throws StoresthalException If an unsupported type of collection was used
+     */
+    private static <U> void followLink(Class<U> objectClass, String parentObject, Link l, Map<String, Collection> collections, int objectCounter, EntityModel<U> intermediateResult, U intermediateResultWithoutLinks, int depth) throws StoresthalException {
 
         URI uri = getUriFromLink(l);
 
@@ -397,32 +434,9 @@ public class Storesthal {
 
     }
 
-    private static <U> void followLink(String parentObject, Link l, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, EntityModel<U> intermediateResult, int depth) throws StoresthalException {
-        logger.debug("Following link: {}", l.toUri());
-        followLinkInternal(objectClass, parentObject, l, collections, objectCounter, intermediateResult, null, depth);
-    }
-
-    /**
-     * Follow a link encountered when parsing an object
-     *
-     * @param l                              The link to follow
-     * @param objectClass                    The expected target object class
-     * @param collections                    A map of collections already known
-     * @param intermediateResultWithoutLinks The intermediate result object up to now
-     * @param depth                          The current depth in the object tree (for reasons of recursion)
-     * @param <U>                            Type of the linked object
-     * @throws StoresthalException If the link URL is invalid or an array collection is encountered
-     *                             (array collections are not supported (yet?))
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static <U> void followLinkWithoutMaintainingLinks(String parentObject, Link l, Class<U> objectClass, Map<String, Collection> collections, int objectCounter, U intermediateResultWithoutLinks, int depth) throws StoresthalException {
-        logger.debug("Following link without maintaining links: {}", l.toUri());
-        followLinkInternal(objectClass, parentObject, l, collections, objectCounter, null, intermediateResultWithoutLinks, depth);
-    }
-
     /**
      * Marks a method to be invoked "later", after the first full object traversal.
-     * This is necessary as e. g. a child object may have a relation to its parent object, which is still being
+     * This is necessary as e.g. a child object may have a relation to its parent object, which is still being
      * traversed and therefore incomplete. It also avoids endless cycling within the object tree.
      * See also {@link #transientObjects}.
      *
@@ -624,10 +638,29 @@ public class Storesthal {
         return PrimitiveValueRetriever.getPrimitive(String.class, url, true, cacheName);
     }
 
+    /**
+     * Returns a collection retrieved from a given url, not expecting an embedded collection.
+     *
+     * @param url         The URL to retrieve the collection from
+     * @param objectClass The class ob the collection's objects (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @param <T>         The type of ollection's objects (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @return The collection retrieved from the URL as {@link java.util.ArrayList} of {@link org.springframework.hateoas.EntityModel} objects
+     * @throws StoresthalException If the URL was invalid
+     */
     public static <T> ArrayList<EntityModel<T>> getCollection(String url, Class<T> objectClass) throws StoresthalException {
         return getCollection(url, objectClass, null);
     }
 
+    /**
+     * Returns a collection retrieved from a given url, not expecting an embedded collection.
+     *
+     * @param url                    The URL to retrieve the collection from
+     * @param objectClass            The class ob the collection's objects (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @param embeddedCollectionName The name of the object starting an embedded collection or NULL, if an embedded collection is not used
+     * @param <T>                    The type of ollection's objects (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @return The collection retrieved from the URL as {@link java.util.ArrayList} of {@link org.springframework.hateoas.EntityModel} objects
+     * @throws StoresthalException If the URL was invalid
+     */
     public static <T> ArrayList<EntityModel<T>> getCollection(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
 
         logger.info("Getting object collection of class \"{}\" from URL \"{}\", maintaining the object links.", objectClass.getCanonicalName(), url);
@@ -703,7 +736,7 @@ public class Storesthal {
                         CacheManager.putObjectInCache(l.toUri(), entry, null);
                     }
                 } else {
-                    followLink(url, l, objectClass, collections, objectCounter, entry, 0);
+                    followLink(objectClass, url, l, collections, objectCounter, entry, null, 0);
                 }
             }
             objectCounter++;
@@ -825,7 +858,7 @@ public class Storesthal {
                         CacheManager.putObjectInCache(l.toUri(), entry.getContent(), null);
                     }
                 } else {
-                    followLinkWithoutMaintainingLinks(url, l, objectClass, collections, objectCounter, entry.getContent(), 0);
+                    followLink(objectClass, url, l, collections, objectCounter, null, entry.getContent(), 0);
                 }
             }
             objectCounter++;
@@ -852,6 +885,17 @@ public class Storesthal {
         return realResult;
     }
 
+    /**
+     * Return an object from a given URL, wrapped as {@link org.springframework.hateoas.EntityModel}
+     *
+     * @param url         The URL to retrieve the object from
+     * @param objectClass The class of the object to be retrieved (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @param collections The collections encountered so far, in order to avoid multiple retrievals of the same one.
+     * @param depth       The depth in the object tree, used to determine when final operations can be applied
+     * @param <T>         The type of the object to be retrieved (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @return The collection found at the given URL
+     * @throws StoresthalException If the URL was invalid or no object could be retrieved from it
+     */
     private static <T> EntityModel<T> getObject(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
         URI uri;
 
@@ -904,7 +948,7 @@ public class Storesthal {
                     CacheManager.putObjectInCache(l.toUri(), result, null);
                 }
             } else {
-                followLink(url, l, objectClass, collections, 0, result, depth);
+                followLink(objectClass, url, l, collections, 0, result, null, depth);
             }
         }
         CacheManager.putObjectInCache(uri, result, null);
@@ -1002,7 +1046,7 @@ public class Storesthal {
                     CacheManager.putObjectInCache(l.toUri(), result, null);
                 }
             } else {
-                followLinkWithoutMaintainingLinks(url, l, objectClass, collections, 0, result, depth);
+                followLink(objectClass, url, l, collections, 0, null, result, depth);
             }
         }
         CacheManager.putObjectInCache(uri, result, null);
@@ -1037,13 +1081,13 @@ public class Storesthal {
     }
 
     /**
-     * Retrieve an object from an URL. Calling GET on the URL is expected to return UTF-8-encoded JSON. If the JSON
+     * Retrieve an object from a URL. Calling GET on the URL is expected to return UTF-8-encoded JSON. If the JSON
      * content / object contains links, these are expected to conform to the
      * <a href="http://stateless.co/hal_specification.html">HAL specifications</a>.
      * <p>
      * The JSON content will be retrieved and any collections encountered will be followed, resulting in a "complete"
      * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
-     * goes wrong (e. g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
+     * goes wrong (e.g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
      * <p>
      * If not disabled (see {@link StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
      * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
@@ -1072,6 +1116,15 @@ public class Storesthal {
         return getObjectWithoutLinks(url, objectClass, new HashMap<>(), 0);
     }
 
+    /**
+     * Retrieve an object from a given URL, wrapped in {@link org.springframework.hateoas.EntityModel}
+     *
+     * @param url         The URL to retrieve the object from
+     * @param objectClass The class of the object to retrieve (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @param <T>         The type of the object to retrieve (not wrapped in {@link org.springframework.hateoas.EntityModel})
+     * @return The object found at the URL, wrapped in {@link org.springframework.hateoas.EntityModel}
+     * @throws StoresthalException If the URL was invalid or no object could be retrieved from it
+     */
     public static <T> EntityModel<T> getObject(String url, Class<T> objectClass) throws StoresthalException {
 
         if (Collection.class.isAssignableFrom(objectClass)) {
@@ -1166,6 +1219,13 @@ public class Storesthal {
         CacheManager.clearCache(cacheName, clearStatisticsAsWell);
     }
 
+    /**
+     * Return the URI from a {@link org.springframework.hateoas.Link} object
+     *
+     * @param l The link containing the URI as href
+     * @return The URI of the link
+     * @throws StoresthalException If no URI could be created from the link's href
+     */
     private static URI getUriFromLink(Link l) throws StoresthalException {
         URI uri;
 
