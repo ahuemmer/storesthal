@@ -211,25 +211,28 @@ public class Storesthal {
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
 
         Class realType = null;
+        String realTypeName = null;
 
         if ((parameterizedType.getActualTypeArguments()[0]).getTypeName().startsWith("org.springframework.hateoas.EntityModel<")) {
             try {
-                if (Collection.class.isAssignableFrom(m.getParameterTypes()[0])) {
 
-                    logger.debug("Searching for real object type of class {}", m.getParameterTypes()[0].getCanonicalName());
+                // We don't need to check if Collection is assignable from m.getParameterTypes()[0], as this takes place
+                // in followLink already.
 
-                    final Matcher matcher = ENTITY_MODEL_CLASS_PATTERN.matcher(m.getGenericParameterTypes()[0].getTypeName());
+                logger.debug("Searching for real object type of class {}", m.getParameterTypes()[0].getCanonicalName());
 
-                    if (matcher.matches()) {
-                        String realTypeName = matcher.group(1);
-                        logger.debug("Found real object type name: {}", realTypeName);
-                        realType = Class.forName(realTypeName);
-                    }
+                final Matcher matcher = ENTITY_MODEL_CLASS_PATTERN.matcher(m.getGenericParameterTypes()[0].getTypeName());
+
+                if (matcher.matches()) {
+                    realTypeName = matcher.group(1);
+                    logger.debug("Found real object type name: {}", realTypeName);
+                    realType = Class.forName(realTypeName);
                 } else {
-                    throw new RuntimeException("Type " + m.getGenericParameterTypes()[0].getTypeName() + " not supported (yet)!");
+                    throw new StoresthalException("Could not extract real object type from type of class" + m.getParameterTypes()[0].getCanonicalName());
                 }
+
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                throw new StoresthalException("Class " + realTypeName + ", which seems to be the real type object type of " + m.getParameterTypes()[0].getCanonicalName() + ", could not be found.", e);
             }
         }
 
@@ -263,13 +266,7 @@ public class Storesthal {
             collections.put(collectionKey, coll);
         }
 
-        URI uri;
-
-        try {
-            uri = new URI(l.getHref());
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from URL \"" + l.getHref() + "\"to visited links collection!", e);
-        }
+        URI uri = getUriFromLink(l);
 
         if (transientObjects.contains(uri)) {
             Method addMethod;
@@ -336,13 +333,7 @@ public class Storesthal {
             collections.put(collectionKey, coll);
         }
 
-        URI uri;
-
-        try {
-            uri = new URI(l.getHref());
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from URL \"" + l.getHref() + "\"to visited links collection!", e);
-        }
+        URI uri = getUriFromLink(l);
 
         if (transientObjects.contains(uri)) {
             Method addMethod;
@@ -665,13 +656,7 @@ public class Storesthal {
 
         logger.info("Getting object collection of class \"{}\" from URL \"{}\", maintaining the object links.", objectClass.getCanonicalName(), url);
 
-        URI uri;
-
-        try {
-            uri = new URI(url);
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
-        }
+        URI uri = getUriFromUrl(url);
 
         ParameterizedTypeReference<ArrayList<EntityModel<T>>> type = new ParameterizedTypeReference<>() {
             @Override
@@ -798,13 +783,7 @@ public class Storesthal {
 
         logger.info("Getting object collection of class \"{}\" from URL \"{}\".", objectClass.getCanonicalName(), url);
 
-        URI uri;
-
-        try {
-            uri = new URI(url);
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
-        }
+        URI uri = getUriFromUrl(url);
 
         ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
 
@@ -897,13 +876,8 @@ public class Storesthal {
      * @throws StoresthalException If the URL was invalid or no object could be retrieved from it
      */
     private static <T> EntityModel<T> getObject(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
-        URI uri;
 
-        try {
-            uri = new URI(url);
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
-        }
+        URI uri = getUriFromUrl(url);
 
         EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
 
@@ -995,13 +969,7 @@ public class Storesthal {
      */
     private static <T> T getObjectWithoutLinks(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
 
-        URI uri;
-
-        try {
-            uri = new URI(url);
-        } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from url\"" + url + "\"!", e);
-        }
+        URI uri = getUriFromUrl(url);
 
         T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
 
@@ -1227,12 +1195,23 @@ public class Storesthal {
      * @throws StoresthalException If no URI could be created from the link's href
      */
     private static URI getUriFromLink(Link l) throws StoresthalException {
+        return getUriFromUrl(l.getHref());
+    }
+
+    /**
+     * Creates a URI from a URL (String) and returns it
+     *
+     * @param url The URL
+     * @return The URI created from the URL
+     * @throws StoresthalException if it was not possible to create a URI from the URL
+     */
+    private static URI getUriFromUrl(String url) throws StoresthalException {
         URI uri;
 
         try {
-            uri = new URI(l.getHref());
+            uri = new URI(url);
         } catch (URISyntaxException e) {
-            throw new StoresthalException("Could not create URI from URL \"" + l.getHref() + "\"to visited links collection!", e);
+            throw new StoresthalException("Could not create URI from URL \"" + url + "\"", e);
         }
 
         return uri;

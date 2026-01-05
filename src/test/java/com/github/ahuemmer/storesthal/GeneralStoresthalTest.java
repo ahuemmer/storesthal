@@ -22,6 +22,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 
@@ -44,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * A big bunch of general tests for the whole thing. This version works with annotations (see {@link HALRelation}), but
  * there is a tiny derivation of this test class ({@link AnnotationlessGeneralStoresthalTest}) doing so without.
  */
+@ExtendWith(AnnotatedTestExtension.class)
 public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
     @Nested
@@ -1141,7 +1145,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
     @Nested
     @DisplayName("collection handling")
-    class CollectionHandling {
+    class Collection_handling {
 
         /**
          * Reset the statistics and empty the caches before each test run.
@@ -1408,5 +1412,42 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertEquals(Link.of("http://localhost:" + serverMock.port() + "/otherobjects/1", "parent"), collectionItems.get(2).getLink("parent").get());
 
         }
+    }
+
+    @Nested
+    @DisplayName("misc tests")
+    @ExtendWith(OutputCaptureExtension.class)
+    public class Misc_tests {
+
+        @Test
+        @DisplayName("issues a warning if a collection is tried to be retrieved using getObject")
+        void issues_a_warning_if_a_collection_is_tried_to_be_retrieved_using_getObject(CapturedOutput capturedOutput) throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "collection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            assertThrows(StoresthalException.class, () -> {
+                Storesthal.getObject("http://localhost:" + serverMock.port() + "/collection/coll", ArrayList.class);
+            });
+
+            assertTrue(capturedOutput.getOut().contains("You seem to be trying to retrieve a collection of objects using Storesthal.getObject on the first level. This will likely fail."));
+        }
+
+        @Test
+        @DisplayName("issues a warning if a collection is tried to be retrieved using getObjectWithoutLinks")
+        void issues_a_warning_if_a_collection_is_tried_to_be_retrieved_using_getObjectWithoutLinks(CapturedOutput capturedOutput) throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "collection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            assertThrows(StoresthalException.class, () -> {
+                Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/collection/coll", ArrayList.class);
+            });
+
+            assertTrue(capturedOutput.getOut().contains("ou seem to be trying to retrieve a collection of objects using Storesthal.getObjectWithoutLinks on the first level. This will likely fail."));
+        }
+
     }
 }

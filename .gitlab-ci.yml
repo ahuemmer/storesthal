@@ -1,0 +1,2 @@
+include:
+  - component: "$CI_SERVER_FQDN/external-projects/to-be-continuous/sonar/gitlab-ci-sonar@5.0.1"
