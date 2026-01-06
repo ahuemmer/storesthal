@@ -193,25 +193,13 @@ public class Storesthal {
         return restTemplate;
     }
 
-    /**
-     * Handles the retrieval of a collection encountered during object structure traversal.
-     *
-     * @param parentObject       The parent object of the collection
-     * @param l                  The link leading to the object collection
-     * @param m                  The setter method for assigning the collection to its parent object
-     * @param collections        A map of "already-known" collections in order to avoid multiple retrievals
-     * @param objectCounter      Part of the key of the collections map
-     * @param intermediateResult The result so far
-     * @param depth              The depth in the object tree, used to determine when final operations can be applied
-     * @param <T>                The type of the collection's objects
-     * @throws StoresthalException Mainly if some of the reflective / cast operations fail.
-     */
-    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, EntityModel<T> intermediateResult, int depth) throws StoresthalException {
-        Type[] genericParameterTypes = m.getGenericParameterTypes();
-        ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
+    private static Class getRealType(boolean maintainLinks, ParameterizedType parameterizedType, Method m) throws StoresthalException {
+        if (!maintainLinks) {
+            return (Class) parameterizedType.getActualTypeArguments()[0];
+        }
 
-        Class realType = null;
         String realTypeName = null;
+        Class realType = null;
 
         if ((parameterizedType.getActualTypeArguments()[0]).getTypeName().startsWith("org.springframework.hateoas.EntityModel<")) {
             try {
@@ -240,72 +228,28 @@ public class Storesthal {
             realType = (Class) parameterizedType.getActualTypeArguments()[0];
         }
 
-        Class type = m.getParameterTypes()[0];
-
-        String collectionKey = parentObject + ":" + objectCounter + ":" + l.getRel().value();
-        Collection coll = collections.get(collectionKey);
-
-        if (coll == null) {
-            if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
-                if (List.class.isAssignableFrom(type)) {
-                    coll = new LinkedList();
-                } else if (Set.class.isAssignableFrom(type)) {
-                    coll = new HashSet();
-                } else if (Queue.class.isAssignableFrom(type)) {
-                    coll = new ConcurrentLinkedDeque();
-                }
-            } else {
-                //TODO: Array...?
-                try {
-                    coll = (Collection) type.getConstructor().newInstance();
-                } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
-                         InvocationTargetException e) {
-                    throw new StoresthalException("Could not instantiate collection of type \"" + type.getCanonicalName() + "\".", e);
-                }
-            }
-            collections.put(collectionKey, coll);
-        }
-
-        URI uri = getUriFromLink(l);
-
-        if (transientObjects.contains(uri)) {
-            Method addMethod;
-            try {
-                addMethod = Objects.requireNonNull(coll).getClass().getMethod("add", Object.class);
-            } catch (NoSuchMethodException e) {
-                throw new StoresthalException("Could not find \"add\" method for collection class " + Objects.requireNonNull(coll).getClass().getCanonicalName());
-            }
-
-            markForLaterInvocation(uri, coll, addMethod);
-        } else {
-            Object subObject = getObject(l.getHref(), realType, new HashMap<>(), depth + 1);
-            Objects.requireNonNull(coll).add(subObject);
-        }
-
-        try {
-            m.invoke(intermediateResult.getContent(), coll);
-        } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
-            throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + coll.getClass().getCanonicalName() + ")\" on instance of \"" + intermediateResult.getClass().getCanonicalName() + "\" class.", e);
-        }
+        return realType;
     }
 
     /**
-     * Handle a collection encountered during object traversal, not maintaining the object links. (Therefore not
-     * returning {@link org.springframework.hateoas.EntityModel} instances, but "plain" instances of the objects.)
+     * Handles the retrieval of a collection encountered during object structure traversal.
      *
-     * @param l                  The link containing the collection
-     * @param m                  The setter method for the collection on the object being populated
-     * @param collections        A map of known collections
-     * @param intermediateResult The intermediate result object up to now
-     * @param depth              The depth in the object tree at the moment (for recursion handling)
-     * @param <T>                The type of the object having the collection
-     * @throws StoresthalException if something fails and the collection cannot be retrieved or handled
+     * @param parentObject                   The parent object of the collection
+     * @param l                              The link leading to the object collection
+     * @param m                              The setter method for assigning the collection to its parent object
+     * @param collections                    A map of "already-known" collections in order to avoid multiple retrievals
+     * @param objectCounter                  Part of the key of the collections map
+     * @param intermediateResultWithoutLinks The result so far, if "without links" mode is used
+     * @param intermediateResultWithLinks    The result so far, if "with links" mode is used
+     * @param depth                          The depth in the object tree, used to determine when final operations can be applied
+     * @param maintainLinks                  Whether links should be maintained (if yes, the collection will be populated with {@link org.springframework.hateoas.EntityModel} objects.
+     * @param <T>                            The type of the collection's objects
+     * @throws StoresthalException mainly if some of the reflective / cast operations fail.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static <T> void handleCollectionWithoutLinks(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, T intermediateResult, int depth) throws StoresthalException {
+    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, T intermediateResultWithoutLinks, EntityModel<T> intermediateResultWithLinks, int depth, boolean maintainLinks) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
-        Class realType = (Class) parameterizedType.getActualTypeArguments()[0];
+        Class realType = getRealType(maintainLinks, parameterizedType, m);
 
         Class type = m.getParameterTypes()[0];
 
@@ -345,15 +289,29 @@ public class Storesthal {
 
             markForLaterInvocation(uri, coll, addMethod);
         } else {
-            Object subObject = getObjectWithoutLinks(l.getHref(), realType, new HashMap<>(), depth + 1);
+            Object subObject;
+            if (maintainLinks) {
+                subObject = getObject(l.getHref(), realType, new HashMap<>(), depth + 1);
+            } else {
+                subObject = getObjectWithoutLinks(l.getHref(), realType, new HashMap<>(), depth + 1);
+            }
             Objects.requireNonNull(coll).add(subObject);
         }
 
         try {
-            m.invoke(intermediateResult, coll);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + coll.getClass().getCanonicalName() + ")\" on instance of \"" + intermediateResult.getClass().getCanonicalName() + "\" class.", e);
+            if (maintainLinks) {
+                m.invoke(intermediateResultWithLinks.getContent(), coll);
+            } else {
+                m.invoke(intermediateResultWithoutLinks, coll);
+            }
+        } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
+            if (maintainLinks) {
+                throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + coll.getClass().getCanonicalName() + ")\" on instance of \"" + intermediateResultWithLinks.getClass().getCanonicalName() + "\" class.", e);
+            } else {
+                throw new StoresthalException("Could not invoke method \"" + m.getName() + "(" + coll.getClass().getCanonicalName() + ")\" on instance of \"" + intermediateResultWithoutLinks.getClass().getCanonicalName() + "\" class.", e);
+            }
         }
+
     }
 
     /**
@@ -387,9 +345,11 @@ public class Storesthal {
         if (transientObjects.contains(uri)) {
             if (Collection.class.isAssignableFrom(type)) {
                 if (linklessMode) {
-                    handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
+                    handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1, false);
+                    //handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
                 } else {
-                    handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
+                    //handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
+                    handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1, true);
                 }
             } else {
                 markForLaterInvocation(uri, intermediateResult != null ? intermediateResult.getContent() : intermediateResultWithoutLinks, m);
@@ -399,9 +359,11 @@ public class Storesthal {
 
         if (Collection.class.isAssignableFrom(type)) {
             if (linklessMode) {
-                handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
+                //handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
+                handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1, false);
             } else {
-                handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
+                //handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
+                handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1, true);
             }
             return;
         } else if (type.getComponentType() != null) {

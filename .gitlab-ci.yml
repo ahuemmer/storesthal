@@ -1,3 +1,5 @@
 include:
-  - component: $CI_SERVER_FQDN/external-projects/to-be-continuous/gradle/gitlab-ci-gradle@2.12.2
-  - component: "$CI_SERVER_FQDN/external-projects/to-be-continuous/sonar/gitlab-ci-sonar@5.0.1"
+  - component: "$CI_SERVER_FQDN/external-projects/to-be-continuous/gradle/gitlab-ci-gradle@2.12.2"
+    inputs:
+      sbom-disabled: true
+      no-publish: true
