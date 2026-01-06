@@ -239,16 +239,17 @@ public class Storesthal {
      * @param m                              The setter method for assigning the collection to its parent object
      * @param collections                    A map of "already-known" collections in order to avoid multiple retrievals
      * @param objectCounter                  Part of the key of the collections map
-     * @param intermediateResultWithoutLinks The result so far, if "without links" mode is used
+     * @param intermediateResultWithoutLinks The result so far, if "without links" mode is used.
      * @param intermediateResultWithLinks    The result so far, if "with links" mode is used
      * @param depth                          The depth in the object tree, used to determine when final operations can be applied
-     * @param maintainLinks                  Whether links should be maintained (if yes, the collection will be populated with {@link org.springframework.hateoas.EntityModel} objects.
      * @param <T>                            The type of the collection's objects
      * @throws StoresthalException mainly if some of the reflective / cast operations fail.
      */
-    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, T intermediateResultWithoutLinks, EntityModel<T> intermediateResultWithLinks, int depth, boolean maintainLinks) throws StoresthalException {
+    private static <T> void handleCollection(String parentObject, Link l, Method m, Map<String, Collection> collections, int objectCounter, T intermediateResultWithoutLinks, EntityModel<T> intermediateResultWithLinks, int depth) throws StoresthalException {
         Type[] genericParameterTypes = m.getGenericParameterTypes();
         ParameterizedType parameterizedType = (ParameterizedType) genericParameterTypes[0];
+        boolean maintainLinks = intermediateResultWithLinks != null;
+
         Class realType = getRealType(maintainLinks, parameterizedType, m);
 
         Class type = m.getParameterTypes()[0];
@@ -338,18 +339,18 @@ public class Storesthal {
             return;
         }
 
-        boolean linklessMode = intermediateResult == null;
+        boolean maintainLinks = intermediateResult != null;
 
         Class type = m.getParameterTypes()[0];
 
         if (transientObjects.contains(uri)) {
             if (Collection.class.isAssignableFrom(type)) {
-                if (linklessMode) {
-                    handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1, false);
+                if (!maintainLinks) {
+                    handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1);
                     //handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
                 } else {
                     //handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
-                    handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1, true);
+                    handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1);
                 }
             } else {
                 markForLaterInvocation(uri, intermediateResult != null ? intermediateResult.getContent() : intermediateResultWithoutLinks, m);
@@ -358,19 +359,19 @@ public class Storesthal {
         }
 
         if (Collection.class.isAssignableFrom(type)) {
-            if (linklessMode) {
+            if (!maintainLinks) {
                 //handleCollectionWithoutLinks(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, depth + 1);
-                handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1, false);
+                handleCollection(parentObject, l, m, collections, objectCounter, intermediateResultWithoutLinks, null, depth + 1);
             } else {
                 //handleCollection(parentObject, l, m, collections, objectCounter, intermediateResult, depth + 1);
-                handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1, true);
+                handleCollection(parentObject, l, m, collections, objectCounter, null, intermediateResult, depth + 1);
             }
             return;
         } else if (type.getComponentType() != null) {
             throw new StoresthalException("Array relations are not supported (yet?).");
         }
 
-        if (!linklessMode) {
+        if (maintainLinks) {
             EntityModel<U> subObject;
             subObject = (EntityModel<U>) Storesthal.<U>getObject(l.getHref(), type, new HashMap<>(), depth + 1);
 
@@ -604,6 +605,11 @@ public class Storesthal {
         return getCollection(url, objectClass, null);
     }
 
+    private static <T> void handleEntryLinks(List<EntityModel<T>> result, Class<T> objectClass, String url, boolean maintainLinks) {
+
+
+    }
+
     /**
      * Returns a collection retrieved from a given url, not expecting an embedded collection.
      *
@@ -645,29 +651,7 @@ public class Storesthal {
         logger.debug("Adding URI {} to transient objects...", uri);
         transientObjects.add(uri);
 
-        ResponseEntity response =
-                getRestTemplateWithHalMessageConverter(true).exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
-                            @Override
-                            @NonNull
-                            public Type getType() {
-                                Type[] responseWrapperActualTypes = {objectClass};
-                                if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
-                                } else {
-                                    return parameterize(ArrayList.class,
-                                            parameterize(EntityModel.class, responseWrapperActualTypes));
-                                }
-                            }
-                        });
-
-        List<EntityModel<T>> result;
-
-        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-            result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
-        } else {
-            result = (ArrayList<EntityModel<T>>) response.getBody();
-        }
+        List<EntityModel<T>> result = getCollectionResponse(url, objectClass, embeddedCollectionName);
 
         ArrayList<EntityModel<T>> realResult = new ArrayList<>();
 
@@ -690,21 +674,7 @@ public class Storesthal {
         }
         CacheManager.putObjectInCache(uri, realResult, null);
 
-        for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
-            URI invokeUri = entry.getKey();
-            List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
-            for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, type.getClass(), null);
-                invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
-            }
-        }
-
-        transientObjects.clear();
-        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
-        invokeLater.clear();
-
-        logger.debug("Removing URI \"{}\" from transient objects...", uri);
-        transientObjects.remove(uri);
+        finishGetCollection(objectClass, uri);
 
         return realResult;
     }
@@ -722,6 +692,52 @@ public class Storesthal {
      */
     public static <T> ArrayList<T> getCollectionWithoutLinks(String url, Class<T> objectClass) throws StoresthalException {
         return getCollectionWithoutLinks(url, objectClass, null);
+    }
+
+    private static <T> List<EntityModel<T>> getCollectionResponse(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
+        ResponseEntity response =
+                getRestTemplateWithHalMessageConverter(true).exchange(url,
+                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
+                            @Override
+                            @NonNull
+                            public Type getType() {
+                                Type[] responseWrapperActualTypes = {objectClass};
+                                if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
+                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
+                                } else {
+                                    return parameterize(ArrayList.class,
+                                            parameterize(EntityModel.class, responseWrapperActualTypes));
+                                }
+                            }
+                        });
+
+        List<EntityModel<T>> result;
+
+        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
+            result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
+        } else {
+            result = (List<EntityModel<T>>) response.getBody();
+        }
+
+        return result;
+    }
+
+    private static <T> void finishGetCollection(Class<T> objectClass, URI uri) throws StoresthalException {
+        for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
+            URI invokeUri = entry.getKey();
+            List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
+            for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
+                invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
+            }
+        }
+
+        transientObjects.clear();
+        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+        invokeLater.clear();
+
+        logger.debug("Removing URI \"{}\" from transient objects...", uri);
+        transientObjects.remove(uri);
     }
 
     /**
@@ -758,32 +774,7 @@ public class Storesthal {
         logger.debug("Adding URI {} to transient objects...", uri);
         transientObjects.add(uri);
 
-        ResponseEntity response =
-                getRestTemplateWithHalMessageConverter(true).exchange(url,
-                        HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
-                            @Override
-                            @NonNull
-                            public Type getType() {
-                                Type[] responseWrapperActualTypes = {objectClass};
-                                if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-                                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
-                            /*return parameterize(EmbeddedCollectionHelper.class,
-                                parameterize(ArrayList.class,
-                                    parameterize(EntityModel.class, responseWrapperActualTypes)));*/
-                                } else {
-                                    return parameterize(ArrayList.class,
-                                            parameterize(EntityModel.class, responseWrapperActualTypes));
-                                }
-                            }
-                        });
-
-        List<EntityModel<T>> result;
-
-        if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-            result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
-        } else {
-            result = (ArrayList<EntityModel<T>>) response.getBody();
-        }
+        List<EntityModel<T>> result = getCollectionResponse(url, objectClass, embeddedCollectionName);
 
         ArrayList<T> realResult = new ArrayList<>();
 
@@ -806,22 +797,7 @@ public class Storesthal {
         }
         CacheManager.putObjectInCache(uri, realResult, null);
 
-
-        for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
-            URI invokeUri = entry.getKey();
-            List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
-            for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
-                invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
-            }
-        }
-
-        transientObjects.clear();
-        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
-        invokeLater.clear();
-
-        logger.debug("Removing URI \"{}\" from transient objects...", uri);
-        transientObjects.remove(uri);
+        finishGetCollection(objectClass, uri);
 
         return realResult;
     }

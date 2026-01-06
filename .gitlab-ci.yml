@@ -3,3 +3,4 @@ include:
     inputs:
       sbom-disabled: true
       no-publish: true
+      sonar-quality-gate-enabled: true
