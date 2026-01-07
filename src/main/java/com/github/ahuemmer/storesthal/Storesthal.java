@@ -651,30 +651,8 @@ public class Storesthal {
         logger.debug("Adding URI {} to transient objects...", uri);
         transientObjects.add(uri);
 
-        List<EntityModel<T>> result = getCollectionResponse(url, objectClass, embeddedCollectionName);
-
         ArrayList<EntityModel<T>> realResult = new ArrayList<>();
-
-        @SuppressWarnings("rawtypes") Map<String, Collection> collections = new HashMap<>();
-
-        int objectCounter = 0;
-        for (EntityModel<T> entry : Objects.requireNonNull(result)) {
-            realResult.add(entry);
-            for (Link l : entry.getLinks()) {
-                if ("self".equals(l.getRel().value())) {
-                    logger.debug("Self-Link for object: {}", l.toUri());
-                    if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null);
-                    }
-                } else {
-                    followLink(objectClass, url, l, collections, objectCounter, entry, null, 0);
-                }
-            }
-            objectCounter++;
-        }
-        CacheManager.putObjectInCache(uri, realResult, null);
-
-        finishGetCollection(objectClass, uri);
+        getCollectionResponse(url, objectClass, embeddedCollectionName, realResult, null, uri);
 
         return realResult;
     }
@@ -684,8 +662,8 @@ public class Storesthal {
      * Using this method, it is assumed, that the collection is not delivered within an `_embedded` object. If it is, please use the
      * method {@link  #getCollectionWithoutLinks(String, Class, java.util.Optional)} method.
      *
-     * @param url         The URL to retrieve the collection from.
-     * @param objectClass The class of the collection items to be returned.
+     * @param url         The URL to retrieve the collection from
+     * @param objectClass The class of the collection items to be returned
      * @param <T>         The type of the collection item object (being consistent with the `objectClass`)
      * @return The collection requested.
      * @throws StoresthalException if no collection could be retrieved.
@@ -694,7 +672,19 @@ public class Storesthal {
         return getCollectionWithoutLinks(url, objectClass, null);
     }
 
-    private static <T> List<EntityModel<T>> getCollectionResponse(String url, Class<T> objectClass, Optional<String> embeddedCollectionName) throws StoresthalException {
+    /**
+     * Retrieves and processes the response for a collection of objects, either with or without links.
+     *
+     * @param url                    The URL to retrieve the collection from
+     * @param objectClass            The class of the collection items to be returned
+     * @param embeddedCollectionName The name of the object starting an embedded collection or NULL, if an embedded collection is not used
+     * @param resultListWithLinks    The list to populate with the final objects, if maintaining links.
+     * @param resultListWithoutLinks The list to populate with the final objects, if not maintaining links.
+     * @param uri                    The URI created from the URL
+     * @param <T>                    The type of the collection item object (being consistent with the `objectClass`)
+     * @throws StoresthalException if no collection could be retrieved.
+     */
+    private static <T> void getCollectionResponse(String url, Class<T> objectClass, Optional<String> embeddedCollectionName, ArrayList<EntityModel<T>> resultListWithLinks, ArrayList<T> resultListWithoutLinks, URI uri) throws StoresthalException {
         ResponseEntity response =
                 getRestTemplateWithHalMessageConverter(true).exchange(url,
                         HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<ArrayList<EntityModel<T>>>() {
@@ -719,10 +709,38 @@ public class Storesthal {
             result = (List<EntityModel<T>>) response.getBody();
         }
 
-        return result;
-    }
+        @SuppressWarnings("rawtypes") Map<String, Collection> collections = new HashMap<>();
 
-    private static <T> void finishGetCollection(Class<T> objectClass, URI uri) throws StoresthalException {
+        int objectCounter = 0;
+        for (EntityModel<T> entry : Objects.requireNonNull(result)) {
+            if (resultListWithLinks != null) {
+                resultListWithLinks.add(entry);
+            } else {
+                resultListWithoutLinks.add(entry.getContent());
+            }
+
+            for (Link l : entry.getLinks()) {
+                if ("self".equals(l.getRel().value())) {
+                    logger.debug("Self-Link for object: {}", l.toUri());
+                    if (!(l.getRel().value().isBlank())) {
+                        CacheManager.putObjectInCache(l.toUri(), entry, null);
+                    }
+                } else {
+                    if (resultListWithLinks != null) {
+                        followLink(objectClass, url, l, collections, objectCounter, entry, null, 0);
+                    } else {
+                        followLink(objectClass, url, l, collections, objectCounter, null, entry.getContent(), 0);
+                    }
+                }
+            }
+            objectCounter++;
+        }
+        if (resultListWithLinks != null) {
+            CacheManager.putObjectInCache(uri, resultListWithLinks, null);
+        } else {
+            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null);
+        }
+
         for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
             URI invokeUri = entry.getKey();
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
@@ -774,30 +792,8 @@ public class Storesthal {
         logger.debug("Adding URI {} to transient objects...", uri);
         transientObjects.add(uri);
 
-        List<EntityModel<T>> result = getCollectionResponse(url, objectClass, embeddedCollectionName);
-
         ArrayList<T> realResult = new ArrayList<>();
-
-        @SuppressWarnings("rawtypes") Map<String, Collection> collections = new HashMap<>();
-
-        int objectCounter = 0;
-        for (EntityModel<T> entry : Objects.requireNonNull(result)) {
-            realResult.add(entry.getContent());
-            for (Link l : entry.getLinks()) {
-                if ("self".equals(l.getRel().value())) {
-                    logger.debug("Self-Link for object: {}", l.toUri());
-                    if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry.getContent(), null);
-                    }
-                } else {
-                    followLink(objectClass, url, l, collections, objectCounter, null, entry.getContent(), 0);
-                }
-            }
-            objectCounter++;
-        }
-        CacheManager.putObjectInCache(uri, realResult, null);
-
-        finishGetCollection(objectClass, uri);
+        getCollectionResponse(url, objectClass, embeddedCollectionName, null, realResult, uri);
 
         return realResult;
     }

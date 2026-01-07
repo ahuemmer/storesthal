@@ -1449,5 +1449,16 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertTrue(capturedOutput.getOut().contains("ou seem to be trying to retrieve a collection of objects using Storesthal.getObjectWithoutLinks on the first level. This will likely fail."));
         }
 
+        @Test
+        @DisplayName("throws an exception when encoutering a malfored link")
+        void throws_an_exception_when_encountering_a_malformed_link() throws IOException {
+            configureServerMockWithResponseFile("/testChild/1", "simpleChildObjectWithFaultyParentRelation.json", Map.of("childId", "654321", "childName", "Testchild with parent 1."));
+
+            assertThrows(StoresthalException.class, () ->
+                    Storesthal.getObject("http://localhost:" + serverMock.port() + "/testChild/1", ChildObjectWithParentRelationCollection.class)
+            );
+
+        }
+
     }
 }
