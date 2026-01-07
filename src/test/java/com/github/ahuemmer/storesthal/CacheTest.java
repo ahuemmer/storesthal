@@ -169,6 +169,10 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
         assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
 
+        Storesthal.clearAllCaches(false);
+        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
+
         Storesthal.clearAllCaches(true);
         assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
         assertEquals(0, Storesthal.getStatistics().get("httpCalls"));

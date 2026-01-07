@@ -819,98 +819,12 @@ public class Storesthal {
             return resultFromCache;
         }
 
-        httpCalls += 1;
-
-        logger.debug("Adding URI \"{}\" to transient objects...", uri);
-        transientObjects.add(uri);
-        ResponseEntity<EntityModel<T>> response =
-                null;
-
-        try {
-            //^^ otherwise, when using the diamond operator a java compiler error (!) will arise!
-            response = getRestTemplateWithHalMessageConverter(false).exchange(url,
-                    HttpMethod.GET, getHttpEntity(), new ParameterizedTypeReference<>() {
-                        @Override
-                        @NonNull
-                        public Type getType() {
-                            Type type = super.getType();
-                            if (type instanceof ParameterizedType) {
-                                Type[] responseWrapperActualTypes = {objectClass};
-                                type = parameterize(EntityModel.class,
-                                        responseWrapperActualTypes);
-                            }
-                            return type;
-                        }
-                    });
-        } catch (RestClientException e) {
-            throw new StoresthalException("Exception trying to get object from " + url, e);
-        }
-        EntityModel<T> result = Objects.requireNonNull(response.getBody());
-
-
-        for (Link l : response.getBody().getLinks()) {
-
-            if ("self".equals(l.getRel().value())) {
-                logger.debug("Self-Link for object: {}", l.toUri());
-                if (!(l.getRel().value().isBlank())) {
-                    CacheManager.putObjectInCache(l.toUri(), result, null);
-                }
-            } else {
-                followLink(objectClass, url, l, collections, 0, result, null, depth);
-            }
-        }
-        CacheManager.putObjectInCache(uri, result, null);
-
-
-        /*
-         * During object retrieval, it might happen, that links to "parent" objects are not followed / populated,
-         * as the parent object itself is just being examined and populated. This function corrects this afterward,
-         * when the parent object is fully available and in cache.
-         */
-
-        if (depth == 0) {
-
-            for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
-                URI invokeUri = entry.getKey();
-                List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
-                for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
-                    invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
-                }
-            }
-
-            transientObjects.clear();
-            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
-            invokeLater.clear();
-        }
-
-        logger.debug("Removing URI \"{}\" from transient objects...", uri);
-        transientObjects.remove(uri);
+        EntityModel<T> result = getObjectResponse(uri, url, objectClass, collections, depth, true);
 
         return result;
     }
 
-    /**
-     * Internal representation of {@link #getObjectWithoutLinks(String, Class)}, used for recursion.
-     *
-     * @param url         The URL representing the object.
-     * @param objectClass The destination class of the object.
-     * @param collections A map of the collections already known.
-     * @param depth       The current recursion depth.
-     * @param <T>         The expected type of the returned object.
-     * @return The object queried
-     * @throws StoresthalException if the URL is invalid
-     */
-    private static <T> T getObjectWithoutLinks(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
-
-        URI uri = getUriFromUrl(url);
-
-        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
-
-        if (resultFromCache != null) {
-            return resultFromCache;
-        }
-
+    private static <T> EntityModel<T> getObjectResponse(URI uri, String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth, boolean maintainLinks) throws StoresthalException {
         httpCalls += 1;
 
         logger.debug("Adding URI \"{}\" to transient objects...", uri);
@@ -937,22 +851,31 @@ public class Storesthal {
         } catch (RestClientException e) {
             throw new StoresthalException("Exception trying to get object from " + url, e);
         }
-        T result = Objects.requireNonNull(response.getBody()).getContent();
-
 
         for (Link l : response.getBody().getLinks()) {
 
             if ("self".equals(l.getRel().value())) {
                 logger.debug("Self-Link for object: {}", l.toUri());
                 if (!(l.getRel().value().isBlank())) {
-                    CacheManager.putObjectInCache(l.toUri(), result, null);
+                    if (maintainLinks) {
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null);
+                    } else {
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null);
+                    }
                 }
             } else {
-                followLink(objectClass, url, l, collections, 0, null, result, depth);
+                if (maintainLinks) {
+                    followLink(objectClass, url, l, collections, 0, Objects.requireNonNull(response.getBody()), null, depth);
+                } else {
+                    followLink(objectClass, url, l, collections, 0, null, Objects.requireNonNull(response.getBody()).getContent(), depth);
+                }
             }
         }
-        CacheManager.putObjectInCache(uri, result, null);
-
+        if (maintainLinks) {
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null);
+        } else {
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null);
+        }
 
         /*
          * During object retrieval, it might happen, that links to "parent" objects are not followed / populated,
@@ -978,6 +901,32 @@ public class Storesthal {
 
         logger.debug("Removing URI \"{}\" from transient objects...", uri);
         transientObjects.remove(uri);
+
+        return Objects.requireNonNull(response.getBody());
+    }
+
+    /**
+     * Internal representation of {@link #getObjectWithoutLinks(String, Class)}, used for recursion.
+     *
+     * @param url         The URL representing the object.
+     * @param objectClass The destination class of the object.
+     * @param collections A map of the collections already known.
+     * @param depth       The current recursion depth.
+     * @param <T>         The expected type of the returned object.
+     * @return The object queried
+     * @throws StoresthalException if the URL is invalid
+     */
+    private static <T> T getObjectWithoutLinks(String url, Class<T> objectClass, @SuppressWarnings("rawtypes") Map<String, Collection> collections, int depth) throws StoresthalException {
+
+        URI uri = getUriFromUrl(url);
+
+        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
+
+        if (resultFromCache != null) {
+            return resultFromCache;
+        }
+
+        T result = getObjectResponse(uri, url, objectClass, collections, depth, false).getContent();
 
         return result;
     }
