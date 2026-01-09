@@ -4,7 +4,7 @@ include:
       sbom-disabled: true
       #no-publish: true
       sonar-quality-gate-enabled: true
-  - component: "$CI_SERVER_FQDN/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0.3"
+  - component: "$CI_SERVER_FQDN/external-projects/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0.3"
     inputs:
       changelog-enabled: true
       auto-release-enabled: true
