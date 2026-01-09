@@ -135,6 +135,6 @@ tasks.publish.dependsOn checkTocs
 
 jacocoTestReport {
     reports {
-        xml.enabled true
+        xml.enabled = true
     }
 }
