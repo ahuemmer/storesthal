@@ -132,3 +132,9 @@ springBoot {
 }
 
 tasks.publish.dependsOn checkTocs
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
