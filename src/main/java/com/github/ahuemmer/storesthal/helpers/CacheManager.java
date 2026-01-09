@@ -6,6 +6,7 @@ import com.github.ahuemmer.storesthal.Storesthal;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.hateoas.EntityModel;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -14,37 +15,32 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 public class CacheManager {
 
-    private static CacheManager instance;
-
-    private static StoresthalConfiguration configuration;
-
-    /**
-     * All configured object caches are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
-     * and {@link Cacheable#cacheName()}).
-     */
-    private static Map<String, LRUCache<URI, Object>> caches;
-
     /**
      * A map containing the number of cache misses by cache (name) for statistics creation.
      * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
      * {@link #getStatistics()}.
      */
     private static final Map<String, Integer> cacheMisses = new HashMap<>();
-
     /**
      * A map containing the number of cache hits by cache (name) for statistics creation.
      * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
      * {@link #getStatistics()}.
      */
     private static final Map<String, Integer> cacheHits = new HashMap<>();
-
-
     /**
      * The logger.
      */
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
+    private static CacheManager instance;
+    private static StoresthalConfiguration configuration;
+    /**
+     * All configured object caches are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
+     * and {@link Cacheable#cacheName()}).
+     */
+    private static Map<String, LRUCache<URI, Object>> caches;
 
-    private CacheManager(){}
+    private CacheManager() {
+    }
 
     @SuppressWarnings("InstantiationOfUtilityClass")
     public static CacheManager getInstance(StoresthalConfiguration configuration) {
@@ -69,15 +65,14 @@ public class CacheManager {
      * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName) {
+    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName, boolean collection) {
 
-        logger.debug("Trying to get object with URI " + uri + " from cache...");
+        logger.debug("Trying to get object with URI {} from cache...", uri);
 
         LRUCache<URI, Object> cache;
         if (cacheName == null) {
-            cache = getCache(objectClass);
-        }
-        else {
+            cache = getCache(objectClass, collection);
+        } else {
             cache = getCache(cacheName, null);
         }
 
@@ -91,11 +86,11 @@ public class CacheManager {
         if (result != null) {
             cacheHits.putIfAbsent(cache.getCacheName(), 0);
             cacheHits.put(cache.getCacheName(), cacheHits.get(cache.getCacheName()) + 1);
-            logger.debug("Cache hit for URI " + uri + " in cache \"" + cache.getCacheName() + "\"!");
+            logger.debug("Cache hit for URI {} in cache \"{}\"!", uri, cache.getCacheName());
         } else {
             cacheMisses.putIfAbsent(cache.getCacheName(), 0);
             cacheMisses.put(cache.getCacheName(), cacheMisses.get(cache.getCacheName()) + 1);
-            logger.debug("Cache miss for URI " + uri + " in cache \"" + cache.getCacheName() + "\"!");
+            logger.debug("Cache miss for URI {} in cache \"{}\"!", uri, cache.getCacheName());
         }
         return result;
     }
@@ -103,30 +98,45 @@ public class CacheManager {
     /**
      * Find the cache an object belongs into and put it there.
      *
-     * @param uri    The uri of the object
-     * @param object The object to be cached
+     * @param uri       The uri of the object
+     * @param object    The object to be cached
      * @param cacheName The name of the cache to put the object in. Use NULL here for automatic cache name detection
      *                  (default).
      */
-    public static void putObjectInCache(URI uri, Object object, String cacheName) {
+    public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass) {
 
         LRUCache<URI, Object> cache;
-        if (cacheName == null) {
-            cache = getCache(object.getClass());
-        }
-        else {
-            cache = getCache(cacheName, null);
+
+        if (collectionItemClass != null) {
+            if (cacheName == null) {
+                cache = getCache(collectionItemClass, true);
+            } else {
+                cache = getCache(cacheName, null);
+            }
+        } else {
+            if (cacheName == null) {
+                Class realObjectClass;
+
+                if (object instanceof EntityModel<?>) {
+                    realObjectClass = ((EntityModel) object).getContent().getClass();
+                } else {
+                    realObjectClass = object.getClass();
+                }
+                cache = getCache(realObjectClass, false);
+            } else {
+                cache = getCache(cacheName, null);
+            }
         }
 
         if (configuration.isCachingDisabled() && !(cache.getCacheName().equals(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME))) {
             return;
         }
 
-        logger.debug("Putting one object of class \"" + object + "\" into cache named \"" + cache.getCacheName() + "\" for URI " + uri.toString());
+        logger.debug("Putting one object of class \"{}\" into cache named \"{}\" for URI {}", object, cache.getCacheName(), uri);
 
         cache.put(uri, object);
 
-        logger.debug("\"" + cache.getCacheName() + "\" cache size is now: " + cache.size());
+        logger.debug("\"{}\" cache size is now: {}", cache.getCacheName(), cache.size());
 
     }
 
@@ -136,13 +146,19 @@ public class CacheManager {
      * @param cls The object class
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
-    private static LRUCache<URI, Object> getCache(Class cls) {
+    private static LRUCache<URI, Object> getCache(Class cls, boolean collection) {
         //noinspection unchecked
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
-        String cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        String cacheName;
 
-        logger.debug("Cache for object class \"" + cls.getCanonicalName() + "\" is named \"" + cacheName + "\".");
+        if (collection) {
+            cacheName = (annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        } else {
+            cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        }
+
+        logger.debug("Cache for object class \"{}\" is named \"{}\".", cls.getCanonicalName(), cacheName);
 
         int cacheSize = (annotation != null) ? annotation.cacheSize() : configuration.getDefaultCacheSize();
 
@@ -170,7 +186,7 @@ public class CacheManager {
     /**
      * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
      * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
-     * a matching call to {@link Storesthal#getObject(String, Class)} occurs).
+     * a matching call to {@link Storesthal#getObjectWithoutLinks(String, Class)} occurs).
      *
      * @param cacheName             The cache to clear.
      * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting

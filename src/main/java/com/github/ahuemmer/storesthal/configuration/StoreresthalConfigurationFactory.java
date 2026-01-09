@@ -9,27 +9,39 @@ import com.github.ahuemmer.storesthal.HALRelation;
  */
 public class StoreresthalConfigurationFactory {
 
+    public static final StoresthalConfiguration DEFAULT_CONFIGURATION = getDefaultConfiguration();
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
      */
-    private int defaultCacheSize= StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE;
-
+    private int defaultCacheSize = StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE;
     /**
      * Controls whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
      */
-    private boolean disableCaching= StoresthalConfiguration.DEFAULT_CACHING_DISABLED;
-
+    private boolean disableCaching = StoresthalConfiguration.DEFAULT_CACHING_DISABLED;
     /**
      * Controls whether the object store works without annotations.
      * It'll try to find relation "target" setters by their name only then.
      */
-    private boolean annotationless= StoresthalConfiguration.DEFAULT_ANNOTATIONLESS;
+    private boolean annotationless = StoresthalConfiguration.DEFAULT_ANNOTATIONLESS;
 
-    public static final StoresthalConfiguration DEFAULT_CONFIGURATION=getDefaultConfiguration();
+    /**
+     * Returns a {@link StoresthalConfiguration} initialized with the default values (see public static vars
+     * of {@link StoresthalConfiguration}.
+     *
+     * @return Default configuration instance
+     */
+    public static StoresthalConfiguration getDefaultConfiguration() {
+        StoresthalConfiguration result = new StoresthalConfiguration();
+        result.setAnnotationless(StoresthalConfiguration.DEFAULT_ANNOTATIONLESS);
+        result.setDefaultCacheSize(StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE);
+        result.setDisableCaching(StoresthalConfiguration.DEFAULT_CACHING_DISABLED);
+        return result;
+    }
 
     /**
      * Get the default size of an object cache.
+     *
      * @return Default cache size
      */
     public int getDefaultCacheSize() {
@@ -39,6 +51,7 @@ public class StoreresthalConfigurationFactory {
     /**
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
      * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
+     *
      * @param defaultCacheSize The default cache size (default: 1000)
      * @return This StoresthalConfiguration factory (fluent interface)
      */
@@ -50,6 +63,7 @@ public class StoreresthalConfigurationFactory {
     /**
      * Return whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
+     *
      * @return true, if caching is disabled
      */
     public boolean isCachingDisabled() {
@@ -59,8 +73,9 @@ public class StoreresthalConfigurationFactory {
     /**
      * Controls whether caching is disabled. @Cacheable annotations will not be considered any more.
      * The only cache that will still exist is the "intermediate cache" of the store, which is necessary to maintain
-     * object structure integrity during one single getObject call. The intermediate cache will not be preserved
-     * between consecutive getObject calls.
+     * object structure integrity during one single getObjectWithoutLinks call. The intermediate cache will not be preserved
+     * between consecutive getObjectWithoutLinks calls.
+     *
      * @param disableCaching Whether to completely disable caching or not (default: false)     *
      * @return This StoresthalConfiguration factory (fluent interface)
      */
@@ -71,6 +86,7 @@ public class StoreresthalConfigurationFactory {
 
     /**
      * Return whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
+     *
      * @return "true", if annotations they will be not be taken into account
      */
     public boolean isAnnotationless() {
@@ -80,6 +96,7 @@ public class StoreresthalConfigurationFactory {
     /**
      * Controls whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
      * ("true" means, the will be not be taken into account!)
+     *
      * @param annotationless Whether to work annotationless or not
      * @return This StoresthalConfiguration factory (fluent interface)
      */
@@ -90,6 +107,7 @@ public class StoreresthalConfigurationFactory {
 
     /**
      * Returns a customized {@link StoresthalConfiguration} using the parameters applied by the setters.
+     *
      * @return Customized configuration instance
      */
     public StoresthalConfiguration getConfiguration() {
@@ -97,19 +115,6 @@ public class StoreresthalConfigurationFactory {
         result.setAnnotationless(this.annotationless);
         result.setDefaultCacheSize(this.defaultCacheSize);
         result.setDisableCaching(this.disableCaching);
-        return result;
-    }
-
-    /**
-     * Returns a {@link StoresthalConfiguration} initialized with the default values (see public static vars
-     * of {@link StoresthalConfiguration}.
-     * @return Default configuration instance
-     */
-    public static StoresthalConfiguration getDefaultConfiguration() {
-        StoresthalConfiguration result = new StoresthalConfiguration();
-        result.setAnnotationless(StoresthalConfiguration.DEFAULT_ANNOTATIONLESS);
-        result.setDefaultCacheSize(StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE);
-        result.setDisableCaching(StoresthalConfiguration.DEFAULT_CACHING_DISABLED);
         return result;
     }
 

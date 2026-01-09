@@ -1,9 +1,13 @@
 plugins {
     id 'java'
+    id 'idea'
+    id 'jacoco'
     id 'maven-publish'
     id 'com.github.blueboxware.tocme' version '1.8'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.5.9'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.sonarqube' version '7.2.2.6593'
+    id 'org.owasp.dependencycheck' version '12.1.9'
 }
 
 /*
@@ -19,6 +23,13 @@ if (file('secrets.gradle').exists()) {
     ext.ghActor = "$System.env.GITHUB_ACTOR"
 }
 
+sonar {
+    properties {
+        property "sonar.projectKey", "storesthal_storesthal_2f0e2536-14e8-4df7-a6f9-cad0ce8f11d2"
+        property "sonar.projectName", "Storesthal"
+        property "sonar.qualitygate.wait", true
+    }
+}
 
 group = 'com.github.ahuemmer'
 
@@ -41,7 +52,7 @@ repositories {
 }
 
 ext {
-    springBootVersion = '3.5.6'
+    springBootVersion = '3.5.9'
 }
 
 dependencies {
@@ -58,6 +69,7 @@ dependencies {
 test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
+    finalizedBy jacocoTestReport
 }
 
 javadoc {
@@ -121,3 +133,9 @@ springBoot {
 }
 
 tasks.publish.dependsOn checkTocs
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+    }
+}

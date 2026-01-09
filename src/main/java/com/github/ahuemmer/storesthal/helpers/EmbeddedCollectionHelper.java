@@ -40,7 +40,6 @@ public class EmbeddedCollectionHelper<T> {
      */
     @JsonProperty(EMBEDDED_PARENT_NAME)
     private JsonNode objectCollection;
-    //private Collection<T> objectCollection;
 
     /**
      * Extract the actual collection from the JSON response.

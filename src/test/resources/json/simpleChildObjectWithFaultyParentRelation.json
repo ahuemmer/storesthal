@@ -1,7 +1,7 @@
 {
     "_links": {
         "self": {"href": "${self}"},
-        "parents": [{"href": "http://localhost:${port}${parent}"}]
+        "parent": {"href": "tHiS Is N0T A uRl"}
     },
     "childId": ${childId},
     "name": "${childName}"

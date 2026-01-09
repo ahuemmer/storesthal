@@ -25,6 +25,7 @@ public class ReflectionHelper {
 
     /**
      * Get all methods of a class having a specific annotation
+     *
      * @param objectClass The class to search for the annotation
      * @return All methods of the object class having the annotation specified (if any)
      */
@@ -33,8 +34,8 @@ public class ReflectionHelper {
 
         Set<Method> result = new HashSet<>();
 
-        for (Method m: objectClass.getMethods()) {
-            for (Annotation a: m.getAnnotationsByType((Class<? extends Annotation>) HALRelation.class)) {
+        for (Method m : objectClass.getMethods()) {
+            for (Annotation a : m.getAnnotationsByType((Class<? extends Annotation>) HALRelation.class)) {
                 result.add(m);
             }
         }
@@ -45,6 +46,7 @@ public class ReflectionHelper {
 
     /**
      * Get all fields of a class having a specific annotation
+     *
      * @param objectClass The class to search for the annotation
      * @return All fields of the object class having the annotation specified (if any)
      */
@@ -52,8 +54,8 @@ public class ReflectionHelper {
 
         Set<Field> result = new HashSet<>();
 
-        for (Field f: objectClass.getDeclaredFields()) {
-            for (Annotation a: f.getAnnotationsByType((Class<? extends Annotation>) HALRelation.class)) {
+        for (Field f : objectClass.getDeclaredFields()) {
+            for (Annotation a : f.getAnnotationsByType((Class<? extends Annotation>) HALRelation.class)) {
                 result.add(f);
             }
         }
@@ -64,13 +66,14 @@ public class ReflectionHelper {
 
     /**
      * Look up a setter method of a specific class
+     *
      * @param objectClass The class to search for the setter
-     * @param methodName The setter method name to be searched for
+     * @param methodName  The setter method name to be searched for
      * @return The first matching method encountered (if any) or null.
      * TODO: Consider searching for method parameter as well for reasons of type safety!
      */
     private static Method searchForSetterByMethodName(Class objectClass, String methodName) {
-        for (Method m: objectClass.getMethods()) {
+        for (Method m : objectClass.getMethods()) {
             if (m.getName().equals(methodName) && (m.getParameterCount() == 1)) {
                 return m;
             }
@@ -80,26 +83,28 @@ public class ReflectionHelper {
 
     /**
      * Return the input string with the first character being converted to lower case
+     *
      * @param input The input string
      * @return The input string with lower case first character
      */
     private static String lcFirst(String input) {
-        if (input==null) {
+        if (input == null) {
             return null;
         }
-        return input.substring(0,1).toLowerCase()+input.substring(1);
+        return input.substring(0, 1).toLowerCase() + input.substring(1);
     }
 
     /**
      * Return the input string with the first character being converted to upper case
+     *
      * @param input The input string
      * @return The input string with upper case first character
      */
     private static String ucFirst(String input) {
-        if (input==null) {
+        if (input == null) {
             return null;
         }
-        return input.substring(0,1).toUpperCase()+input.substring(1);
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /**
@@ -131,63 +136,59 @@ public class ReflectionHelper {
      *     </li>
      * </ul>
      * These rules are evaluated in the order they are described here.
+     *
      * @param objectClass The class of the object where the setter is to be searched for.
-     * @param rel The name of the relation
+     * @param rel         The name of the relation
      * @return A matching setter method or `null` if none was found.
      */
     public static Method searchForSetter(Class objectClass, String rel) {
 
-        ReflectionHelper.logger.debug("Searching setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\"");
+        ReflectionHelper.logger.debug("Searching setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\"");
 
         if (Storesthal.getConfiguration().isAnnotationless()) {
-            String methodName = "set"+ ReflectionHelper.ucFirst(rel);
+            String methodName = "set" + ReflectionHelper.ucFirst(rel);
             Method m = searchForSetterByMethodName(objectClass, methodName);
-            if (m==null) {
-                ReflectionHelper.logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
-            }
-            else {
-                ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName()+" (annotationless mode!)");
+            if (m == null) {
+                ReflectionHelper.logger.warn("No setter found for relation \"" + rel + "\" in class \"" + objectClass.getCanonicalName() + "\"!");
+            } else {
+                ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName() + " (annotationless mode!)");
             }
             return m;
-        }
-        else {
+        } else {
             Set<Method> methods = getMethodsAnnotatedWith(objectClass);
-            for (Method m: methods) {
+            for (Method m : methods) {
                 if (m.getAnnotation(HALRelation.class).value().equals(rel)) {
                     if (m.getParameterCount() == 1) {
-                        ReflectionHelper.logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                        ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName());
                         return m;
                     }
-                    ReflectionHelper.logger.warn("Method \""+m.getName()+"\" is annotated with \""+HALRelation.class.getName()+"\" and would be a suitable setter candidate for relation \""+rel+"\", but has the wrong number of parameters!");
+                    ReflectionHelper.logger.warn("Method \"" + m.getName() + "\" is annotated with \"" + HALRelation.class.getName() + "\" and would be a suitable setter candidate for relation \"" + rel + "\", but has the wrong number of parameters!");
+                } else if (m.getAnnotation(HALRelation.class).value().equals("") && ReflectionHelper.lcFirst(m.getName().substring(3)).equals(rel)) {
+                    ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName());
+                    return m;
                 }
-                else if (m.getAnnotation(HALRelation.class).value().equals("")) {
-                    if (ReflectionHelper.lcFirst(m.getName().substring(3)).equals(rel)) {
-                        ReflectionHelper.logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
-                        return m;
-                    }
-                }
+
             }
             //Nothing found up to now, let's go on and search the fields...
             Set<Field> fields = getFieldsAnnotatedWith(objectClass);
-            for (Field f: fields) {
+            for (Field f : fields) {
                 if (f.getAnnotation(HALRelation.class).value().equals(rel)) {
-                    String methodName = "set"+ ReflectionHelper.ucFirst(f.getName());
+                    String methodName = "set" + ReflectionHelper.ucFirst(f.getName());
                     Method m = searchForSetterByMethodName(objectClass, methodName);
-                    if (m!=null) {
-                        ReflectionHelper.logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                    if (m != null) {
+                        ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName());
                         return m;
                     }
-                }
-                else if (f.getAnnotation(HALRelation.class).value().equals("")) {
-                    String methodName = "set"+ ReflectionHelper.ucFirst(rel);
+                } else if (f.getAnnotation(HALRelation.class).value().equals("")) {
+                    String methodName = "set" + ReflectionHelper.ucFirst(rel);
                     Method m = searchForSetterByMethodName(objectClass, methodName);
-                    if (m!=null) {
-                        ReflectionHelper.logger.debug("Setter for relation \""+rel+"\" for object class \""+objectClass.getCanonicalName()+"\" found: "+m.getName());
+                    if (m != null) {
+                        ReflectionHelper.logger.debug("Setter for relation \"" + rel + "\" for object class \"" + objectClass.getCanonicalName() + "\" found: " + m.getName());
                         return m;
                     }
                 }
             }
-            ReflectionHelper.logger.warn("No setter found for relation \""+rel+"\" in class \""+objectClass.getCanonicalName()+"\"!");
+            ReflectionHelper.logger.warn("No setter found for relation \"" + rel + "\" in class \"" + objectClass.getCanonicalName() + "\"!");
             return null;
         }
     }

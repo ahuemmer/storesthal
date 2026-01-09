@@ -24,9 +24,12 @@ public @interface Cacheable {
      * Nevertheless, neither using one cache name per object class nor using a cache name at all is enforced!
      * If no cache name is used, the objects will be stored in a cache denoted by {@link Storesthal#COMMON_CACHE_NAME},
      * regardless of the specific class.
+     *
      * @return The name of the object cache.
      */
     String cacheName() default Storesthal.COMMON_CACHE_NAME;
+
+    String collectionCacheName() default Storesthal.COMMON_CACHE_NAME;
 
     /**
      * The size of the cache.
@@ -37,6 +40,7 @@ public @interface Cacheable {
      * cache sizes, the cache will be initialized with the size of the object class that is first encountered
      * by {@link Storesthal}. Is this can lead to undesired behavior (and it makes no sense it all), using different
      * cache size parameters for the same cache is discouraged.
+     *
      * @return The size of the cache denoted by {@link #cacheName()}, see notes above.
      */
     int cacheSize() default 1000;
