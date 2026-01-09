@@ -69,6 +69,7 @@ dependencies {
 test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
+    finalizedBy jacocoTestReport
 }
 
 javadoc {
@@ -135,6 +136,6 @@ tasks.publish.dependsOn checkTocs
 
 jacocoTestReport {
     reports {
-        xml.enabled = true
+        xml.required = true
     }
 }
