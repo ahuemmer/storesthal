@@ -2,7 +2,7 @@
   {
     "_links": {
       "self": {
-        "href": "/collObjects/1"
+        "href": "http://localhost:${port}/collObjects/1"
       }
     },
     "objectId": 1,
@@ -11,7 +11,7 @@
   {
     "_links": {
       "self": {
-        "href": "/collObjects/2"
+        "href": "http://localhost:${port}/collObjects/2"
       }
     },
     "objectId": 2,
@@ -20,7 +20,7 @@
   {
     "_links": {
       "self": {
-        "href": "/collObjects/759034"
+        "href": "http://localhost:${port}/collObjects/759034"
       }
     },
     "objectId": 759034,
@@ -29,7 +29,7 @@
   {
     "_links": {
       "self": {
-        "href": "/collObjects/673896873"
+        "href": "http://localhost:${port}/collObjects/673896873"
       }
     },
     "objectId": 673896873,

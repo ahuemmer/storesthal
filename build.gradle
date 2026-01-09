@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'idea'
+    id 'jacoco'
     id 'maven-publish'
     id 'com.github.blueboxware.tocme' version '1.8'
     id 'org.springframework.boot' version '3.5.9'

@@ -6,6 +6,7 @@ import com.github.ahuemmer.storesthal.Storesthal;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.hateoas.EntityModel;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -64,13 +65,13 @@ public class CacheManager {
      * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName) {
+    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName, boolean collection) {
 
         logger.debug("Trying to get object with URI {} from cache...", uri);
 
         LRUCache<URI, Object> cache;
         if (cacheName == null) {
-            cache = getCache(objectClass);
+            cache = getCache(objectClass, collection);
         } else {
             cache = getCache(cacheName, null);
         }
@@ -102,13 +103,29 @@ public class CacheManager {
      * @param cacheName The name of the cache to put the object in. Use NULL here for automatic cache name detection
      *                  (default).
      */
-    public static void putObjectInCache(URI uri, Object object, String cacheName) {
+    public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass) {
 
         LRUCache<URI, Object> cache;
-        if (cacheName == null) {
-            cache = getCache(object.getClass());
+
+        if (collectionItemClass != null) {
+            if (cacheName == null) {
+                cache = getCache(collectionItemClass, true);
+            } else {
+                cache = getCache(cacheName, null);
+            }
         } else {
-            cache = getCache(cacheName, null);
+            if (cacheName == null) {
+                Class realObjectClass;
+
+                if (object instanceof EntityModel<?>) {
+                    realObjectClass = ((EntityModel) object).getContent().getClass();
+                } else {
+                    realObjectClass = object.getClass();
+                }
+                cache = getCache(realObjectClass, false);
+            } else {
+                cache = getCache(cacheName, null);
+            }
         }
 
         if (configuration.isCachingDisabled() && !(cache.getCacheName().equals(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME))) {
@@ -129,11 +146,17 @@ public class CacheManager {
      * @param cls The object class
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
-    private static LRUCache<URI, Object> getCache(Class cls) {
+    private static LRUCache<URI, Object> getCache(Class cls, boolean collection) {
         //noinspection unchecked
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
-        String cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        String cacheName;
+
+        if (collection) {
+            cacheName = (annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        } else {
+            cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+        }
 
         logger.debug("Cache for object class \"{}\" is named \"{}\".", cls.getCanonicalName(), cacheName);
 

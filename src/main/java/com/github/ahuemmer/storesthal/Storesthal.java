@@ -65,6 +65,12 @@ public class Storesthal {
     public static final String COMMON_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common";
 
     /**
+     * The name of the "common" cache for object collections (in opposition to singular objects) which is used, if no
+     * explicit object collection cache name has been configured for a cache (see {@link Cacheable#cacheName()}).
+     */
+    public static final String COMMON_COLLECTION_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.common.collections";
+
+    /**
      * When searching for the "real" type of an object to populate, which was given as an
      * {@link org.springframework.hateoas.EntityModel}, this regex is applied.
      */
@@ -130,8 +136,8 @@ public class Storesthal {
     /**
      * Get the configuration of the store.
      * Please note, that <i>changing</i> the configuration at runtime isn't possible (there are no public setters in
-     * {@link StoresthalConfiguration} as it might have unexpected side effects. The only way to change the
-     * configuration is to use the {@link #init(StoresthalConfiguration)} function (which should take place before
+     * {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} as it might have unexpected side effects. The only way to change the
+     * configuration is to use the {@link #init(com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration)} function (which should take place before
      * any other operations of the store).
      *
      * @return The store configuration
@@ -176,10 +182,10 @@ public class Storesthal {
     }
 
     /**
-     * Return a specialized {@link RestTemplate} able to demand and process HAL+JSON data.
+     * Return a specialized {@link org.springframework.web.client.RestTemplate} able to demand and process HAL+JSON data.
      *
      * @param collection Whether to regard REST response as a collection
-     * @return A specialized {@link RestTemplate} able to demand and process HAL+JSON data.
+     * @return A specialized {@link org.springframework.web.client.RestTemplate} able to demand and process HAL+JSON data.
      */
     private static RestTemplate getRestTemplateWithHalMessageConverter(boolean collection) {
         RestTemplate restTemplate = new RestTemplate();
@@ -232,6 +238,41 @@ public class Storesthal {
     }
 
     /**
+     * Creates a new {@link Collection} to be held in a collections array used by
+     * {@link #handleCollection(String, org.springframework.hateoas.Link, java.lang.reflect.Method, java.util.Map, int, Object, org.springframework.hateoas.EntityModel, int)}.
+     *
+     * @param type The type of the objects contained in the collection
+     * @return The new {@link Collection}
+     */
+    private static Collection createCollectionEntry(Class type) {
+        Collection newCollection = null;
+
+        if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+            if (List.class.isAssignableFrom(type)) {
+                newCollection = new LinkedList();
+            } else if (Set.class.isAssignableFrom(type)) {
+                newCollection = new HashSet();
+            } else if (Queue.class.isAssignableFrom(type)) {
+                newCollection = new ConcurrentLinkedDeque();
+            }
+        } else {
+            //TODO: Array...?
+            try {
+                newCollection = (Collection) type.getConstructor().newInstance();
+            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException e) {
+                try {
+                    throw new StoresthalException("Could not instantiate collection of type \"" + type.getCanonicalName() + "\".", e);
+                } catch (StoresthalException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
+        return newCollection;
+    }
+
+    /**
      * Handles the retrieval of a collection encountered during object structure traversal.
      *
      * @param parentObject                   The parent object of the collection
@@ -255,28 +296,8 @@ public class Storesthal {
         Class type = m.getParameterTypes()[0];
 
         String collectionKey = parentObject + ":" + objectCounter + ":" + l.getRel().value();
-        Collection coll = collections.get(collectionKey);
 
-        if (coll == null) {
-            if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
-                if (List.class.isAssignableFrom(type)) {
-                    coll = new LinkedList();
-                } else if (Set.class.isAssignableFrom(type)) {
-                    coll = new HashSet();
-                } else if (Queue.class.isAssignableFrom(type)) {
-                    coll = new ConcurrentLinkedDeque();
-                }
-            } else {
-                //TODO: Array...?
-                try {
-                    coll = (Collection) type.getConstructor().newInstance();
-                } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
-                         InvocationTargetException e) {
-                    throw new StoresthalException("Could not instantiate collection of type \"" + type.getCanonicalName() + "\".", e);
-                }
-            }
-            collections.put(collectionKey, coll);
-        }
+        Collection coll = collections.computeIfAbsent(collectionKey, ignored -> createCollectionEntry(type));
 
         URI uri = getUriFromLink(l);
 
@@ -605,11 +626,6 @@ public class Storesthal {
         return getCollection(url, objectClass, null);
     }
 
-    private static <T> void handleEntryLinks(List<EntityModel<T>> result, Class<T> objectClass, String url, boolean maintainLinks) {
-
-
-    }
-
     /**
      * Returns a collection retrieved from a given url, not expecting an embedded collection.
      *
@@ -626,21 +642,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ParameterizedTypeReference<ArrayList<EntityModel<T>>> type = new ParameterizedTypeReference<>() {
-            @Override
-            @NonNull
-            public Type getType() {
-                Type[] responseWrapperActualTypes = {objectClass};
-                if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
-                    return parameterize(EmbeddedCollectionHelper.class, responseWrapperActualTypes);
-                } else {
-                    return parameterize(ArrayList.class,
-                            parameterize(EntityModel.class, responseWrapperActualTypes));
-                }
-            }
-        };
-
-        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, type.getClass(), null);
+        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -721,9 +723,9 @@ public class Storesthal {
 
             for (Link l : entry.getLinks()) {
                 if ("self".equals(l.getRel().value())) {
-                    logger.debug("Self-Link for object: {}", l.toUri());
+                    logger.debug("Self-Link for object within collection: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null);
+                        CacheManager.putObjectInCache(l.toUri(), entry, null, null);
                     }
                 } else {
                     if (resultListWithLinks != null) {
@@ -736,21 +738,23 @@ public class Storesthal {
             objectCounter++;
         }
         if (resultListWithLinks != null) {
-            CacheManager.putObjectInCache(uri, resultListWithLinks, null);
+            CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass);
         } else {
-            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null);
+            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass);
         }
 
         for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
             URI invokeUri = entry.getKey();
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
             for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
                 invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
             }
         }
 
         transientObjects.clear();
+
+        // TODO: Der Intermediate Cache wird bei jeder Collection verwendet und danach geleert, ergo wird nie richtig gecached.
         CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
         invokeLater.clear();
 
@@ -781,7 +785,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
+        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -813,7 +817,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
+        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -842,7 +846,7 @@ public class Storesthal {
                             Type type = super.getType();
                             if (type instanceof ParameterizedType) {
                                 Type[] responseWrapperActualTypes = {objectClass};
-                                return parameterize(EntityModel.class,
+                                type = parameterize(EntityModel.class,
                                         responseWrapperActualTypes);
                             }
                             return type;
@@ -858,9 +862,9 @@ public class Storesthal {
                 logger.debug("Self-Link for object: {}", l.toUri());
                 if (!(l.getRel().value().isBlank())) {
                     if (maintainLinks) {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null, null);
                     } else {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null, null);
                     }
                 }
             } else {
@@ -872,9 +876,9 @@ public class Storesthal {
             }
         }
         if (maintainLinks) {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null, null);
         } else {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null, null);
         }
 
         /*
@@ -889,7 +893,7 @@ public class Storesthal {
                 URI invokeUri = entry.getKey();
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null);
+                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }
@@ -920,7 +924,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null);
+        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -940,13 +944,13 @@ public class Storesthal {
      * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
      * goes wrong (e.g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
      * <p>
-     * If not disabled (see {@link StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
+     * If not disabled (see {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
      * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
      * multiple times will only have <i>one</i> representation in memory, so all references will point to the same
      * (not just an equal) object.
      * <p>
-     * The exact behavior can be adjusted by {@link StoresthalConfiguration} (see also {@link StoreresthalConfigurationFactory}
-     * and {@link #init(StoresthalConfiguration)}).
+     * The exact behavior can be adjusted by {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} (see also {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory}
+     * and {@link #init(com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration)}).
      *
      * @param url         The URL to retrieve the object from. Must be well-formed and absolute!
      * @param objectClass The class of the object to be returned.
