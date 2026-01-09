@@ -9,10 +9,3 @@ include:
       changelog-enabled: true
       auto-release-enabled: true
       info-on: "prod"
-
-# secret variables
-# (define the variables below in your GitLab group/project variables)
-# SONAR_TOKEN: SonarQube authentication token (see https://docs.sonarsource.com/sonarqube-server/user-guide/managing-tokens/)
-# GITLAB_TOKEN: A GitLab 'project access token' or 'personal access token' with `api`, `read_repository` and `write repository` scopes.
-# SEMREL_GPG_SIGNKEY: Path to the GPG signkey exported with `gpg --armor --export-secret-key`.
-
