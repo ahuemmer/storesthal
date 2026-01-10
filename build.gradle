@@ -100,6 +100,9 @@ def pomConfig = {
     }
 }
 
+isGitLab = !"$System.env.CI_SERVER_HOST".isBlank() && !"$System.env.CI_SERVER_HOST".contains('github')
+isGitHub = "$System.env.GITHUB_ACTIONS" == "true"
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -114,7 +117,7 @@ publishing {
     }
 
     repositories {
-        if ("$System.env.GITHUB_ACTIONS" == "true") {
+        if (isGitHub || !isGitLab) {
             if (!project.version.endsWith('-SNAPSHOT')) {
                 maven {
                     name = "GitHubPackages"
@@ -125,7 +128,8 @@ publishing {
                     }
                 }
             }
-        } else {
+        }
+        if (!isGitHub) {
             maven {
                 name = "local"
                 if (project.version.endsWith('-SNAPSHOT')) {
