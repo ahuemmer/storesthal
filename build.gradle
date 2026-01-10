@@ -53,6 +53,8 @@ repositories {
 
 ext {
     springBootVersion = '3.5.9'
+    isGitLab = !"$System.env.CI_SERVER_HOST".isBlank() && !"$System.env.CI_SERVER_HOST".contains('github')
+    isGitHub = "$System.env.GITHUB_ACTIONS" == "true"
 }
 
 dependencies {
@@ -112,17 +114,41 @@ publishing {
             }
         }
     }
+
     repositories {
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/ahuemmer/storesthal"
-            credentials {
-                username = project.ghActor
-                password = project.ghToken
+        if (project.isGitHub || !project.isGitLab) {
+            if (!project.version.endsWith('-SNAPSHOT')) {
+                maven {
+                    name = "GitHubPackages"
+                    url = "https://maven.pkg.github.com/ahuemmer/storesthal"
+                    credentials {
+                        username = project.ghActor ?: "$System.env.GH_ACTOR"
+                        password = project.ghToken ?: "$System.env.GH_TOKEN"
+                    }
+                }
+            }
+        }
+        if (!project.isGitHub) {
+            maven {
+                name = "local"
+                if (project.version.endsWith('-SNAPSHOT')) {
+                    url project.hasProperty('localSnapshotRepositoryUrl') ? project.localSnapshotRepositoryUrl : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_URL"
+                    credentials {
+                        username = project.hasProperty('localSnapshotRepositoryUser') ? project.localSnapshotRepositoryUser : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_USER"
+                        password = project.hasProperty('localSnapshotRepositoryPassword') ? project.localSnapshotRepositoryPassword : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_PASSWORD"
+                    }
+                } else {
+                    url project.hasProperty('localReleaseRepositoryUrl') ? project.localReleaseRepositoryUrl : "$System.env.LOCAL_RELEASE_REPOSITORY_URL"
+                    credentials {
+                        username = project.hasProperty('localReleaseRepositoryUser') ? project.localReleaseRepositoryUser : "$System.env.LOCAL_RELEASE_REPOSITORY_USER"
+                        password = project.hasProperty('localReleaseRepositoryPassword') ? project.localReleaseRepositoryPassword : "$System.env.LOCAL_RELEASE_REPOSITORY_PASSWORD"
+                    }
+                }
             }
         }
     }
 }
+
 
 tocme {
     doc(file('README.md'))

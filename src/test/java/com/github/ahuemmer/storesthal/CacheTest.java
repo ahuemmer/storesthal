@@ -5,6 +5,7 @@ import com.github.ahuemmer.storesthal.cachetestobjects.ChildWithParentRelationWi
 import com.github.ahuemmer.storesthal.cachetestobjects.ParentObject;
 import com.github.ahuemmer.storesthal.cachetestobjects.SmallSizedCacheObject;
 import com.github.ahuemmer.storesthal.cachetestobjects.UncacheableParentObject;
+import com.github.ahuemmer.storesthal.helpers.CacheManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -87,8 +88,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         }
 
         assertEquals(9, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(7, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
+        assertEquals(7, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
 
     }
 
@@ -134,60 +135,60 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
 
         serverMock.start();
 
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(0, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
             Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
-        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
 
-        Storesthal.clearCache(PARENT_CACHE_NAME, false);
-        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        Storesthal.clearCache(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME, false);
+        assertEquals(0, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
 
-        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
-        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
             Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
-        assertEquals(20, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(20, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
 
         Storesthal.clearAllCaches(false);
-        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(0, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.clearAllCaches(true);
-        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(0, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(0, Storesthal.getStatistics().get("httpCalls"));
 
         Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
 
-        assertEquals(0, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(0, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 0; i < 10; i++) {
             Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/objects/1", ParentObject.class);
         }
 
-        assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
-        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(10, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
         assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
     }
@@ -223,8 +224,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         }
 
         //Parent cache should now be "full", having no hits
-        assertEquals(5, Storesthal.getCachedObjectCount(SMALL_SIZE_CACHE_NAME));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(SMALL_SIZE_CACHE_NAME));
+        assertEquals(5, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
         assertEquals(10, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 6; i < 9; i++) {
@@ -236,8 +237,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         }
 
         //Cache is still full and having no hits, as the older objects were replaced by the newer ones
-        assertEquals(5, Storesthal.getCachedObjectCount(SMALL_SIZE_CACHE_NAME));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(SMALL_SIZE_CACHE_NAME));
+        assertEquals(5, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
         assertEquals(16, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
@@ -249,8 +250,8 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         }
 
         //Still no cache hits, as objects were evicted...
-        assertEquals(5, Storesthal.getCachedObjectCount(SMALL_SIZE_CACHE_NAME));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(SMALL_SIZE_CACHE_NAME));
+        assertEquals(5, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
         assertEquals(24, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 9; i < 13; i++) {
@@ -262,10 +263,10 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         }
 
         //Now we've got some hits
-        assertEquals(5, Storesthal.getCachedObjectCount(SMALL_SIZE_CACHE_NAME));
-        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
+        assertEquals(5, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
+        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
         //Is still null here as cache isn't accessed directly:
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(SMALL_SIZE_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
         assertEquals(24, Storesthal.getStatistics().get("httpCalls"));
 
         for (int i = 1; i < 5; i++) {
@@ -274,9 +275,9 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
             assertEquals(i, test.getId());
         }
 
-        assertEquals(5, Storesthal.getCachedObjectCount(SMALL_SIZE_CACHE_NAME));
-        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
-        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(SMALL_SIZE_CACHE_NAME));
+        assertEquals(5, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
+        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(4, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + SMALL_SIZE_CACHE_NAME));
         assertEquals(24, Storesthal.getStatistics().get("httpCalls"));
 
     }
@@ -298,39 +299,39 @@ class CacheTest extends AbstractJsonTemplateBasedTest {
         ChildWithParentRelation test = Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
-        assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
-        assertEquals(1, Storesthal.getCachedObjectCount(CHILD_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
 
         ChildWithParentRelation test2 = Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
         //NULL because no _direct_ access:
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
-        assertEquals(1, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
-        assertEquals(1, Storesthal.getCachedObjectCount(CHILD_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
         assertSame(test, test2);
         assertSame(test.getParent(), test2.getParent());
 
-        Storesthal.clearCache(PARENT_CACHE_NAME, false);
+        Storesthal.clearCache(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME, false);
 
-        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
+        assertEquals(0, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
 
         ChildWithParentRelation test3 = Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/complexChildren1/1", ChildWithParentRelation.class);
 
         assertEquals(2, Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(PARENT_CACHE_NAME));
-        assertEquals(2, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CHILD_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(PARENT_CACHE_NAME));
-        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CHILD_CACHE_NAME));
-        assertEquals(0, Storesthal.getCachedObjectCount(PARENT_CACHE_NAME));
-        assertEquals(1, Storesthal.getCachedObjectCount(CHILD_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(2, ((Map) Storesthal.getStatistics().get("cacheHits")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, ((Map) Storesthal.getStatistics().get("cacheMisses")).get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
+        assertEquals(0, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + PARENT_CACHE_NAME));
+        assertEquals(1, Storesthal.getCachedObjectCount(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + CHILD_CACHE_NAME));
         assertSame(test, test3);
         assertSame(test2.getParent(), test3.getParent());
 
