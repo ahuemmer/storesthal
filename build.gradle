@@ -112,7 +112,37 @@ publishing {
             }
         }
     }
+
+    repositories {
+        if (!project.version.endsWith('-SNAPSHOT')) {
+            maven {
+                name = "GitHubPackages"
+                url = "https://maven.pkg.github.com/ahuemmer/storesthal"
+                credentials {
+                    username = project.ghActor ?: "$System.env.GH_ACTOR"
+                    password = project.ghToken ?: "$System.env.GH_TOKEN"
+                }
+            }
+        }
+        maven {
+            name = "local"
+            if (project.version.endsWith('-SNAPSHOT')) {
+                url project.localSnapshotRepositoryUrl ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_URL"
+                credentials {
+                    username = project.localSnapshotRepositoryUser ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_USER"
+                    password = project.localSnapshotRepositoryPassword ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_PASSWORD"
+                }
+            } else {
+                url project.localReleaseRepositoryUrl ?: "$System.env.LOCAL_RELEASE_REPOSITORY_URL"
+                credentials {
+                    username = project.localReleaseRepositoryUser ?: "$System.env.LOCAL_RELEASE_REPOSITORY_USER"
+                    password = project.localReleaseRepositoryPassword ?: "$System.env.LOCAL_RELEASE_REPOSITORY_PASSWORD"
+                }
+            }
+        }
+    }
 }
+
 
 tocme {
     doc(file('README.md'))
