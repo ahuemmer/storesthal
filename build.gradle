@@ -127,16 +127,16 @@ publishing {
         maven {
             name = "local"
             if (project.version.endsWith('-SNAPSHOT')) {
-                url project.localSnapshotRepositoryUrl ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_URL"
+                url project.hasProperty('localSnapshotRepositoryUrl') ? project.localSnapshotRepositoryUrl : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_URL"
                 credentials {
-                    username = project.localSnapshotRepositoryUser ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_USER"
-                    password = project.localSnapshotRepositoryPassword ?: "$System.env.LOCAL_SNAPSHOT_REPOSITORY_PASSWORD"
+                    username = project.hasProperty('localSnapshotRepositoryUser') ? project.localSnapshotRepositoryUser : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_USER"
+                    password = project.hasProperty('localSnapshotRepositoryPassword') ? project.localSnapshotRepositoryPassword : "$System.env.LOCAL_SNAPSHOT_REPOSITORY_PASSWORD"
                 }
             } else {
-                url project.localReleaseRepositoryUrl ?: "$System.env.LOCAL_RELEASE_REPOSITORY_URL"
+                url project.hasProperty('localReleaseRepositoryUrl') ? project.localReleaseRepositoryUrl : "$System.env.LOCAL_RELEASE_REPOSITORY_URL"
                 credentials {
-                    username = project.localReleaseRepositoryUser ?: "$System.env.LOCAL_RELEASE_REPOSITORY_USER"
-                    password = project.localReleaseRepositoryPassword ?: "$System.env.LOCAL_RELEASE_REPOSITORY_PASSWORD"
+                    username = project.hasProperty('localReleaseRepositoryUser') ? project.localReleaseRepositoryUser : "$System.env.LOCAL_RELEASE_REPOSITORY_USER"
+                    password = project.hasProperty('localReleaseRepositoryPassword') ? project.localReleaseRepositoryPassword : "$System.env.LOCAL_RELEASE_REPOSITORY_PASSWORD"
                 }
             }
         }
