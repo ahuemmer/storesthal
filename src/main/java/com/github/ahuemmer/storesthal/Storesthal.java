@@ -642,7 +642,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
+        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true, true);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -725,7 +725,7 @@ public class Storesthal {
                 if ("self".equals(l.getRel().value())) {
                     logger.debug("Self-Link for object within collection: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null, null);
+                        CacheManager.putObjectInCache(l.toUri(), entry, null, null, (resultListWithLinks != null));
                     }
                 } else {
                     if (resultListWithLinks != null) {
@@ -738,24 +738,25 @@ public class Storesthal {
             objectCounter++;
         }
         if (resultListWithLinks != null) {
-            CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass);
+            CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass, true);
         } else {
-            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass);
+            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass, false);
         }
 
         for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
             URI invokeUri = entry.getKey();
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
             for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, (resultListWithLinks != null));
                 invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
             }
         }
 
         transientObjects.clear();
 
-        // TODO: Der Intermediate Cache wird bei jeder Collection verwendet und danach geleert, ergo wird nie richtig gecached.
-        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+        String cachePrefix = resultListWithLinks != null ? CacheManager.CACHE_PREFIX_WITH_LINKS : CacheManager.CACHE_PREFIX_WITHOUT_LINKS;
+
+        CacheManager.clearCache(cachePrefix + StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
         invokeLater.clear();
 
         logger.debug("Removing URI \"{}\" from transient objects...", uri);
@@ -785,7 +786,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
+        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -817,7 +818,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
+        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false, true);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -862,9 +863,9 @@ public class Storesthal {
                 logger.debug("Self-Link for object: {}", l.toUri());
                 if (!(l.getRel().value().isBlank())) {
                     if (maintainLinks) {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null, null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null, null, maintainLinks);
                     } else {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null, null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null, null, maintainLinks);
                     }
                 }
             } else {
@@ -876,9 +877,9 @@ public class Storesthal {
             }
         }
         if (maintainLinks) {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null, null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null, null, maintainLinks);
         } else {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null, null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null, null, maintainLinks);
         }
 
         /*
@@ -893,13 +894,14 @@ public class Storesthal {
                 URI invokeUri = entry.getKey();
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
+                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, maintainLinks);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }
 
             transientObjects.clear();
-            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+            String cachePrefix = maintainLinks ? CacheManager.CACHE_PREFIX_WITH_LINKS : CacheManager.CACHE_PREFIX_WITHOUT_LINKS;
+            CacheManager.clearCache(cachePrefix + StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
             invokeLater.clear();
         }
 
@@ -924,7 +926,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
+        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false, false);
 
         if (resultFromCache != null) {
             return resultFromCache;

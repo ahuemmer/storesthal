@@ -51,7 +51,7 @@ public class PrimitiveValueRetriever {
             if (cacheName != null) {
                 cacheNameToUse = cacheName;
             }
-            result = CacheManager.getObjectFromCache(uri, primitiveClass, cacheNameToUse, false);
+            result = CacheManager.getObjectFromCache(uri, primitiveClass, cacheNameToUse, false, false);
             if (result != null) {
                 return result;
             }
@@ -79,7 +79,7 @@ public class PrimitiveValueRetriever {
         }
 
         if (doCache) {
-            CacheManager.putObjectInCache(uri, result, cacheNameToUse, null);
+            CacheManager.putObjectInCache(uri, result, cacheNameToUse, null, false);
         }
 
         return result;
