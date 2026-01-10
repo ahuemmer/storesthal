@@ -53,6 +53,8 @@ repositories {
 
 ext {
     springBootVersion = '3.5.9'
+    isGitLab = !"$System.env.CI_SERVER_HOST".isBlank() && !"$System.env.CI_SERVER_HOST".contains('github')
+    isGitHub = "$System.env.GITHUB_ACTIONS" == "true"
 }
 
 dependencies {
@@ -100,9 +102,6 @@ def pomConfig = {
     }
 }
 
-isGitLab = !"$System.env.CI_SERVER_HOST".isBlank() && !"$System.env.CI_SERVER_HOST".contains('github')
-isGitHub = "$System.env.GITHUB_ACTIONS" == "true"
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -117,7 +116,7 @@ publishing {
     }
 
     repositories {
-        if (isGitHub || !isGitLab) {
+        if (project.isGitHub || !project.isGitLab) {
             if (!project.version.endsWith('-SNAPSHOT')) {
                 maven {
                     name = "GitHubPackages"
@@ -129,7 +128,7 @@ publishing {
                 }
             }
         }
-        if (!isGitHub) {
+        if (!project.isGitHub) {
             maven {
                 name = "local"
                 if (project.version.endsWith('-SNAPSHOT')) {
