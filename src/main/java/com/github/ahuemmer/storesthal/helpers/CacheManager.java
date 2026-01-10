@@ -10,10 +10,15 @@ import org.springframework.hateoas.EntityModel;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class CacheManager {
+
+    public static final String CACHE_PREFIX_WITH_LINKS = "withLinks:";
+    public static final String CACHE_PREFIX_WITHOUT_LINKS = "withoutLinks:";
 
     /**
      * A map containing the number of cache misses by cache (name) for statistics creation.
@@ -65,13 +70,13 @@ public class CacheManager {
      * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName, boolean collection) {
+    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName, boolean collection, boolean withLinks) {
 
         logger.debug("Trying to get object with URI {} from cache...", uri);
 
         LRUCache<URI, Object> cache;
         if (cacheName == null) {
-            cache = getCache(objectClass, collection);
+            cache = getCache(objectClass, collection, withLinks);
         } else {
             cache = getCache(cacheName, null);
         }
@@ -103,13 +108,13 @@ public class CacheManager {
      * @param cacheName The name of the cache to put the object in. Use NULL here for automatic cache name detection
      *                  (default).
      */
-    public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass) {
+    public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass, boolean withLinks) {
 
         LRUCache<URI, Object> cache;
 
         if (collectionItemClass != null) {
             if (cacheName == null) {
-                cache = getCache(collectionItemClass, true);
+                cache = getCache(collectionItemClass, true, withLinks);
             } else {
                 cache = getCache(cacheName, null);
             }
@@ -122,7 +127,7 @@ public class CacheManager {
                 } else {
                     realObjectClass = object.getClass();
                 }
-                cache = getCache(realObjectClass, false);
+                cache = getCache(realObjectClass, false, withLinks);
             } else {
                 cache = getCache(cacheName, null);
             }
@@ -146,23 +151,32 @@ public class CacheManager {
      * @param cls The object class
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
-    private static LRUCache<URI, Object> getCache(Class cls, boolean collection) {
+    private static LRUCache<URI, Object> getCache(Class cls, boolean collection, boolean withLinks) {
         //noinspection unchecked
         Cacheable annotation = (Cacheable) cls.getDeclaredAnnotation(Cacheable.class);
 
         String cacheName;
 
         if (collection) {
-            cacheName = (annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+            cacheName = adaptCacheName((annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, withLinks);
         } else {
-            cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
+            cacheName = adaptCacheName((annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, withLinks);
         }
+
 
         logger.debug("Cache for object class \"{}\" is named \"{}\".", cls.getCanonicalName(), cacheName);
 
         int cacheSize = (annotation != null) ? annotation.cacheSize() : configuration.getDefaultCacheSize();
 
         return getCache(cacheName, cacheSize);
+    }
+
+    private static String adaptCacheName(String cacheName, boolean withLinks) {
+        if (withLinks) {
+            return CACHE_PREFIX_WITH_LINKS + cacheName;
+        }
+
+        return CACHE_PREFIX_WITHOUT_LINKS + cacheName;
     }
 
     /**
@@ -193,12 +207,25 @@ public class CacheManager {
      *                              both of them to zero).
      */
     public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
-        if (caches.containsKey(cacheName)) {
-            caches.get(cacheName).clear();
+
+        List<String> cachesToClear = new LinkedList<>();
+        cachesToClear.add(cacheName);
+
+        if (!cacheName.startsWith(CACHE_PREFIX_WITH_LINKS) && !cacheName.startsWith(CACHE_PREFIX_WITHOUT_LINKS)) {
+            logger.warn("clearCache was called with cache name \"{}\" - please prefix it with CacheManager.CACHE_PREFIX_WITHOUT_LINKS or CacheManager.CACHE_PREFIX_WITH_LINKS. (Primitive values are always stored in the cache prefixed with CacheManager.CACHE_PREFIX_WITHOUT_LINKS.) Going on anyway clearing all matching caches.", cacheName);
+            logger.warn("Going on anyway clearing all matching caches.");
+            cachesToClear.add(CACHE_PREFIX_WITH_LINKS + cacheName);
+            cachesToClear.add(CACHE_PREFIX_WITHOUT_LINKS + cacheName);
         }
-        if (clearStatisticsAsWell) {
-            cacheHits.put(cacheName, 0);
-            cacheMisses.put(cacheName, 0);
+
+        for (String cacheNameToTry : cachesToClear) {
+            if (caches.containsKey(cacheNameToTry)) {
+                caches.get(cacheNameToTry).clear();
+            }
+            if (clearStatisticsAsWell) {
+                cacheHits.put(cacheNameToTry, 0);
+                cacheMisses.put(cacheNameToTry, 0);
+            }
         }
     }
 
