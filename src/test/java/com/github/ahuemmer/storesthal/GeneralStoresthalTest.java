@@ -1199,8 +1199,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/collObjects/759034", CacheableChildObject.class);
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
-            assertEquals(2, CacheManager.getCacheHits().get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + "test"));
-            assertEquals(1, CacheManager.getCacheHits().get(CacheManager.CACHE_PREFIX_WITHOUT_LINKS + "test-collection"));
+            assertEquals(2, CacheManager.getCacheHits(false).get("test"));
+            assertEquals(1, CacheManager.getCacheHits(false).get("test-collection"));
         }
 
 
@@ -1218,8 +1218,6 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
             ArrayList<EntityModel<CacheableChildObject>> children = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class);
-
-            // TODO: Warum schlägt das Nachfolgende fehl?
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
@@ -1247,8 +1245,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             Storesthal.getObject("http://localhost:" + serverMock.port() + "/collObjects/759034", CacheableChildObject.class);
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
-            assertEquals(2, CacheManager.getCacheHits().get(CacheManager.CACHE_PREFIX_WITH_LINKS + "test"));
-            assertEquals(1, CacheManager.getCacheHits().get(CacheManager.CACHE_PREFIX_WITH_LINKS + "test-collection"));
+            assertEquals(2, CacheManager.getCacheHits(true).get("test"));
+            assertEquals(1, CacheManager.getCacheHits(true).get("test-collection"));
         }
 
         /**

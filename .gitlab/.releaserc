@@ -1,0 +1,28 @@
+{
+     "branches": [
+       {name: "main"},
+       {name: "develop", prerelease: true},
+     ],
+     "debug": "true",
+     "plugins": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        [
+            "@semantic-release/exec",
+            {
+                "prepareCmd": "./prepare_release.sh ${nextRelease.version}"
+            }
+        ],
+        "@semantic-release/git",
+        [
+            "@semantic-release/gitlab",
+            {
+                "assets": [
+                    {
+                        "path": "build/libs/**"
+                    }
+                ]
+            }
+        ]
+    ]
+}

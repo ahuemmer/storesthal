@@ -8,3 +8,4 @@ include:
       changelog-enabled: true
       auto-release-enabled: true
       info-on: "prod"
+      config-dir: ".gitlab"
