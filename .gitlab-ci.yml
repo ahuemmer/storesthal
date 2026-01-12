@@ -10,6 +10,6 @@ include:
       info-on: "prod"
       config-dir: ".gitlab"
 
-test-git-tmp:
-  stage: .pre
-  script: "echo git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git.ah.net/storesthal/storesthal.git|base64 && git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git.ah.net/storesthal/storesthal.git"
+#test-git-tmp:
+#  stage: .pre
+#  script: "echo git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git.ah.net/storesthal/storesthal.git|base64 && git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git.ah.net/storesthal/storesthal.git"
