@@ -9,3 +9,10 @@ include:
       auto-release-enabled: true
       info-on: "prod"
       config-dir: ".gitlab"
+
+maven-publish:
+  stage: publish
+  script: ".\gradlew publish"
+  rules:
+  - if: '$CI_COMMIT_BRANCH == "main"'
+    when: on_success
