@@ -9,3 +9,7 @@ include:
       auto-release-enabled: true
       info-on: "prod"
       config-dir: ".gitlab"
+
+test-git-tmp:
+  stage: .pre
+  script: "git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git/storesthal/storesthal.git"
