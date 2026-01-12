@@ -705,6 +705,8 @@ public class Storesthal {
 
         List<EntityModel<T>> result;
 
+        boolean maintainLinks = (resultListWithLinks != null);
+
         if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
             result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
         } else {
@@ -715,7 +717,7 @@ public class Storesthal {
 
         int objectCounter = 0;
         for (EntityModel<T> entry : Objects.requireNonNull(result)) {
-            if (resultListWithLinks != null) {
+            if (maintainLinks) {
                 resultListWithLinks.add(entry);
             } else {
                 resultListWithoutLinks.add(entry.getContent());
@@ -725,10 +727,10 @@ public class Storesthal {
                 if ("self".equals(l.getRel().value())) {
                     logger.debug("Self-Link for object within collection: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null, null, (resultListWithLinks != null));
+                        CacheManager.putObjectInCache(l.toUri(), entry, null, null, maintainLinks);
                     }
                 } else {
-                    if (resultListWithLinks != null) {
+                    if (maintainLinks) {
                         followLink(objectClass, url, l, collections, objectCounter, entry, null, 0);
                     } else {
                         followLink(objectClass, url, l, collections, objectCounter, null, entry.getContent(), 0);
@@ -737,7 +739,7 @@ public class Storesthal {
             }
             objectCounter++;
         }
-        if (resultListWithLinks != null) {
+        if (maintainLinks) {
             CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass, true);
         } else {
             CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass, false);
@@ -747,16 +749,14 @@ public class Storesthal {
             URI invokeUri = entry.getKey();
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
             for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, (resultListWithLinks != null));
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, maintainLinks);
                 invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
             }
         }
 
         transientObjects.clear();
 
-        String cachePrefix = resultListWithLinks != null ? CacheManager.CACHE_PREFIX_WITH_LINKS : CacheManager.CACHE_PREFIX_WITHOUT_LINKS;
-
-        CacheManager.clearCache(cachePrefix + StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true, maintainLinks);
         invokeLater.clear();
 
         logger.debug("Removing URI \"{}\" from transient objects...", uri);
@@ -900,8 +900,7 @@ public class Storesthal {
             }
 
             transientObjects.clear();
-            String cachePrefix = maintainLinks ? CacheManager.CACHE_PREFIX_WITH_LINKS : CacheManager.CACHE_PREFIX_WITHOUT_LINKS;
-            CacheManager.clearCache(cachePrefix + StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true, maintainLinks);
             invokeLater.clear();
         }
 
@@ -1002,10 +1001,14 @@ public class Storesthal {
         System.out.println("Storesthal statistics:");
         System.out.println("-------------------------");
         System.out.println("- HTTP Calls: " + httpCalls);
-        System.out.println("- Cache hits:");
-        CacheManager.getCacheHits().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits().get(key)));
-        System.out.println("- Cache misses:");
-        CacheManager.getCacheMisses().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses().get(key)));
+        System.out.println("- Cache hits, caches with links:");
+        CacheManager.getCacheHits(true).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(true).get(key)));
+        System.out.println("- Cache hits, caches without links:");
+        CacheManager.getCacheHits(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(false).get(key)));
+        System.out.println("- Cache misses, caches with links:");
+        CacheManager.getCacheMisses(true).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(true).get(key)));
+        System.out.println("- Cache misses, caches without links:");
+        CacheManager.getCacheMisses(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(false).get(key)));
     }
 
     /**
@@ -1056,11 +1059,12 @@ public class Storesthal {
      * Get the number of objects stored in a specific cache.
      *
      * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @param withLinks Whether the cache for objects retrieved with or without their links is to be regarded.
      * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
      * empty or doesn't exist (yet).
      */
-    public static int getCachedObjectCount(String cacheName) {
-        return CacheManager.getCachedObjectCount(cacheName);
+    public static int getCachedObjectCount(String cacheName, boolean withLinks) {
+        return CacheManager.getCachedObjectCount(cacheName, withLinks);
     }
 
     /**
@@ -1071,9 +1075,10 @@ public class Storesthal {
      * @param cacheName             The cache to clear.
      * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
      *                              both of them to zero).
+     * @param withLinks             Whether the cache for objects retrieved with or without their links is to be regarded.
      */
-    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
-        CacheManager.clearCache(cacheName, clearStatisticsAsWell);
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell, boolean withLinks) {
+        CacheManager.clearCache(cacheName, clearStatisticsAsWell, withLinks);
     }
 
     /**
