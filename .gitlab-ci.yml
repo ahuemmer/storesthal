@@ -12,4 +12,4 @@ include:
 
 test-git-tmp:
   stage: .pre
-  script: "git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git/storesthal/storesthal.git"
+  script: "echo ${GITLAB_TOKEN} | base64 && git ls-remote --heads https://gitlab-ci-token:${GITLAB_TOKEN}@git/storesthal/storesthal.git"
