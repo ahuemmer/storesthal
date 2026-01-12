@@ -17,42 +17,97 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 public class CacheManager {
 
-    public static final String CACHE_PREFIX_WITH_LINKS = "withLinks:";
-    public static final String CACHE_PREFIX_WITHOUT_LINKS = "withoutLinks:";
+    /**
+     * The key for the cache hits for the number of cache hits for objects retrieved with their links in the statistics map.
+     */
+    public static final String STATISTICS_ENTRY_CACHE_HITS_WITH_LINKS = "cacheHitsWithLinks";
+    /**
+     * The key for the cache hits for the number of cache hits for objects retrieved without their links in the statistics map.
+     */
+    public static final String STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS = "cacheHitsWithoutLinks";
+    /**
+     * The key for the cache hits for the number of cache misses for objects retrieved with their links in the statistics map.
+     */
+    public static final String STATISTICS_ENTRY_CACHE_MISSES_WITH_LINKS = "cacheMissesWithLinks";
+    /**
+     * The key for the cache hits for the number of cache misses for objects retrieved without their links in the statistics map.
+     */
+    public static final String STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS = "cacheMissesWithoutLinks";
 
     /**
-     * A map containing the number of cache misses by cache (name) for statistics creation.
+     * A map containing the number of cache for caches containing objects retrieved with their links misses by cache (name) for statistics creation.
      * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
      * {@link #getStatistics()}.
      */
-    private static final Map<String, Integer> cacheMisses = new HashMap<>();
+    private static final Map<String, Integer> cacheMissesWithLinks = new HashMap<>();
+
     /**
-     * A map containing the number of cache hits by cache (name) for statistics creation.
+     * A map containing the number of cache for caches containing objects retrieved without their links misses by cache (name) for statistics creation.
      * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
      * {@link #getStatistics()}.
      */
-    private static final Map<String, Integer> cacheHits = new HashMap<>();
+    private static final Map<String, Integer> cacheMissesWithoutLinks = new HashMap<>();
+
+    /**
+     * A map containing the number of cache hits by cache (name) for statistics creation. Only cache his for objects retrieved with their links are considered here.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()}.
+     */
+    private static final Map<String, Integer> cacheHitsWithLinks = new HashMap<>();
+
+    /**
+     * A map containing the number of cache hits by cache (name) for statistics creation. Only cache his for objects retrieved without their links are considered here.
+     * Can be re-zeroed by {@link #resetStatistics()} or {@link #clearAllCaches(boolean)} and retrieved by
+     * {@link #getStatistics()}.
+     */
+    private static final Map<String, Integer> cacheHitsWithoutLinks = new HashMap<>();
+
     /**
      * The logger.
      */
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
-    private static CacheManager instance;
-    private static StoresthalConfiguration configuration;
+
     /**
-     * All configured object caches are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
+     * The only (singleton) instance of this class, accessible via {@link #getInstance(com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration)}
+     */
+    private static CacheManager instance;
+
+    /**
+     * The {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} this CacheManager was instantiated with.
+     */
+    private static StoresthalConfiguration configuration;
+
+    /**
+     * All configured object caches for objects retrieved with their links are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
      * and {@link Cacheable#cacheName()}).
      */
-    private static Map<String, LRUCache<URI, Object>> caches;
+    private static Map<String, LRUCache<URI, Object>> cachesWithLinks;
 
+    /**
+     * All configured object caches for objects retrieved without their links are stored in this map, the key is the cache name (see {@link LRUCache#getCacheName()}
+     * and {@link Cacheable#cacheName()}).
+     */
+    private static Map<String, LRUCache<URI, Object>> cachesWithoutLinks;
+
+    /**
+     * Private constructor in order to allow singleton pattern.
+     */
     private CacheManager() {
     }
 
+    /**
+     * Get the only instance (singleton) of the CacheManager, initialized with the given configuration.
+     *
+     * @param configuration The configuration applying to the CacheManager singleton instance.
+     * @return The CacheManager singleton instance.
+     */
     @SuppressWarnings("InstantiationOfUtilityClass")
     public static CacheManager getInstance(StoresthalConfiguration configuration) {
         if (instance == null) {
             instance = new CacheManager();
             CacheManager.configuration = configuration;
-            caches = new HashMap<>();
+            cachesWithLinks = new HashMap<>();
+            cachesWithoutLinks = new HashMap<>();
             clearAllCaches(true);
         }
         return instance;
@@ -66,6 +121,8 @@ public class CacheManager {
      * @param objectClass The class of the object
      * @param cacheName   The name of the cache to get the object from. Use NULL here for automatic cache name detection
      *                    (default).
+     * @param collection  Whether the cache for a collection of objects is to be searched.
+     * @param withLinks   Whether the cache for objects (/collections) retrieved with or without their links is to be searched.
      * @param <T>         The class of the object to retrieve.
      * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
      */
@@ -78,7 +135,7 @@ public class CacheManager {
         if (cacheName == null) {
             cache = getCache(objectClass, collection, withLinks);
         } else {
-            cache = getCache(cacheName, null);
+            cache = getCache(cacheName, null, withLinks);
         }
 
         if (configuration.isCachingDisabled() && !(cache.getCacheName().equals(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME))) {
@@ -87,6 +144,9 @@ public class CacheManager {
         }
 
         T result = (T) cache.get(uri);
+
+        Map<String, Integer> cacheHits = withLinks ? cacheHitsWithLinks : cacheHitsWithoutLinks;
+        Map<String, Integer> cacheMisses = withLinks ? cacheMissesWithLinks : cacheMissesWithoutLinks;
 
         if (result != null) {
             cacheHits.putIfAbsent(cache.getCacheName(), 0);
@@ -103,10 +163,12 @@ public class CacheManager {
     /**
      * Find the cache an object belongs into and put it there.
      *
-     * @param uri       The uri of the object
-     * @param object    The object to be cached
-     * @param cacheName The name of the cache to put the object in. Use NULL here for automatic cache name detection
-     *                  (default).
+     * @param uri                 The uri of the object
+     * @param object              The object to be cached
+     * @param cacheName           The name of the cache to put the object in. Use NULL here for automatic cache name detection
+     *                            (default).
+     * @param collectionItemClass If a collection is queried, the type of the actual collection item.
+     * @param withLinks           Whether the cache for objects (/collections) retrieved with or without their links is to be used.
      */
     public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass, boolean withLinks) {
 
@@ -116,7 +178,7 @@ public class CacheManager {
             if (cacheName == null) {
                 cache = getCache(collectionItemClass, true, withLinks);
             } else {
-                cache = getCache(cacheName, null);
+                cache = getCache(cacheName, null, withLinks);
             }
         } else {
             if (cacheName == null) {
@@ -129,7 +191,7 @@ public class CacheManager {
                 }
                 cache = getCache(realObjectClass, false, withLinks);
             } else {
-                cache = getCache(cacheName, null);
+                cache = getCache(cacheName, null, withLinks);
             }
         }
 
@@ -148,7 +210,9 @@ public class CacheManager {
     /**
      * Get the cache for a specific object class.
      *
-     * @param cls The object class
+     * @param cls        The object class
+     * @param collection Whether the cache for a collection of objects is to be searched.
+     * @param withLinks  Whether the cache for objects (/collections) retrieved with or without their links is to be searched.
      * @return The {@link LRUCache} for this object class. If there was no such cache yet, it will be created.
      */
     private static LRUCache<URI, Object> getCache(Class cls, boolean collection, boolean withLinks) {
@@ -158,34 +222,27 @@ public class CacheManager {
         String cacheName;
 
         if (collection) {
-            cacheName = adaptCacheName((annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, withLinks);
+            cacheName = (annotation != null) ? annotation.collectionCacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
         } else {
-            cacheName = adaptCacheName((annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, withLinks);
+            cacheName = (annotation != null) ? annotation.cacheName() : StoresthalConfiguration.INTERMEDIATE_CACHE_NAME;
         }
-
 
         logger.debug("Cache for object class \"{}\" is named \"{}\".", cls.getCanonicalName(), cacheName);
 
         int cacheSize = (annotation != null) ? annotation.cacheSize() : configuration.getDefaultCacheSize();
 
-        return getCache(cacheName, cacheSize);
-    }
-
-    private static String adaptCacheName(String cacheName, boolean withLinks) {
-        if (withLinks) {
-            return CACHE_PREFIX_WITH_LINKS + cacheName;
-        }
-
-        return CACHE_PREFIX_WITHOUT_LINKS + cacheName;
+        return getCache(cacheName, cacheSize, withLinks);
     }
 
     /**
      * Get the cache with the specified name.
      *
      * @param cacheName The name of the cache
+     * @param cacheSize The size of the cache to be created, if a cache with the given name does not exist yet. If NULL, {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration#getDefaultCacheSize()} will be used.
+     * @param withLinks Whether a cache for objects retrieved with or without their links is to be used.
      * @return The {@link LRUCache} having the given name. If there was no such cache yet, it will be created.
      */
-    private static LRUCache<URI, Object> getCache(String cacheName, Integer cacheSize) {
+    private static LRUCache<URI, Object> getCache(String cacheName, Integer cacheSize, boolean withLinks) {
 
         int newCacheSize = Storesthal.getConfiguration().getDefaultCacheSize();
 
@@ -193,8 +250,12 @@ public class CacheManager {
             newCacheSize = cacheSize;
         }
 
-        caches.putIfAbsent(cacheName, new LRUCache<>(cacheName, newCacheSize));
-        return caches.get(cacheName);
+        if (withLinks) {
+            cachesWithLinks.putIfAbsent(cacheName, new LRUCache<>(cacheName, newCacheSize));
+            return cachesWithLinks.get(cacheName);
+        }
+        cachesWithoutLinks.putIfAbsent(cacheName, new LRUCache<>(cacheName, newCacheSize));
+        return cachesWithoutLinks.get(cacheName);
     }
 
     /**
@@ -205,26 +266,31 @@ public class CacheManager {
      * @param cacheName             The cache to clear.
      * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
      *                              both of them to zero).
+     * @param withLinks             Whether the cache for objects retrieved with or without their links is to be regarded.
      */
-    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell, Boolean withLinks) {
 
-        List<String> cachesToClear = new LinkedList<>();
-        cachesToClear.add(cacheName);
+        List<Map<String, LRUCache<URI, Object>>> cachesToClear = new LinkedList<>();
 
-        if (!cacheName.startsWith(CACHE_PREFIX_WITH_LINKS) && !cacheName.startsWith(CACHE_PREFIX_WITHOUT_LINKS)) {
-            logger.warn("clearCache was called with cache name \"{}\" - please prefix it with CacheManager.CACHE_PREFIX_WITHOUT_LINKS or CacheManager.CACHE_PREFIX_WITH_LINKS. (Primitive values are always stored in the cache prefixed with CacheManager.CACHE_PREFIX_WITHOUT_LINKS.) Going on anyway clearing all matching caches.", cacheName);
+        if (withLinks == null) {
+            logger.warn("clearCache was with the \"withLinks\" parameter set NULL. Please supply a valid boolean parameter indicating wheter the cache for objects with out without links is to be cleared. (Primitive values are always stored in the cache prefixed with CacheManager.CACHE_PREFIX_WITHOUT_LINKS.) Going on anyway clearing all matching caches.", cacheName);
             logger.warn("Going on anyway clearing all matching caches.");
-            cachesToClear.add(CACHE_PREFIX_WITH_LINKS + cacheName);
-            cachesToClear.add(CACHE_PREFIX_WITHOUT_LINKS + cacheName);
+            cachesToClear.add(cachesWithLinks);
+            cachesToClear.add(cachesWithoutLinks);
+        } else {
+            cachesToClear.add(withLinks ? cachesWithLinks : cachesWithoutLinks);
         }
 
-        for (String cacheNameToTry : cachesToClear) {
-            if (caches.containsKey(cacheNameToTry)) {
-                caches.get(cacheNameToTry).clear();
+        Map<String, Integer> cacheHits = withLinks ? cacheHitsWithLinks : cacheHitsWithoutLinks;
+        Map<String, Integer> cacheMisses = withLinks ? cacheMissesWithLinks : cacheMissesWithoutLinks;
+
+        for (Map<String, LRUCache<URI, Object>> cacheToClear : cachesToClear) {
+            if (cacheToClear.containsKey(cacheName)) {
+                cacheToClear.get(cacheName).clear();
             }
             if (clearStatisticsAsWell) {
-                cacheHits.put(cacheNameToTry, 0);
-                cacheMisses.put(cacheNameToTry, 0);
+                cacheHits.put(cacheName, 0);
+                cacheMisses.put(cacheName, 0);
             }
         }
     }
@@ -233,14 +299,18 @@ public class CacheManager {
      * Get the number of objects stored in a specific cache.
      *
      * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @param withLinks Whether the cache for objects retrieved with or without their links is to be regarded.
      * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
      * empty or doesn't exist (yet).
      */
-    public static int getCachedObjectCount(String cacheName) {
-        if (caches.get(cacheName) == null) {
+    public static int getCachedObjectCount(String cacheName, boolean withLinks) {
+
+        LRUCache<URI, Object> cache = withLinks ? cachesWithLinks.get(cacheName) : cachesWithoutLinks.get(cacheName);
+
+        if (cache == null) {
             return 0;
         }
-        return caches.get(cacheName).size();
+        return cache.size();
     }
 
     /**
@@ -250,8 +320,11 @@ public class CacheManager {
      *                              all of them to zero).
      */
     public static void clearAllCaches(boolean clearStatisticsAsWell) {
-        for (String key : caches.keySet()) {
-            clearCache(key, clearStatisticsAsWell);
+        for (String key : cachesWithLinks.keySet()) {
+            clearCache(key, clearStatisticsAsWell, true);
+        }
+        for (String key : cachesWithoutLinks.keySet()) {
+            clearCache(key, clearStatisticsAsWell, false);
         }
     }
 
@@ -264,23 +337,36 @@ public class CacheManager {
      * @return The cache statistics map
      */
     public static Map<String, Object> getStatistics() {
-        return Map.of("cacheHits", cacheHits, "cacheMisses", cacheMisses);
+        return Map.of(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITH_LINKS, cacheHitsWithLinks, STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS, cacheHitsWithoutLinks, STATISTICS_ENTRY_CACHE_MISSES_WITH_LINKS, cacheMissesWithLinks, STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS, cacheMissesWithoutLinks);
     }
 
     /**
      * Reset all statistics about HTTP calls, cache hits and cache misses.
      */
     public static void resetStatistics() {
-        cacheHits.clear();
-        cacheMisses.clear();
+        cacheHitsWithLinks.clear();
+        cacheHitsWithoutLinks.clear();
+        cacheMissesWithLinks.clear();
+        cacheMissesWithoutLinks.clear();
     }
 
-    public static Map<String, Integer> getCacheHits() {
-        return cacheHits;
+    /**
+     * Returns a map containing the number of hits in all caches for objects retrieved with or without their links.
+     *
+     * @param withLinks Whether the caches for objects retrieved with or without their links are to be regarded.
+     * @return A map containing the number of hits in all caches for objects retrieved with or without their links.
+     */
+    public static Map<String, Integer> getCacheHits(boolean withLinks) {
+        return withLinks ? cacheHitsWithLinks : cacheHitsWithoutLinks;
     }
 
-
-    public static Map<String, Integer> getCacheMisses() {
-        return cacheMisses;
+    /**
+     * Returns a map containing the number of misses in all caches for objects retrieved with or without their links.
+     *
+     * @param withLinks Whether the caches for objects retrieved with or without their links are to be regarded.
+     * @return A map containing the number of misses in all caches for objects retrieved with or without their links.
+     */
+    public static Map<String, Integer> getCacheMisses(boolean withLinks) {
+        return withLinks ? cacheMissesWithLinks : cacheMissesWithoutLinks;
     }
 }
