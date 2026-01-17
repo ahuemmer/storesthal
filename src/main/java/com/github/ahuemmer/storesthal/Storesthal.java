@@ -1057,6 +1057,21 @@ public class Storesthal {
 
     /**
      * Get the number of objects stored in a specific cache.
+     * <p>
+     * This method will return the cached object count for objects retrieved with their links only as object retrieval
+     * with links (not using the "...withoutLinks" methods) is the default. To be able to count objects also in
+     * "without links" caches, please use {@link #getCachedObjectCount(String, boolean)} (String, boolean, boolean)}.
+     *
+     * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
+     * empty or doesn't exist (yet).
+     */
+    public static int getCachedObjectCount(String cacheName) {
+        return CacheManager.getCachedObjectCount(cacheName, true);
+    }
+
+    /**
+     * Get the number of objects stored in a specific cache.
      *
      * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
      * @param withLinks Whether the cache for objects retrieved with or without their links is to be regarded.
@@ -1065,6 +1080,23 @@ public class Storesthal {
      */
     public static int getCachedObjectCount(String cacheName, boolean withLinks) {
         return CacheManager.getCachedObjectCount(cacheName, withLinks);
+    }
+
+    /**
+     * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
+     * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
+     * a matching call to {@link Storesthal#getObjectWithoutLinks(String, Class)} occurs).
+     * <p>
+     * This method will clear the cache for objects retrieved with their links only as object retrieval with links
+     * (not using the "...withoutLinks" methods) is the default. To be able to clear also the caches for objects
+     * retrieved without links, please use {@link #clearCache(String, boolean, boolean)}.
+     *
+     * @param cacheName             The cache to clear.
+     * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
+     *                              both of them to zero).
+     */
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
+        CacheManager.clearCache(cacheName, clearStatisticsAsWell, true);
     }
 
     /**
