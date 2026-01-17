@@ -121,3 +121,4 @@ springBoot {
 }
 
 tasks.publish.dependsOn checkTocs
+tasks.generateMetadataFileForMavenJavaPublication.dependsOn bootJar
