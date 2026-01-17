@@ -7,7 +7,7 @@ import com.github.ahuemmer.storesthal.HALRelation;
  * Factory for {@link StoresthalConfiguration}s. These are not to be modified after creation, therefore this factory
  * will initialize an instance once and return in then. (See description at {@link StoresthalConfiguration}).
  */
-public class StoreresthalConfigurationFactory {
+public class StoresthalConfigurationFactory {
 
     public static final StoresthalConfiguration DEFAULT_CONFIGURATION = getDefaultConfiguration();
     /**
@@ -55,7 +55,7 @@ public class StoreresthalConfigurationFactory {
      * @param defaultCacheSize The default cache size (default: 1000)
      * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public StoreresthalConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
+    public StoresthalConfigurationFactory setDefaultCacheSize(int defaultCacheSize) {
         this.defaultCacheSize = defaultCacheSize;
         return this;
     }
@@ -79,7 +79,7 @@ public class StoreresthalConfigurationFactory {
      * @param disableCaching Whether to completely disable caching or not (default: false)     *
      * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public StoreresthalConfigurationFactory setDisableCaching(boolean disableCaching) {
+    public StoresthalConfigurationFactory setDisableCaching(boolean disableCaching) {
         this.disableCaching = disableCaching;
         return this;
     }
@@ -100,7 +100,7 @@ public class StoreresthalConfigurationFactory {
      * @param annotationless Whether to work annotationless or not
      * @return This StoresthalConfiguration factory (fluent interface)
      */
-    public StoreresthalConfigurationFactory setAnnotationless(boolean annotationless) {
+    public StoresthalConfigurationFactory setAnnotationless(boolean annotationless) {
         this.annotationless = annotationless;
         return this;
     }

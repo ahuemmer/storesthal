@@ -1199,8 +1199,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             Storesthal.getObjectWithoutLinks("http://localhost:" + serverMock.port() + "/collObjects/759034", CacheableChildObject.class);
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
-            assertEquals(2, CacheManager.getCacheHits().get("test"));
-            assertEquals(1, CacheManager.getCacheHits().get("test-collection"));
+            assertEquals(2, CacheManager.getCacheHits(false).get("test"));
+            assertEquals(1, CacheManager.getCacheHits(false).get("test-collection"));
         }
 
 
@@ -1218,8 +1218,6 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
             ArrayList<EntityModel<CacheableChildObject>> children = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class);
-
-            // TODO: Warum schlägt das Nachfolgende fehl?
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
 
@@ -1283,6 +1281,36 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertEquals("http://localhost:" + serverMock.port() + "/collObjects/673896873", children.get(3).getLink("self").get().getHref());
         }
 
+        @Test
+        @DisplayName("getting a collection without links does not intefere with getting it with links")
+        void getting_a_collection_without_links_does_not_interfere_with_getting_it_with_links() throws IOException, StoresthalException {
+            configureServerMockWithResponseFile("/collection/coll", "collection.json");
+            serverMock.start();
+
+            ArrayList<CacheableChildObject> childrenWithoutLinks = Storesthal.getCollectionWithoutLinks("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class);
+
+            ArrayList<EntityModel<CacheableChildObject>> childrenWithLinks = Storesthal.getCollection("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class);
+
+            assertEquals(4, childrenWithLinks.size());
+            assertEquals(759034, childrenWithLinks.get(2).getContent().getChildId());
+            assertEquals("collObject673896873", childrenWithLinks.get(3).getContent().getChildName());
+
+            assertTrue(childrenWithLinks.get(0).hasLink("self"));
+            assertTrue(childrenWithLinks.get(0).getLink("self").isPresent());
+            assertEquals("http://localhost:" + serverMock.port() + "/collObjects/1", childrenWithLinks.get(0).getLink("self").get().getHref());
+
+            assertTrue(childrenWithLinks.get(1).hasLink("self"));
+            assertTrue(childrenWithLinks.get(1).getLink("self").isPresent());
+            assertEquals("http://localhost:" + serverMock.port() + "/collObjects/2", childrenWithLinks.get(1).getLink("self").get().getHref());
+
+            assertTrue(childrenWithLinks.get(2).hasLink("self"));
+            assertTrue(childrenWithLinks.get(2).getLink("self").isPresent());
+            assertEquals("http://localhost:" + serverMock.port() + "/collObjects/759034", childrenWithLinks.get(2).getLink("self").get().getHref());
+
+            assertTrue(childrenWithLinks.get(3).hasLink("self"));
+            assertTrue(childrenWithLinks.get(3).getLink("self").isPresent());
+            assertEquals("http://localhost:" + serverMock.port() + "/collObjects/673896873", childrenWithLinks.get(3).getLink("self").get().getHref());
+        }
 
     }
 

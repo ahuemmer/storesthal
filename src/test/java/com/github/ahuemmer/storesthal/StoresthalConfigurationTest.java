@@ -1,14 +1,14 @@
 package com.github.ahuemmer.storesthal;
 
-import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
+import com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test suite for the {@link StoresthalConfiguration} and {@link StoreresthalConfigurationFactory}.
+ * Test suite for the {@link StoresthalConfiguration} and {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory}.
  */
 public class StoresthalConfigurationTest {
 
@@ -17,7 +17,7 @@ public class StoresthalConfigurationTest {
      */
     @Test
     public void canCreateDefaultConfiguration() {
-        StoresthalConfiguration conf = StoreresthalConfigurationFactory.getDefaultConfiguration();
+        StoresthalConfiguration conf = StoresthalConfigurationFactory.getDefaultConfiguration();
         assertEquals(StoresthalConfiguration.DEFAULT_DEFAULT_CACHE_SIZE, conf.getDefaultCacheSize());
         assertEquals(StoresthalConfiguration.DEFAULT_ANNOTATIONLESS, conf.isAnnotationless());
         assertEquals(StoresthalConfiguration.DEFAULT_CACHING_DISABLED, conf.isCachingDisabled());
@@ -29,7 +29,7 @@ public class StoresthalConfigurationTest {
      */
     @Test
     public void canCreateCustomConfiguration() {
-        StoreresthalConfigurationFactory factory = new StoreresthalConfigurationFactory();
+        StoresthalConfigurationFactory factory = new StoresthalConfigurationFactory();
 
         StoresthalConfiguration conf = factory
                 .setAnnotationless(true)

@@ -1,8 +1,8 @@
 package com.github.ahuemmer.storesthal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
+import com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.helpers.CacheManager;
 import com.github.ahuemmer.storesthal.helpers.EmbeddedCollectionHelper;
 import com.github.ahuemmer.storesthal.helpers.PrimitiveValueRetriever;
@@ -116,7 +116,7 @@ public class Storesthal {
      * Depending on the state of {@link #initialized}, init the object store with the default configuration.
      */
     static {
-        init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
+        init(StoresthalConfigurationFactory.DEFAULT_CONFIGURATION);
     }
 
     /**
@@ -705,6 +705,8 @@ public class Storesthal {
 
         List<EntityModel<T>> result;
 
+        boolean maintainLinks = (resultListWithLinks != null);
+
         if (embeddedCollectionName != null) { // This is intended - NULL would mean "collection is not embedded" here.
             result = EmbeddedCollectionHelper.getObjects(response, objectClass, embeddedCollectionName);
         } else {
@@ -715,7 +717,7 @@ public class Storesthal {
 
         int objectCounter = 0;
         for (EntityModel<T> entry : Objects.requireNonNull(result)) {
-            if (resultListWithLinks != null) {
+            if (maintainLinks) {
                 resultListWithLinks.add(entry);
             } else {
                 resultListWithoutLinks.add(entry.getContent());
@@ -725,10 +727,10 @@ public class Storesthal {
                 if ("self".equals(l.getRel().value())) {
                     logger.debug("Self-Link for object within collection: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null, null);
+                        CacheManager.putObjectInCache(l.toUri(), entry, null, null, maintainLinks);
                     }
                 } else {
-                    if (resultListWithLinks != null) {
+                    if (maintainLinks) {
                         followLink(objectClass, url, l, collections, objectCounter, entry, null, 0);
                     } else {
                         followLink(objectClass, url, l, collections, objectCounter, null, entry.getContent(), 0);
@@ -737,25 +739,24 @@ public class Storesthal {
             }
             objectCounter++;
         }
-        if (resultListWithLinks != null) {
+        if (maintainLinks) {
             CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass);
         } else {
-            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass);
+            CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass, false);
         }
 
         for (Map.Entry<URI, List<AbstractMap.SimpleEntry<Object, Method>>> entry : invokeLater.entrySet()) {
             URI invokeUri = entry.getKey();
             List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
             for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
+                Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, maintainLinks);
                 invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
             }
         }
 
         transientObjects.clear();
 
-        // TODO: Der Intermediate Cache wird bei jeder Collection verwendet und danach geleert, ergo wird nie richtig gecached.
-        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+        CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true, maintainLinks);
         invokeLater.clear();
 
         logger.debug("Removing URI \"{}\" from transient objects...", uri);
@@ -785,7 +786,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
+        ArrayList<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -862,9 +863,9 @@ public class Storesthal {
                 logger.debug("Self-Link for object: {}", l.toUri());
                 if (!(l.getRel().value().isBlank())) {
                     if (maintainLinks) {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null, null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()), null, null, maintainLinks);
                     } else {
-                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null, null);
+                        CacheManager.putObjectInCache(l.toUri(), Objects.requireNonNull(response.getBody()).getContent(), null, null, maintainLinks);
                     }
                 }
             } else {
@@ -876,9 +877,9 @@ public class Storesthal {
             }
         }
         if (maintainLinks) {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null, null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()), null, null, maintainLinks);
         } else {
-            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null, null);
+            CacheManager.putObjectInCache(uri, Objects.requireNonNull(response.getBody()).getContent(), null, null, maintainLinks);
         }
 
         /*
@@ -893,13 +894,13 @@ public class Storesthal {
                 URI invokeUri = entry.getKey();
                 List<AbstractMap.SimpleEntry<Object, Method>> invocationList = invokeLater.get(invokeUri);
                 for (AbstractMap.SimpleEntry<Object, Method> objectAndMethod : invocationList) {
-                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false);
+                    Object cachedObject = CacheManager.getObjectFromCache(invokeUri, objectClass, null, false, maintainLinks);
                     invokeSetter(objectAndMethod.getValue(), objectAndMethod.getKey(), cachedObject);
                 }
             }
 
             transientObjects.clear();
-            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true);
+            CacheManager.clearCache(StoresthalConfiguration.INTERMEDIATE_CACHE_NAME, true, maintainLinks);
             invokeLater.clear();
         }
 
@@ -924,7 +925,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
+        T resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -944,12 +945,12 @@ public class Storesthal {
      * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
      * goes wrong (e.g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
      * <p>
-     * If not disabled (see {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
+     * If not disabled (see {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
      * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
      * multiple times will only have <i>one</i> representation in memory, so all references will point to the same
      * (not just an equal) object.
      * <p>
-     * The exact behavior can be adjusted by {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} (see also {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory}
+     * The exact behavior can be adjusted by {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} (see also {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory}
      * and {@link #init(com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration)}).
      *
      * @param url         The URL to retrieve the object from. Must be well-formed and absolute!
@@ -1000,10 +1001,14 @@ public class Storesthal {
         System.out.println("Storesthal statistics:");
         System.out.println("-------------------------");
         System.out.println("- HTTP Calls: " + httpCalls);
-        System.out.println("- Cache hits:");
-        CacheManager.getCacheHits().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits().get(key)));
-        System.out.println("- Cache misses:");
-        CacheManager.getCacheMisses().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses().get(key)));
+        System.out.println("- Cache hits, caches with links:");
+        CacheManager.getCacheHits().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(true).get(key)));
+        System.out.println("- Cache hits, caches without links:");
+        CacheManager.getCacheHits(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(false).get(key)));
+        System.out.println("- Cache misses, caches with links:");
+        CacheManager.getCacheMisses().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(true).get(key)));
+        System.out.println("- Cache misses, caches without links:");
+        CacheManager.getCacheMisses(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(false).get(key)));
     }
 
     /**
@@ -1054,11 +1059,12 @@ public class Storesthal {
      * Get the number of objects stored in a specific cache.
      *
      * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @param withLinks Whether the cache for objects retrieved with or without their links is to be regarded.
      * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
      * empty or doesn't exist (yet).
      */
-    public static int getCachedObjectCount(String cacheName) {
-        return CacheManager.getCachedObjectCount(cacheName);
+    public static int getCachedObjectCount(String cacheName, boolean withLinks) {
+        return CacheManager.getCachedObjectCount(cacheName, withLinks);
     }
 
     /**
@@ -1069,9 +1075,10 @@ public class Storesthal {
      * @param cacheName             The cache to clear.
      * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
      *                              both of them to zero).
+     * @param withLinks             Whether the cache for objects retrieved with or without their links is to be regarded.
      */
-    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
-        CacheManager.clearCache(cacheName, clearStatisticsAsWell);
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell, boolean withLinks) {
+        CacheManager.clearCache(cacheName, clearStatisticsAsWell, withLinks);
     }
 
     /**
