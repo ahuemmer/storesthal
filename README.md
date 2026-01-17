@@ -204,7 +204,7 @@ Explaining the usage of Storesthal, we will mainly stick to the example object s
 In order to retrieve an object via Storesthal, you basically just need one call:
 
 ```java
-ParentObject Testparent = Storesthal.getObject("https://mygreatwebservice.com/api/parents/3", ParentObject.class);
+EntityModel<ParentObject> Testparent = Storesthal.getObject("https://mygreatwebservice.com/api/parents/3", ParentObject.class);
 ```
 
 Storesthal will then retrieve and examine the object found at the given URL and traverse the object structure as it
@@ -212,6 +212,35 @@ discovers it and add matching sub-objects to every level of object relations.
 Especially, Storesthal is able to handle back-references and references to (yet) unknown or "incomplete" objects
 correctly!
 Additionally, Storesthal will use an object cache by default, making subsequent calls to the same URL performant.
+
+#### Using `EntityModel`
+
+You might have noticed, that we had to wrap `ParentObject` in an `EntityModel` here. This is necessary, because the
+`EntityModel` as basic object of Spring HATEOAS will automatically be populated with an objects links, which will then
+be re-usable in the future.
+
+It's recommended to do this and also define the `ParentObject` class accordingly:
+
+```java
+import org.springframework.hateoas.EntityModel;
+
+public class ParentObject extends EntityModel<ParentObject> {
+    // ...
+}
+```
+
+This is all you need to do to make your `ParentObject` a full-blown HATEOAS object. The mechanism used here is called
+"self-referential generic type".
+
+#### "Linkless" mode (legacy)
+
+As seen in the last section, using `EntityModel` brings some advantages like the retention of the links associated with
+each object. Anyway, if you do not want or need this, probably saving a little more RAM, you can use
+`getObjectWithoutLinks`. The example will then look just like this:
+
+```java
+ParentObject Testparent = Storesthal.getObjectWithoutLinks("https://mygreatwebservice.com/api/parents/3", ParentObject.class);
+```
 
 ### Collections
 
@@ -252,8 +281,9 @@ Let's say you want to retrieve the content from a JSON body like this:
 ```
 
 You would write something like
-`ArrayList<Character> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class)` and
-get an ArrayList containing the three entries of the JSON array in return.
+`ArrayList<EntityModel<Character>> characters = getCollection("https://mygreatwebservice.com/api/characters", Character.class);`
+and
+get an `ArrayList` containing the three entries of the JSON array in return.
 
 This is due to technical limitations of Java and perhaps also my own knowledge or creativity. :wink:
 Please note that this doesn't apply to any collections on any other level of the object hierarchy. They will be
@@ -321,6 +351,18 @@ Anyway, if you need this functionality, you can always model the class you hand 
 `getCollection` method accordingly to make it work.
 `getCollection` is just a convenience shortcut for you to avoid this extra work. :slightly_smiling_face:.
 
+#### Linkless mode for collections (legacy)
+
+The advantages of wrapping your objects into `EntityModel`s apply to collections as well,
+please see [above](#linkless-mode-legacy). Anyway, there a "linkless" alternative for collection retrieval as well: You
+can use `getCollectionWithoutLinks`.
+
+Example:
+
+```java
+ArrayList<Character> characters = getCollectionWithoutLinks("https://mygreatwebservice.com/api/characters", Character.class);
+```
+
 ### Relations
 
 As stated above, Storesthal will automatically find and "attach" related objects to the one retrieved. For this to work,
@@ -377,6 +419,11 @@ last recently _accessed_ will be evicted from it. This is not necessarily the ob
 you use a cache name, you will also be able to clear the
 whole Cache at once using the `Storesthal.clearCache` function and supplying that cache name. All the other caches won't
 be touched.
+
+The `@Cacheable` annotation has one more attribute: `collectionCacheName`. When working with [collections](#collections)
+as first-level objects, you might want to use another cache than the one for singular objects of the same type. If a
+collection is retrieved not having `collectionCacheName` set (but `@Cacheable`), an internal standard cache will be
+used.
 
 Caching happens based on the URL of the object retrieved. This means, if caching is enabled, only the first request
 for http://my.web.service/api/cagetory/42 will really cause

@@ -8,60 +8,57 @@ import com.github.ahuemmer.storesthal.Storesthal;
  * This class holds the configuration of the runtime behavior of the Storesthal.
  * The configuration itself is not to be changed at runtime (meaning: after calling {@link Storesthal#init(StoresthalConfiguration)}),
  * as this might lead to unexpected results. Therefore all setters are package-private and new configuration instances
- * are to be created using {@link StoreresthalConfigurationFactory}.
+ * are to be created using {@link StoresthalConfigurationFactory}.
  */
 public class StoresthalConfiguration {
-
-    /**
-     * Empty constructor - package private in order to be accessible only by {@link StoreresthalConfigurationFactory}, for the reasons mentioned above.
-     */
-    StoresthalConfiguration(){}
 
     /**
      * The name of the intermediate cache. This cache is only used while traversing the objects / relations found during
      * a single http call.
      */
     public static final String INTERMEDIATE_CACHE_NAME = "com.github.ahuemmer.wsobjectstore.cache.intermediate";
-
     /**
      * The default for the default of the size of an object cache.
      */
-    public static final int DEFAULT_DEFAULT_CACHE_SIZE=1000;
-
+    public static final int DEFAULT_DEFAULT_CACHE_SIZE = 1000;
     /**
      * The default setting (true or false) for annotationless mode.
      */
-    public static final boolean DEFAULT_ANNOTATIONLESS=false;
-
+    public static final boolean DEFAULT_ANNOTATIONLESS = false;
     /**
-     *  Indicates whether caching is disabled by default
+     * Indicates whether caching is disabled by default
      */
-    public static final boolean DEFAULT_CACHING_DISABLED=false;
-
+    public static final boolean DEFAULT_CACHING_DISABLED = false;
     /**
      * The parent object name for embedded HATEOAS objects
      */
-    public static final String EMBEDDED_PARENT_NAME="_embedded";
-
+    public static final String EMBEDDED_PARENT_NAME = "_embedded";
     /**
      * The default size of an object cache, if {@link Cacheable#cacheSize()} is not given.
      */
-    private int defaultCacheSize=DEFAULT_DEFAULT_CACHE_SIZE;
+    private int defaultCacheSize = DEFAULT_DEFAULT_CACHE_SIZE;
 
     /**
      * Controls whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
      */
-    private boolean disableCaching=DEFAULT_CACHING_DISABLED;
+    private boolean disableCaching = DEFAULT_CACHING_DISABLED;
 
     /**
      * Controls whether the object store works without annotations.
      * It'll try to find relation "target" setters by their name only then.
      */
-    private boolean annotationless=DEFAULT_ANNOTATIONLESS;
+    private boolean annotationless = DEFAULT_ANNOTATIONLESS;
+
+    /**
+     * Empty constructor - package private in order to be accessible only by {@link StoresthalConfigurationFactory}, for the reasons mentioned above.
+     */
+    StoresthalConfiguration() {
+    }
 
     /**
      * Get the default size of an object cache.
+     *
      * @return Default cache size
      */
     public int getDefaultCacheSize() {
@@ -71,6 +68,7 @@ public class StoresthalConfiguration {
     /**
      * Sets the default size of an object cache. This applies to every object class that has a {@link Cacheable}
      * annotation, but no explicit {@link Cacheable#cacheSize()} setting.
+     *
      * @param defaultCacheSize The default cache size (default: 1000)
      */
     void setDefaultCacheSize(int defaultCacheSize) {
@@ -80,6 +78,7 @@ public class StoresthalConfiguration {
     /**
      * Return whether caching is disabled.
      * See {@link #setDisableCaching(boolean)} for details.
+     *
      * @return true, if caching is disabled
      */
     public boolean isCachingDisabled() {
@@ -89,8 +88,9 @@ public class StoresthalConfiguration {
     /**
      * Controls whether caching is disabled. @Cacheable annotations will not be considered any more.
      * The only cache that will still exist is the "intermediate cache" of the store, which is necessary to maintain
-     * object structure integrity during one single getObject call. The intermediate cache will not be preserved
-     * between consecutive getObject calls.
+     * object structure integrity during one single getObjectWithoutLinks call. The intermediate cache will not be preserved
+     * between consecutive getObjectWithoutLinks calls.
+     *
      * @param disableCaching Whether to completely disable caching or not (default: false)
      */
     void setDisableCaching(boolean disableCaching) {
@@ -99,6 +99,7 @@ public class StoresthalConfiguration {
 
     /**
      * Return whether annotations (esp. {@link HALRelation}) shall be taken into account when searching for setters.
+     *
      * @return "true", if annotations will not be taken into account
      */
     public boolean isAnnotationless() {
@@ -112,7 +113,5 @@ public class StoresthalConfiguration {
     void setAnnotationless(boolean annotationless) {
         this.annotationless = annotationless;
     }
-
-    public static String jsonProperty="_embedded";
 
 }

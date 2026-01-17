@@ -1,5 +1,6 @@
 package com.github.ahuemmer.storesthal;
 
+import com.github.ahuemmer.storesthal.helpers.CacheManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -62,8 +63,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(5784390, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getInteger("http://localhost:" + serverMock.port() + "/get/an/integer", true);
@@ -72,8 +73,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
     }
 
     @ParameterizedTest
@@ -89,8 +90,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(-543909, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getInteger("http://localhost:" + serverMock.port() + "/get/an/integer", TEST_CACHE_NAME);
@@ -99,18 +100,18 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
-        Storesthal.clearCache(TEST_CACHE_NAME, false);
+        Storesthal.clearCache(TEST_CACHE_NAME, false, false);
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getInteger("http://localhost:" + serverMock.port() + "/get/an/integer", TEST_CACHE_NAME);
             assertEquals(-543909, test);
         }
 
         assertEquals(2, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
 
     }
@@ -158,8 +159,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(-56.1234, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getDouble("http://localhost:" + serverMock.port() + "/get/a/double", true);
@@ -168,8 +169,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
 
     }
@@ -187,8 +188,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(584390584390.0, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getDouble("http://localhost:" + serverMock.port() + "/get/a/double", TEST_CACHE_NAME);
@@ -197,18 +198,18 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
-        Storesthal.clearCache(TEST_CACHE_NAME, false);
+        Storesthal.clearCache(TEST_CACHE_NAME, false, false);
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getDouble("http://localhost:" + serverMock.port() + "/get/a/double", TEST_CACHE_NAME);
             assertEquals(584390584390.0, test);
         }
 
         assertEquals(2, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
 
     }
@@ -245,8 +246,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(true, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getBoolean("http://localhost:" + serverMock.port() + "/get/a/boolean", true);
@@ -255,8 +256,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
 
     }
@@ -274,8 +275,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals(false, test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getBoolean("http://localhost:" + serverMock.port() + "/get/a/boolean", TEST_CACHE_NAME);
@@ -284,18 +285,18 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the integer was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
-        Storesthal.clearCache(TEST_CACHE_NAME, false);
+        Storesthal.clearCache(TEST_CACHE_NAME, false, false);
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getBoolean("http://localhost:" + serverMock.port() + "/get/a/boolean", TEST_CACHE_NAME);
             assertEquals(false, test);
         }
 
         assertEquals(2, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
 
     }
@@ -347,8 +348,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("fjsdlöfsdkeöl", test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getString("http://localhost:" + serverMock.port() + "/get/a/string", true);
@@ -357,8 +358,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the String was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(Storesthal.COMMON_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(Storesthal.COMMON_CACHE_NAME));
 
 
     }
@@ -376,8 +377,8 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
         assertEquals("\"%$§%§$85943!|💥💜🎉€µ'", test);
 
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertNull(((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertNull(((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getString("http://localhost:" + serverMock.port() + "/get/a/string", TEST_CACHE_NAME);
@@ -386,18 +387,18 @@ public class PrimitiveRetrievalTest extends AbstractJsonTemplateBasedTest {
 
         //Still, there should have only one http call occured, as the String was cached already...
         assertEquals(1, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(10, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(1, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
-        Storesthal.clearCache(TEST_CACHE_NAME, false);
+        Storesthal.clearCache(TEST_CACHE_NAME, false, false);
         for (int i = 0; i < 10; i++) {
             test = Storesthal.getString("http://localhost:" + serverMock.port() + "/get/a/string", TEST_CACHE_NAME);
             assertEquals("\"%$§%§$85943!|💥💜🎉€µ'", test);
         }
 
         assertEquals(2, (Integer) Storesthal.getStatistics().get("httpCalls"));
-        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get("cacheHits")).get(TEST_CACHE_NAME));
-        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get("cacheMisses")).get(TEST_CACHE_NAME));
+        assertEquals(19, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_HITS_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
+        assertEquals(2, (Integer) ((Map) Storesthal.getStatistics().get(CacheManager.STATISTICS_ENTRY_CACHE_MISSES_WITHOUT_LINKS)).get(TEST_CACHE_NAME));
 
 
     }
