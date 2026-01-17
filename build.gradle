@@ -23,6 +23,11 @@ if (file('secrets.gradle').exists()) {
     ext.ghActor = "$System.env.GITHUB_ACTOR"
 }
 
+def gitTag = System.getenv('CI_COMMIT_TAG') ?: ''
+if (gitTag) {
+    project.version = gitTag.startsWith('v') ? gitTag.substring(1) : gitTag
+}
+
 sonar {
     properties {
         property "sonar.projectKey", "storesthal_storesthal_2f0e2536-14e8-4df7-a6f9-cad0ce8f11d2"
@@ -109,14 +114,7 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
 
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
+            version = project.version.toString()
         }
     }
 

@@ -116,6 +116,27 @@ public class CacheManager {
     /**
      * Try to retrieve an object from the associated cache (or the common cache, if the {@link com.github.ahuemmer.storesthal.Cacheable} annotation does
      * not state an explicit cache name).
+     * <p>
+     * Only the cache for objects with links is considered here, as retrieval with links is the default. To see cache
+     * hits for objects retrieved without their links, you can use {@link #getObjectFromCache(java.net.URI, Class, String, boolean, boolean)}.
+     *
+     * @param uri         The object's URI
+     * @param objectClass The class of the object
+     * @param cacheName   The name of the cache to get the object from. Use NULL here for automatic cache name detection
+     *                    (default).
+     * @param collection  Whether the cache for a collection of objects is to be searched.
+     * @param <T>         The class of the object to retrieve.
+     * @return The cached object instance or NULL, if the cache didn't contain an object for the given URI.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getObjectFromCache(URI uri, Class objectClass, String cacheName, boolean collection) {
+        return getObjectFromCache(uri, objectClass, cacheName, collection, true);
+
+    }
+
+    /**
+     * Try to retrieve an object from the associated cache (or the common cache, if the {@link com.github.ahuemmer.storesthal.Cacheable} annotation does
+     * not state an explicit cache name).
      *
      * @param uri         The object's URI
      * @param objectClass The class of the object
@@ -158,6 +179,22 @@ public class CacheManager {
             logger.debug("Cache miss for URI {} in cache \"{}\"!", uri, cache.getCacheName());
         }
         return result;
+    }
+
+    /**
+     * Find the cache an object belongs into and put it there.
+     * <p>
+     * Only the cache for objects with links is considered here, as retrieval with links is the default. To see cache
+     * hits for objects retrieved without their links, you can use {@link #putObjectInCache(java.net.URI, Object, String, Class, boolean)}.
+     *
+     * @param uri                 The uri of the object
+     * @param object              The object to be cached
+     * @param cacheName           The name of the cache to put the object in. Use NULL here for automatic cache name detection
+     *                            (default).
+     * @param collectionItemClass If a collection is queried, the type of the actual collection item.
+     */
+    public static <T> void putObjectInCache(URI uri, Object object, String cacheName, Class<T> collectionItemClass) {
+        putObjectInCache(uri, object, cacheName, collectionItemClass, true);
     }
 
     /**
@@ -261,6 +298,19 @@ public class CacheManager {
     /**
      * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
      * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
+     * a matching call to {@link Storesthal#getObject(String, Class)} (String, Class)} occurs).
+     *
+     * @param cacheName             The cache to clear.
+     * @param clearStatisticsAsWell Whether to clear the cache hit and miss statistics of the cache as well (resetting
+     *                              both of them to zero).
+     */
+    public static void clearCache(String cacheName, boolean clearStatisticsAsWell) {
+        clearCache(cacheName, clearStatisticsAsWell);
+    }
+
+    /**
+     * Clear a specific cache using its name (see {@link Cacheable#cacheName()}). Every object stored in the cache
+     * will be removed and a new HTTP call will be needed to retrieve the again (which happens automatically once
      * a matching call to {@link Storesthal#getObjectWithoutLinks(String, Class)} occurs).
      *
      * @param cacheName             The cache to clear.
@@ -293,6 +343,25 @@ public class CacheManager {
                 cacheMisses.put(cacheName, 0);
             }
         }
+    }
+
+    /**
+     * Get the number of objects stored in a specific cache.
+     * Only the cache for objects with links is considered here, as retrieval with links is the default. To see cache
+     * hits for objects retrieved without their links, you can use {@link #getCachedObjectCount(String, boolean)}.
+     *
+     * @param cacheName The name of the cache (see {@link Cacheable#cacheName()}).
+     * @return The number of objects in the cache. Note, that a zero return value can mean that the cache either is
+     * empty or doesn't exist (yet).
+     */
+    public static int getCachedObjectCount(String cacheName) {
+
+        LRUCache<URI, Object> cache = cachesWithLinks.get(cacheName);
+
+        if (cache == null) {
+            return 0;
+        }
+        return cache.size();
     }
 
     /**
@@ -348,6 +417,17 @@ public class CacheManager {
         cacheHitsWithoutLinks.clear();
         cacheMissesWithLinks.clear();
         cacheMissesWithoutLinks.clear();
+    }
+
+    /**
+     * Returns a map containing the number of hits in all caches for objects retrieved with their links.
+     * Only the cache for objects with links is considered here, as retrieval with links is the default. To see cache
+     * hits for objects retrieved without their links, you can use {@link #getCacheHits(boolean)}.
+     *
+     * @return A map containing the number of hits in all caches for objects retrieved with their links.
+     */
+    public static Map<String, Integer> getCacheHits() {
+        return cacheHitsWithLinks;
     }
 
     /**
