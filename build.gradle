@@ -109,8 +109,13 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
 
-            pom.withXml {
-                asNode().children().last() + pomConfig
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
             }
         }
     }
