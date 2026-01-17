@@ -8,7 +8,7 @@ import com.github.ahuemmer.storesthal.Storesthal;
  * This class holds the configuration of the runtime behavior of the Storesthal.
  * The configuration itself is not to be changed at runtime (meaning: after calling {@link Storesthal#init(StoresthalConfiguration)}),
  * as this might lead to unexpected results. Therefore all setters are package-private and new configuration instances
- * are to be created using {@link StoreresthalConfigurationFactory}.
+ * are to be created using {@link StoresthalConfigurationFactory}.
  */
 public class StoresthalConfiguration {
 
@@ -51,7 +51,7 @@ public class StoresthalConfiguration {
     private boolean annotationless = DEFAULT_ANNOTATIONLESS;
 
     /**
-     * Empty constructor - package private in order to be accessible only by {@link StoreresthalConfigurationFactory}, for the reasons mentioned above.
+     * Empty constructor - package private in order to be accessible only by {@link StoresthalConfigurationFactory}, for the reasons mentioned above.
      */
     StoresthalConfiguration() {
     }

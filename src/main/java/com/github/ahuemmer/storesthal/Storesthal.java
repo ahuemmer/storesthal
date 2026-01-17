@@ -1,8 +1,8 @@
 package com.github.ahuemmer.storesthal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration;
+import com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory;
 import com.github.ahuemmer.storesthal.helpers.CacheManager;
 import com.github.ahuemmer.storesthal.helpers.EmbeddedCollectionHelper;
 import com.github.ahuemmer.storesthal.helpers.PrimitiveValueRetriever;
@@ -116,7 +116,7 @@ public class Storesthal {
      * Depending on the state of {@link #initialized}, init the object store with the default configuration.
      */
     static {
-        init(StoreresthalConfigurationFactory.DEFAULT_CONFIGURATION);
+        init(StoresthalConfigurationFactory.DEFAULT_CONFIGURATION);
     }
 
     /**
@@ -642,7 +642,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true, true);
+        ArrayList<EntityModel<T>> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, true);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -740,7 +740,7 @@ public class Storesthal {
             objectCounter++;
         }
         if (maintainLinks) {
-            CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass, true);
+            CacheManager.putObjectInCache(uri, resultListWithLinks, null, objectClass);
         } else {
             CacheManager.putObjectInCache(uri, resultListWithoutLinks, null, objectClass, false);
         }
@@ -818,7 +818,7 @@ public class Storesthal {
 
         URI uri = getUriFromUrl(url);
 
-        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false, true);
+        EntityModel<T> resultFromCache = CacheManager.getObjectFromCache(uri, objectClass, null, false);
 
         if (resultFromCache != null) {
             return resultFromCache;
@@ -945,12 +945,12 @@ public class Storesthal {
      * object structure (including possible collections as well). Warnings and/or errors will be logged, if something
      * goes wrong (e.g. unparseable JSON / no setter for a relation was found / unable to retrieve relation / ...).
      * <p>
-     * If not disabled (see {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
+     * If not disabled (see {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory#setDisableCaching(boolean)}), caching is used to
      * avoid calling the same URL multiple times. This will also lead to one object (with the same URL) being referenced
      * multiple times will only have <i>one</i> representation in memory, so all references will point to the same
      * (not just an equal) object.
      * <p>
-     * The exact behavior can be adjusted by {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} (see also {@link com.github.ahuemmer.storesthal.configuration.StoreresthalConfigurationFactory}
+     * The exact behavior can be adjusted by {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration} (see also {@link com.github.ahuemmer.storesthal.configuration.StoresthalConfigurationFactory}
      * and {@link #init(com.github.ahuemmer.storesthal.configuration.StoresthalConfiguration)}).
      *
      * @param url         The URL to retrieve the object from. Must be well-formed and absolute!
@@ -1002,11 +1002,11 @@ public class Storesthal {
         System.out.println("-------------------------");
         System.out.println("- HTTP Calls: " + httpCalls);
         System.out.println("- Cache hits, caches with links:");
-        CacheManager.getCacheHits(true).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(true).get(key)));
+        CacheManager.getCacheHits().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(true).get(key)));
         System.out.println("- Cache hits, caches without links:");
         CacheManager.getCacheHits(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheHits(false).get(key)));
         System.out.println("- Cache misses, caches with links:");
-        CacheManager.getCacheMisses(true).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(true).get(key)));
+        CacheManager.getCacheMisses().keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(true).get(key)));
         System.out.println("- Cache misses, caches without links:");
         CacheManager.getCacheMisses(false).keySet().forEach(key -> System.out.println("   - " + key + ": " + CacheManager.getCacheMisses(false).get(key)));
     }

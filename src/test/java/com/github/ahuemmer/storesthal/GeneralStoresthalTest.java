@@ -1245,8 +1245,8 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             Storesthal.getObject("http://localhost:" + serverMock.port() + "/collObjects/759034", CacheableChildObject.class);
 
             assertEquals(1, Storesthal.getStatistics().get("httpCalls"));
-            assertEquals(2, CacheManager.getCacheHits(true).get("test"));
-            assertEquals(1, CacheManager.getCacheHits(true).get("test-collection"));
+            assertEquals(2, CacheManager.getCacheHits().get("test"));
+            assertEquals(1, CacheManager.getCacheHits().get("test-collection"));
         }
 
         /**
