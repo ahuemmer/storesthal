@@ -31,6 +31,8 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -1340,6 +1342,19 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
             assertEquals(4, collectionItems.size());
             assertEquals(673896873, collectionItems.get(3).getChildId());
             assertEquals("collObject2", collectionItems.get(1).getChildName());
+        }
+
+        @Test
+        @DisplayName("caches objects without links")
+        public void caches_objects_without_links() throws IOException, StoresthalException, URISyntaxException {
+            configureServerMockWithResponseFile("/collection/coll", "embeddedCollection.json");
+            serverMock.start();
+
+            Storesthal.resetStatistics();
+
+            Storesthal.getCollectionWithoutLinks("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class, Optional.of("someCollection"));
+
+            assertTrue(CacheManager.getObjectFromCache(new URI("/collObjects/2"), CacheableChildObject.class, null, false, false) instanceof CacheableChildObject);
         }
 
         @Test
