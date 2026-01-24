@@ -1,12 +1,14 @@
 package com.github.ahuemmer.storesthal.complextestobjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.ahuemmer.storesthal.Cacheable;
 
 import java.util.List;
 
 /**
  * Simple "child" object having an id and a name
  */
+@Cacheable(cacheName = "test")
 public class ChildObject {
 
     @JsonProperty("objectId")

@@ -727,7 +727,7 @@ public class Storesthal {
                 if ("self".equals(l.getRel().value())) {
                     logger.debug("Self-Link for object within collection: {}", l.toUri());
                     if (!(l.getRel().value().isBlank())) {
-                        CacheManager.putObjectInCache(l.toUri(), entry, null, null, maintainLinks);
+                        CacheManager.putObjectInCache(l.toUri(), maintainLinks ? entry : entry.getContent(), null, null, maintainLinks);
                     }
                 } else {
                     if (maintainLinks) {
