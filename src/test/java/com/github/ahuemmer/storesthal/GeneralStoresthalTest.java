@@ -1354,7 +1354,7 @@ public class GeneralStoresthalTest extends AbstractJsonTemplateBasedTest {
 
             Storesthal.getCollectionWithoutLinks("http://localhost:" + serverMock.port() + "/collection/coll", CacheableChildObject.class, Optional.of("someCollection"));
 
-            assertTrue(CacheManager.getObjectFromCache(new URI("/collObjects/2"), ChildObject.class, null, false, false) instanceof CacheableChildObject);
+            assertTrue(CacheManager.getObjectFromCache(new URI("/collObjects/2"), CacheableChildObject.class, null, false, false) instanceof CacheableChildObject);
         }
 
         @Test
