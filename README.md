@@ -378,7 +378,7 @@ The same scheme applies to any type of relation: 1 to 1, 1 to many, backreferenc
 
 For convenience, it is also possible to annotate a class field with `@HALRelation`. If doing so, Storesthal will again
 expect a setter method with the correspondent name to be
-present in your class. So, if the annotated field is named `studends`, there must be a method called `setStudents`,
+present in your class. So, if the annotated field is named `students`, there must be a method called `setStudents`,
 accepting any java `Collection` type as first and only parameter.
 If that collection type is an abstract one, Storesthal will try to use an appropriate implementation, otherwise it will
 try and instantiate a new collection of the given type.
