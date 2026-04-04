@@ -67,24 +67,26 @@ public class EmbeddedCollectionHelper<T> {
 
         String fieldNameFound = null;
 
-        Iterator<String> fieldNameIterator = helper.getObjectCollection().fieldNames();
+        if ((helper != null) && (helper.objectCollection != null)) {
+            Iterator<String> fieldNameIterator = helper.getObjectCollection().fieldNames();
 
-        if (fieldName.isEmpty()) {
-            if (fieldNameIterator.hasNext()) {
-                String currentFieldName = fieldNameIterator.next();
-                if (helper.getObjectCollection().get(currentFieldName).isArray()) {
-                    fieldNameFound = currentFieldName;
-                }
-            }
-        } else {
-            while (fieldNameIterator.hasNext()) {
-                String currentFieldName = fieldNameIterator.next();
-                if (fieldName.get().equals(currentFieldName)) {
-                    fieldNameFound = currentFieldName;
-                    if (!helper.getObjectCollection().get(fieldNameFound).isArray()) {
-                        throw new StoresthalException("Embedded collection is not an array in field " + fieldName);
+            if (fieldName.isEmpty()) {
+                if (fieldNameIterator.hasNext()) {
+                    String currentFieldName = fieldNameIterator.next();
+                    if (helper.getObjectCollection().get(currentFieldName).isArray()) {
+                        fieldNameFound = currentFieldName;
                     }
-                    break;
+                }
+            } else {
+                while (fieldNameIterator.hasNext()) {
+                    String currentFieldName = fieldNameIterator.next();
+                    if (fieldName.get().equals(currentFieldName)) {
+                        fieldNameFound = currentFieldName;
+                        if (!helper.getObjectCollection().get(fieldNameFound).isArray()) {
+                            throw new StoresthalException("Embedded collection is not an array in field " + fieldName);
+                        }
+                        break;
+                    }
                 }
             }
         }

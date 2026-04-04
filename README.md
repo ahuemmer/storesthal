@@ -4,30 +4,33 @@ A simple solution for JSON-HAL object retrieval and caching.
 
 ## Table of contents
 
-<!-- toc -->- __[What is it?](#what-is-it)__
+<!-- toc -->
+
+- __[What is it?](#what-is-it)__
 - __[Features](#features)__
 - __[Example](#example)__
-   - __[Object structure](#object-structure)__
-   - __[Parent object](#parent-object)__
-   - __[First child object](#first-child-object)__
-   - __[Second child object](#second-child-object)__
-   - __[First (and only) subchild object](#first-and-only-subchild-object)__
-   - __[Here comes Storesthal](#here-comes-storesthal)__
-   - __[How does that work?](#how-does-that-work)__
+    - __[Object structure](#object-structure)__
+    - __[Parent object](#parent-object)__
+    - __[First child object](#first-child-object)__
+    - __[Second child object](#second-child-object)__
+    - __[First (and only) subchild object](#first-and-only-subchild-object)__
+    - __[Here comes Storesthal](#here-comes-storesthal)__
+    - __[How does that work?](#how-does-that-work)__
 - __[Usage](#usage)__
-   - __[Basic invocation](#basic-invocation)__
-   - __[Collections](#collections)__
-   - __[Embedded collections](#embedded-collections)__
-   - __[Relations](#relations)__
-   - __[Caching](#caching)__
-   - __[Caveats](#caveats)__
-   - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
+    - __[Basic invocation](#basic-invocation)__
+    - __[Collections](#collections)__
+    - __[Embedded collections](#embedded-collections)__
+    - __[Relations](#relations)__
+    - __[Caching](#caching)__
+    - __[Caveats](#caveats)__
+    - __[Non-HAL-answer retrieval](#non-hal-answer-retrieval)__
 - __[What's that name about... :thinking:?](#whats-that-name-about-thinking)__
 - __[TODOs and future of the project](#todos-and-future-of-the-project)__
-   - __[Possible future plans](#possible-future-plans)__
+    - __[Possible future plans](#possible-future-plans)__
 - __[Third-Party software](#third-party-software)__
 - __[Disclaimer](#disclaimer)__
 - __[License](#license)__
+
 <!-- /toc -->
 
 ## What is it?
@@ -378,7 +381,7 @@ The same scheme applies to any type of relation: 1 to 1, 1 to many, backreferenc
 
 For convenience, it is also possible to annotate a class field with `@HALRelation`. If doing so, Storesthal will again
 expect a setter method with the correspondent name to be
-present in your class. So, if the annotated field is named `studends`, there must be a method called `setStudents`,
+present in your class. So, if the annotated field is named `students`, there must be a method called `setStudents`,
 accepting any java `Collection` type as first and only parameter.
 If that collection type is an abstract one, Storesthal will try to use an appropriate implementation, otherwise it will
 try and instantiate a new collection of the given type.
